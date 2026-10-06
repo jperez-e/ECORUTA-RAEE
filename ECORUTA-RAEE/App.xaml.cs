@@ -11,7 +11,7 @@ namespace ECORUTA_RAEE
 
         protected override Window CreateWindow(IActivationState? activationState)
         {
-            return new Window(new Views.SolicitudFormPage());
+            return new Window(new Views.HomePage());
         }
     }
 }
