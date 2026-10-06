@@ -1,0 +1,111 @@
+# =====================================================
+# .gitignore para proyecto .NET MAUI
+# =====================================================
+
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.userprefs
+*.sln.docstates
+*.userosscache
+
+# Build outputs
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+[Bb]uild/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+
+# NuGet
+*.nupkg
+*.snupkg
+packages/
+!packages/build/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# Visual Studio Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Rider / JetBrains
+.idea/
+*.sln.iml
+
+# ReSharper
+_ReSharper*/
+*.[Rr]e[Ss]harper
+
+# Test results
+[Tt]est[Rr]esult*/
+TestResults/
+*.coverage
+*.coveragexml
+coverage*.json
+coverage*.xml
+
+# DotCover
+*.dotCover
+
+# Roslyn cache
+*.ide/
+
+# Android
+*.apk
+*.aab
+*.ap_
+*.dex
+local.properties
+.gradle/
+captures/
+*.keystore
+!debug.keystore
+
+# iOS (por si acaso)
+*.ipa
+*.dSYM/
+Pods/
+
+# Mac
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Logs y temporales
+*.log
+*.tmp
+*.bak
+*.swp
+*~
+
+# Backup y publicación
+*.PublishSettings
+PublishProfiles/
+publish/
+
+# Archivos de usuario específicos
+*.opensdf
+*.sdf
+*.cachefile
+
+# SQLite
+*.db
+*.db-journal
+*.db-shm
+*.db-wal

@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="ECORUTA_RAEE.Views.SolicitudFormPage"
+             Title="Nueva solicitud"
+             BackgroundColor="#F5F7F6">
+
+    <ScrollView>
+
+        <VerticalStackLayout
+            Padding="22"
+            Spacing="18">
+
+            <!-- Encabezado -->
+            <VerticalStackLayout Spacing="4">
+
+                <Label
+                    Text="Gestión de RAEE"
+                    FontSize="13"
+                    TextColor="#718078" />
+
+                <Label
+                    Text="Nueva solicitud"
+                    FontSize="28"
+                    FontAttributes="Bold"
+                    TextColor="#176B3A" />
+
+                <Label
+                    Text="Registra los datos del residuo electrónico que deseas gestionar."
+                    FontSize="13"
+                    TextColor="#718078"
+                    LineBreakMode="WordWrap" />
+
+            </VerticalStackLayout>
+
+            <!-- Formulario -->
+            <Border
+                Padding="20"
+                BackgroundColor="White"
+                Stroke="#E1E7E3"
+                StrokeThickness="1"
+                StrokeShape="RoundRectangle 18">
+
+                <VerticalStackLayout Spacing="17">
+
+                    <!-- Código -->
+                    <VerticalStackLayout Spacing="6">
+
+                        <Label
+                            Text="Código de solicitud"
+                            FontAttributes="Bold"
+                            FontSize="14"
+                            TextColor="#34423A" />
+
+                        <Border
+                            BackgroundColor="#F7F9F8"
+                            Stroke="#D9E2DC"
+                            StrokeShape="RoundRectangle 10">
+
+                            <Entry
+                                Placeholder="Ej. SOL-0001"
+                                FontSize="14"
+                                TextColor="#26332C"
+                                PlaceholderColor="#9AA69F"
+                                BackgroundColor="Transparent" />
+
+                        </Border>
+
+                    </VerticalStackLayout>
+
+                    <!-- Tipo -->
+                    <VerticalStackLayout Spacing="6">
+
+                        <Label
+                            Text="Tipo de residuo electrónico"
+                            FontAttributes="Bold"
+                            FontSize="14"
+                            TextColor="#34423A" />
+
+                        <Border
+                            BackgroundColor="#F7F9F8"
+                            Stroke="#D9E2DC"
+                            StrokeShape="RoundRectangle 10">
+
+                            <Picker
+                                Title="Seleccione una categoría"
+                                FontSize="14"
+                                TextColor="#26332C"
+                                BackgroundColor="Transparent">
+
+                                <Picker.Items>
+                                    <x:String>Laptop</x:String>
+                                    <x:String>Computadora de escritorio</x:String>
+                                    <x:String>Monitor</x:String>
+                                    <x:String>Teléfono celular</x:String>
+                                    <x:String>Impresora</x:String>
+                                    <x:String>Televisor</x:String>
+                                    <x:String>Otro</x:String>
+                                </Picker.Items>
+
+                            </Picker>
+
+                        </Border>
+
+                    </VerticalStackLayout>
+
+                    <!-- Marca -->
+                    <VerticalStackLayout Spacing="6">
+
+                        <Label
+                            Text="Marca"
+                            FontAttributes="Bold"
+                            FontSize="14"
+                            TextColor="#34423A" />
+
+                        <Border
+                            BackgroundColor="#F7F9F8"
+                            Stroke="#D9E2DC"
+                            StrokeShape="RoundRectangle 10">
+
+                            <Entry
+                                Placeholder="Ej. Dell, HP, Samsung..."
+                                FontSize="14"
+                                TextColor="#26332C"
+                                PlaceholderColor="#9AA69F"
+                                BackgroundColor="Transparent" />
+
+                        </Border>
+
+                    </VerticalStackLayout>
+
+                    <!-- Estado -->
+                    <VerticalStackLayout Spacing="6">
+
+                        <Label
+                            Text="Estado del equipo"
+                            FontAttributes="Bold"
+                            FontSize="14"
+                            TextColor="#34423A" />
+
+                        <Border
+                            BackgroundColor="#F7F9F8"
+                            Stroke="#D9E2DC"
+                            StrokeShape="RoundRectangle 10">
+
+                            <Picker
+                                Title="Seleccione el estado"
+                                FontSize="14"
+                                TextColor="#26332C"
+                                BackgroundColor="Transparent">
+
+                                <Picker.Items>
+                                    <x:String>Funciona</x:String>
+                                    <x:String>Funciona parcialmente</x:String>
+                                    <x:String>No funciona</x:String>
+                                    <x:String>Dañado</x:String>
+                                </Picker.Items>
+
+                            </Picker>
+
+                        </Border>
+
+                    </VerticalStackLayout>
+
+                    <!-- Zona -->
+                    <VerticalStackLayout Spacing="6">
+
+                        <Label
+                            Text="Zona"
+                            FontAttributes="Bold"
+                            FontSize="14"
+                            TextColor="#34423A" />
+
+                        <Border
+                            BackgroundColor="#F7F9F8"
+                            Stroke="#D9E2DC"
+                            StrokeShape="RoundRectangle 10">
+
+                            <Picker
+                                Title="Seleccione una zona"
+                                FontSize="14"
+                                TextColor="#26332C"
+                                BackgroundColor="Transparent">
+
+                                <Picker.Items>
+                                    <x:String>Herrera</x:String>
+                                    <x:String>Los Alcarrizos</x:String>
+                                    <x:String>Manoguayabo</x:String>
+                                    <x:String>Pantoja</x:String>
+                                    <x:String>Pedro Brand</x:String>
+                                </Picker.Items>
+
+                            </Picker>
+
+                        </Border>
+
+                    </VerticalStackLayout>
+
+                    <!-- Dirección -->
+                    <VerticalStackLayout Spacing="6">
+
+                        <Label
+                            Text="Dirección o referencia"
+                            FontAttributes="Bold"
+                            FontSize="14"
+                            TextColor="#34423A" />
+
+                        <Border
+                            BackgroundColor="#F7F9F8"
+                            Stroke="#D9E2DC"
+                            StrokeShape="RoundRectangle 10">
+
+                            <Editor
+                                Placeholder="Ej. Cerca de..."
+                                HeightRequest="90"
+                                FontSize="14"
+                                TextColor="#26332C"
+                                PlaceholderColor="#9AA69F"
+                                BackgroundColor="Transparent"
+                                AutoSize="TextChanges" />
+
+                        </Border>
+
+                    </VerticalStackLayout>
+
+                    <!-- Peso -->
+                    <VerticalStackLayout Spacing="6">
+
+                        <Label
+                            Text="Peso estimado (kg)"
+                            FontAttributes="Bold"
+                            FontSize="14"
+                            TextColor="#34423A" />
+
+                        <Border
+                            BackgroundColor="#F7F9F8"
+                            Stroke="#D9E2DC"
+                            StrokeShape="RoundRectangle 10">
+
+                            <Entry
+                                Placeholder="Ej. 4.5"
+                                Keyboard="Numeric"
+                                FontSize="14"
+                                TextColor="#26332C"
+                                PlaceholderColor="#9AA69F"
+                                BackgroundColor="Transparent" />
+
+                        </Border>
+
+                    </VerticalStackLayout>
+
+                    <!-- Botón -->
+                    <Button
+                        Margin="0,10,0,0"
+                        Text="GUARDAR SOLICITUD"
+                        HeightRequest="52"
+                        CornerRadius="12"
+                        BackgroundColor="#1B8A4B"
+                        TextColor="White"
+                        FontAttributes="Bold"
+                        FontSize="15" />
+
+                    <Button
+                        Text="CANCELAR"
+                        HeightRequest="48"
+                        CornerRadius="12"
+                        BackgroundColor="#EEF2EF"
+                        TextColor="#536159"
+                        FontAttributes="Bold"
+                        FontSize="14" />
+
+                </VerticalStackLayout>
+
+            </Border>
+
+        </VerticalStackLayout>
+
+    </ScrollView>
+
+</ContentPage>
