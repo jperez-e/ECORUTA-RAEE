@@ -1,0 +1,325 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="ECORUTA_RAEE.Views.HomePage"
+             Title="EcoRuta"
+             BackgroundColor="#F5F7F6">
+
+    <ScrollView>
+
+        <VerticalStackLayout
+            Padding="22"
+            Spacing="20">
+
+            <!-- Encabezado -->
+            <Grid
+                ColumnDefinitions="*,Auto"
+                RowDefinitions="Auto,Auto">
+
+                <VerticalStackLayout Grid.Column="0">
+
+                    <Label
+                        Text="Hola, administrador 👋"
+                        FontSize="14"
+                        TextColor="#718078" />
+
+                    <Label
+                        Text="EcoRuta RAEE"
+                        FontSize="28"
+                        FontAttributes="Bold"
+                        TextColor="#176B3A" />
+
+                </VerticalStackLayout>
+
+                <Border
+                    Grid.Column="1"
+                    WidthRequest="46"
+                    HeightRequest="46"
+                    BackgroundColor="#DDF4E5"
+                    StrokeThickness="0"
+                    StrokeShape="RoundRectangle 23">
+
+                    <Label
+                        Text="♻"
+                        FontSize="25"
+                        TextColor="#1B8A4B"
+                        HorizontalOptions="Center"
+                        VerticalOptions="Center" />
+
+                </Border>
+
+            </Grid>
+
+            <!-- Resumen -->
+            <Label
+                Text="Resumen"
+                FontSize="19"
+                FontAttributes="Bold"
+                TextColor="#26332C" />
+
+            <Grid
+                ColumnDefinitions="*,*"
+                RowDefinitions="Auto,Auto"
+                ColumnSpacing="12"
+                RowSpacing="12">
+
+                <!-- Solicitudes -->
+                <Border
+                    Grid.Row="0"
+                    Grid.Column="0"
+                    Padding="18"
+                    BackgroundColor="White"
+                    Stroke="#E1E7E3"
+                    StrokeThickness="1"
+                    StrokeShape="RoundRectangle 16">
+
+                    <VerticalStackLayout Spacing="5">
+
+                        <Label
+                            Text="24"
+                            FontSize="30"
+                            FontAttributes="Bold"
+                            TextColor="#1B8A4B" />
+
+                        <Label
+                            Text="Solicitudes"
+                            FontSize="13"
+                            TextColor="#718078" />
+
+                        <Label
+                            Text="Pendientes"
+                            FontSize="11"
+                            TextColor="#9AA69F" />
+
+                    </VerticalStackLayout>
+
+                </Border>
+
+                <!-- Equipos -->
+                <Border
+                    Grid.Row="0"
+                    Grid.Column="1"
+                    Padding="18"
+                    BackgroundColor="White"
+                    Stroke="#E1E7E3"
+                    StrokeThickness="1"
+                    StrokeShape="RoundRectangle 16">
+
+                    <VerticalStackLayout Spacing="5">
+
+                        <Label
+                            Text="73"
+                            FontSize="30"
+                            FontAttributes="Bold"
+                            TextColor="#2878A8" />
+
+                        <Label
+                            Text="Equipos"
+                            FontSize="13"
+                            TextColor="#718078" />
+
+                        <Label
+                            Text="Registrados"
+                            FontSize="11"
+                            TextColor="#9AA69F" />
+
+                    </VerticalStackLayout>
+
+                </Border>
+
+                <!-- Peso -->
+                <Border
+                    Grid.Row="1"
+                    Grid.Column="0"
+                    Padding="18"
+                    BackgroundColor="White"
+                    Stroke="#E1E7E3"
+                    StrokeThickness="1"
+                    StrokeShape="RoundRectangle 16">
+
+                    <VerticalStackLayout Spacing="5">
+
+                        <Label
+                            Text="325 kg"
+                            FontSize="25"
+                            FontAttributes="Bold"
+                            TextColor="#8A6A1B" />
+
+                        <Label
+                            Text="RAEE"
+                            FontSize="13"
+                            TextColor="#718078" />
+
+                        <Label
+                            Text="Peso estimado"
+                            FontSize="11"
+                            TextColor="#9AA69F" />
+
+                    </VerticalStackLayout>
+
+                </Border>
+
+                <!-- Jornadas -->
+                <Border
+                    Grid.Row="1"
+                    Grid.Column="1"
+                    Padding="18"
+                    BackgroundColor="White"
+                    Stroke="#E1E7E3"
+                    StrokeThickness="1"
+                    StrokeShape="RoundRectangle 16">
+
+                    <VerticalStackLayout Spacing="5">
+
+                        <Label
+                            Text="6"
+                            FontSize="30"
+                            FontAttributes="Bold"
+                            TextColor="#7B4AA8" />
+
+                        <Label
+                            Text="Jornadas"
+                            FontSize="13"
+                            TextColor="#718078" />
+
+                        <Label
+                            Text="Programadas"
+                            FontSize="11"
+                            TextColor="#9AA69F" />
+
+                    </VerticalStackLayout>
+
+                </Border>
+
+            </Grid>
+
+            <!-- Acciones -->
+            <Label
+                Margin="0,8,0,0"
+                Text="Acciones rápidas"
+                FontSize="19"
+                FontAttributes="Bold"
+                TextColor="#26332C" />
+
+            <Border
+                Padding="16"
+                BackgroundColor="White"
+                Stroke="#E1E7E3"
+                StrokeShape="RoundRectangle 14">
+
+                <Grid ColumnDefinitions="Auto,*">
+
+                    <Border
+                        WidthRequest="48"
+                        HeightRequest="48"
+                        BackgroundColor="#DDF4E5"
+                        StrokeThickness="0"
+                        StrokeShape="RoundRectangle 12">
+
+                        <Label
+                            Text="+"
+                            FontSize="28"
+                            TextColor="#1B8A4B"
+                            HorizontalOptions="Center"
+                            VerticalOptions="Center" />
+
+                    </Border>
+
+                    <VerticalStackLayout
+                        Grid.Column="1"
+                        Margin="15,0,0,0"
+                        VerticalOptions="Center">
+
+                        <Label
+                            Text="Nueva solicitud"
+                            FontAttributes="Bold"
+                            FontSize="15"
+                            TextColor="#26332C" />
+
+                        <Label
+                            Text="Registrar un nuevo RAEE"
+                            FontSize="12"
+                            TextColor="#718078" />
+
+                    </VerticalStackLayout>
+
+                </Grid>
+
+            </Border>
+
+            <Border
+                Padding="16"
+                BackgroundColor="White"
+                Stroke="#E1E7E3"
+                StrokeShape="RoundRectangle 14">
+
+                <Grid ColumnDefinitions="Auto,*">
+
+                    <Border
+                        WidthRequest="48"
+                        HeightRequest="48"
+                        BackgroundColor="#E3F0F8"
+                        StrokeThickness="0"
+                        StrokeShape="RoundRectangle 12">
+
+                        <Label
+                            Text="☷"
+                            FontSize="25"
+                            TextColor="#2878A8"
+                            HorizontalOptions="Center"
+                            VerticalOptions="Center" />
+
+                    </Border>
+
+                    <VerticalStackLayout
+                        Grid.Column="1"
+                        Margin="15,0,0,0"
+                        VerticalOptions="Center">
+
+                        <Label
+                            Text="Ver solicitudes"
+                            FontAttributes="Bold"
+                            FontSize="15"
+                            TextColor="#26332C" />
+
+                        <Label
+                            Text="Consultar solicitudes registradas"
+                            FontSize="12"
+                            TextColor="#718078" />
+
+                    </VerticalStackLayout>
+
+                </Grid>
+
+            </Border>
+
+            <!-- Información -->
+            <Border
+                Padding="18"
+                BackgroundColor="#EAF6EE"
+                StrokeThickness="0"
+                StrokeShape="RoundRectangle 14">
+
+                <VerticalStackLayout Spacing="7">
+
+                    <Label
+                        Text="♻ EcoRuta"
+                        FontSize="16"
+                        FontAttributes="Bold"
+                        TextColor="#176B3A" />
+
+                    <Label
+                        Text="Organiza la demanda de residuos electrónicos para facilitar jornadas de recolección más eficientes."
+                        FontSize="13"
+                        TextColor="#4E6256"
+                        LineBreakMode="WordWrap" />
+
+                </VerticalStackLayout>
+
+            </Border>
+
+        </VerticalStackLayout>
+
+    </ScrollView>
+
+</ContentPage>
