@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
+    
 <Shell
     x:Class="ECORUTA_RAEE.AppShell"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
@@ -6,22 +7,30 @@
     xmlns:views="clr-namespace:ECORUTA_RAEE.Views"
     FlyoutBehavior="Flyout">
 
-    <ShellContent
+    <FlyoutItem
         Title="Inicio"
-        Icon="home.png"
-        ContentTemplate="{DataTemplate views:HomePage}"
-        Route="HomePage" />
+        Route="inicio">
 
-    <ShellContent
+        <ShellContent
+            Title="Inicio"
+            ContentTemplate="{DataTemplate views:HomePage}"
+            Route="HomePage" />
+
+    </FlyoutItem>
+
+    <FlyoutItem
         Title="Solicitudes"
-        Icon="list.png"
-        ContentTemplate="{DataTemplate views:SolicitudesPage}"
-        Route="SolicitudesPage" />
+        Route="solicitudes">
 
-    <ShellContent
-        Title="Nueva solicitud"
-        Icon="add.png"
-        ContentTemplate="{DataTemplate views:SolicitudFormPage}"
-        Route="SolicitudFormPage" />
+        <ShellContent
+            Title="Solicitudes"
+            ContentTemplate="{DataTemplate views:SolicitudesPage}"
+            Route="SolicitudesPage" />
+
+    </FlyoutItem>
+
+    <MenuItem
+        Text="Cerrar sesión"
+        Clicked="CerrarSesion_Clicked" />
 
 </Shell>

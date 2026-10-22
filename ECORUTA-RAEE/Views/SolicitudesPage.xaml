@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
+    
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="ECORUTA_RAEE.Views.SolicitudesPage"
@@ -9,175 +10,97 @@
         RowDefinitions="Auto,Auto,*"
         Padding="20">
 
-        <!-- Encabezado -->
-        <Grid
+        <Label
             Grid.Row="0"
-            ColumnDefinitions="*,Auto">
+            Text="Solicitudes de recolección"
+            FontSize="24"
+            FontAttributes="Bold"
+            TextColor="#176B3A"/>
 
-            <VerticalStackLayout>
-
-                <Label
-                    Text="Gestión de RAEE"
-                    FontSize="13"
-                    TextColor="#718078" />
-
-                <Label
-                    Text="Solicitudes"
-                    FontSize="28"
-                    FontAttributes="Bold"
-                    TextColor="#176B3A" />
-
-            </VerticalStackLayout>
-
-            <Border
-                Grid.Column="1"
-                WidthRequest="46"
-                HeightRequest="46"
-                BackgroundColor="#1B8A4B"
-                StrokeThickness="0"
-                StrokeShape="RoundRectangle 23">
-
-                <Label
-                    Text="+"
-                    FontSize="28"
-                    TextColor="White"
-                    HorizontalOptions="Center"
-                    VerticalOptions="Center" />
-
-            </Border>
-
-        </Grid>
-
-        <!-- Buscador -->
-        <Border
+        <Button
             Grid.Row="1"
-            Margin="0,20,0,15"
-            BackgroundColor="White"
-            Stroke="#DCE4DF"
-            StrokeThickness="1"
-            StrokeShape="RoundRectangle 12">
+            Margin="0,12,0,12"
+            Text="+ Nueva solicitud"
+            BackgroundColor="#1B8A4B"
+            TextColor="White"
+            Clicked="NuevaSolicitud_Clicked"/>
 
-            <Grid ColumnDefinitions="Auto,*">
-
-                <Label
-                    Grid.Column="0"
-                    Margin="14,0,8,0"
-                    Text="⌕"
-                    FontSize="24"
-                    TextColor="#7C8981"
-                    VerticalOptions="Center" />
-
-                <Entry
-                    Grid.Column="1"
-                    Placeholder="Buscar solicitud..."
-                    FontSize="14"
-                    TextColor="#26332C"
-                    PlaceholderColor="#9AA69F"
-                    BackgroundColor="Transparent" />
-
-            </Grid>
-
-        </Border>
-
-        <!-- Lista -->
         <CollectionView
+            x:Name="SolicitudesCollection"
             Grid.Row="2"
             SelectionMode="None">
 
-            <CollectionView.ItemsSource>
+            <CollectionView.EmptyView>
+                <VerticalStackLayout
+                    Padding="20"
+                    Spacing="8"
+                    VerticalOptions="Center">
 
-                <x:Array Type="{x:Type x:String}">
-                    <x:String>SOL-0012</x:String>
-                    <x:String>SOL-0013</x:String>
-                    <x:String>SOL-0014</x:String>
-                    <x:String>SOL-0015</x:String>
-                </x:Array>
+                    <Label
+                        Text="Todavía no hay solicitudes."
+                        FontSize="16"
+                        TextColor="#718078"
+                        HorizontalTextAlignment="Center"/>
 
-            </CollectionView.ItemsSource>
+                    <Label
+                        Text="Crea la primera para comenzar."
+                        FontSize="13"
+                        TextColor="#718078"
+                        HorizontalTextAlignment="Center"/>
+                </VerticalStackLayout>
+            </CollectionView.EmptyView>
 
             <CollectionView.ItemTemplate>
-
                 <DataTemplate>
-
                     <Border
                         Margin="0,0,0,12"
                         Padding="16"
                         BackgroundColor="White"
                         Stroke="#E1E7E3"
-                        StrokeThickness="1"
-                        StrokeShape="RoundRectangle 15">
+                        StrokeShape="RoundRectangle 14">
 
-                        <Grid
-                            RowDefinitions="Auto,Auto,Auto"
-                            ColumnDefinitions="*,Auto">
+                        <VerticalStackLayout Spacing="7">
 
-                            <!-- Código -->
+                            <Grid ColumnDefinitions="*,Auto">
+                                <Label
+                                    Text="{Binding CodigoSolicitud}"
+                                    FontSize="17"
+                                    FontAttributes="Bold"
+                                    TextColor="#176B3A"/>
+
+                                <Label
+                                    Grid.Column="1"
+                                    Text="{Binding Estado}"
+                                    FontSize="12"
+                                    TextColor="#8A6A1B"
+                                    VerticalOptions="Center"/>
+                            </Grid>
+
                             <Label
-                                Grid.Row="0"
-                                Text="{Binding}"
-                                FontSize="16"
-                                FontAttributes="Bold"
-                                TextColor="#26332C" />
+                                Text="{Binding Zona, StringFormat='Zona: {0}'}"
+                                FontSize="14"
+                                TextColor="#34423A"/>
 
-                            <!-- Estado -->
-                            <Border
-                                Grid.Row="0"
-                                Grid.Column="1"
-                                Padding="10,5"
-                                BackgroundColor="#FFF4D6"
-                                StrokeThickness="0"
-                                StrokeShape="RoundRectangle 10">
-
-                                <Label
-                                    Text="Pendiente"
-                                    FontSize="11"
-                                    TextColor="#8A6A1B" />
-
-                            </Border>
-
-                            <!-- Información -->
-                            <VerticalStackLayout
-                                Grid.Row="1"
-                                Grid.ColumnSpan="2"
-                                Margin="0,12,0,0"
-                                Spacing="5">
-
-                                <Label
-                                    Text="💻 Laptop Dell"
-                                    FontSize="14"
-                                    TextColor="#4A5951" />
-
-                                <Label
-                                    Text="📍 Herrera"
-                                    FontSize="13"
-                                    TextColor="#718078" />
-
-                                <Label
-                                    Text="⚖ 4.2 kg estimados"
-                                    FontSize="13"
-                                    TextColor="#718078" />
-
-                            </VerticalStackLayout>
-
-                            <!-- Fecha -->
                             <Label
-                                Grid.Row="2"
-                                Grid.ColumnSpan="2"
-                                Margin="0,12,0,0"
-                                Text="Registrada recientemente"
-                                FontSize="11"
-                                TextColor="#9AA69F" />
+                                Text="{Binding DireccionReferencia, StringFormat='Dirección: {0}'}"
+                                FontSize="13"
+                                TextColor="#718078"/>
 
-                        </Grid>
+                            <Label
+                                Text="{Binding PesoTotalEstimado, StringFormat='Peso estimado: {0:F2} kg'}"
+                                FontSize="13"
+                                TextColor="#718078"/>
 
+                            <Label
+                                Text="{Binding FechaRegistro, StringFormat='Registrada: {0:dd/MM/yyyy HH:mm}'}"
+                                FontSize="12"
+                                TextColor="#9AA69F"/>
+
+                        </VerticalStackLayout>
                     </Border>
-
                 </DataTemplate>
-
             </CollectionView.ItemTemplate>
-
         </CollectionView>
-
     </Grid>
-
 </ContentPage>
+        

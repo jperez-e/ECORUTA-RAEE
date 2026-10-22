@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    
+<ContentPage 
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="ECORUTA_RAEE.Views.LoginPage"
              Title="Iniciar sesión"
@@ -7,133 +9,72 @@
     
     <ScrollView>
         <VerticalStackLayout
-            Padding="30,50"
-            Spacing="0">
+            Padding="28,60"
+            Spacing="20"
+            VerticalOptions="Center">
 
-            <!-- Logo / Identidad -->
-            <VerticalStackLayout
-                HorizontalOptions="Center"
-                Spacing="10">
+            <Label
+                        Text="♻ EcoRuta RAEE"
+                        FontSize="32"
+                        FontAttributes="Bold"
+                        TextColor="#176B3A"
+                        HorizontalTextAlignment="Center"/>
 
-                <Border
-                    WidthRequest="90"
-                    HeightRequest="90"
-                    StrokeThickness="0"
-                    BackgroundColor="#DDF4E5"
-                    StrokeShape="RoundRectangle 45">
-
-                    <Label
-                        Text="♻"
-                        FontSize="52"
-                        TextColor="#1B8A4B"
-                        HorizontalOptions="Center"
-                        VerticalOptions="Center" />
-                </Border>
-
-                <Label
-                    Text="EcoRuta"
-                    FontSize="32"
-                    FontAttributes="Bold"
-                    TextColor="#176B3A"
-                    HorizontalTextAlignment="Center" />
 
                 <Label
                     Text="Gestión inteligente de residuos electrónicos"
-                    FontSize="14"
-                    TextColor="#68746D"
-                    HorizontalTextAlignment="Center" />
-            </VerticalStackLayout>
+                FontSize="14"
+                TextColor="#718078"
+                HorizontalTextAlignment="Center"/>
+                
 
-            <!-- Formulario -->
+                <!-- Formulario -->
             <Border
-                Margin="0,45,0,0"
+                Margin="0,20,0,0"
                 Padding="22"
                 BackgroundColor="White"
-                Stroke="#E2E8E4"
+                Stroke="#E1E7E3"
                 StrokeThickness="1"
                 StrokeShape="RoundRectangle 18">
 
-                <VerticalStackLayout Spacing="18">
+                <VerticalStackLayout Spacing="15">
 
                     <Label
                         Text="Iniciar sesión"
                         FontSize="24"
                         FontAttributes="Bold"
-                        TextColor="#1F2D25" />
+                        TextColor="#26332C" />
+
+                    <Entry
+                        x:Name="UsuarioEntry"
+                        Placeholder="Usuario"
+                        ClearButtonVisibility="WhileEditing"/>
+
+                    <Entry
+                        x:Name="ContrasenaEntry"
+                        Placeholder="Contraseña"
+                        IsPassword="True"/>
 
                     <Label
-                        Text="Ingresa tus credenciales para continuar."
+                        x:Name="MensajeError"
+                        TextColor="#C62828"
                         FontSize="13"
-                        TextColor="#718078" />
-
-                    <!-- Usuario -->
-                    <VerticalStackLayout Spacing="6">
-
-                        <Label
-                            Text="Usuario"
-                            FontAttributes="Bold"
-                            FontSize="14"
-                            TextColor="#34423A" />
-
-                        <Border
-                            BackgroundColor="#F7F9F8"
-                            Stroke="#D9E2DC"
-                            StrokeThickness="1"
-                            StrokeShape="RoundRectangle 10">
-
-                            <Entry
-                                Placeholder="Ingresa tu usuario"
-                                FontSize="14"
-                                TextColor="#26332C"
-                                PlaceholderColor="#9AA69F"
-                                BackgroundColor="Transparent" />
-                        </Border>
-
-                    </VerticalStackLayout>
-
-                    <!-- Contraseña -->
-                    <VerticalStackLayout Spacing="6">
-
-                        <Label
-                            Text="Contraseña"
-                            FontAttributes="Bold"
-                            FontSize="14"
-                            TextColor="#34423A" />
-
-                        <Border
-                            BackgroundColor="#F7F9F8"
-                            Stroke="#D9E2DC"
-                            StrokeThickness="1"
-                            StrokeShape="RoundRectangle 10">
-
-                            <Entry
-                                Placeholder="Ingresa tu contraseña"
-                                IsPassword="True"
-                                FontSize="14"
-                                TextColor="#26332C"
-                                PlaceholderColor="#9AA69F"
-                                BackgroundColor="Transparent" />
-                        </Border>
-
-                    </VerticalStackLayout>
+                        IsVisible="False"/>
 
                     <!-- Botón -->
                     <Button
-                        Margin="0,10,0,0"
                         Text="INICIAR SESIÓN"
-                        HeightRequest="52"
-                        CornerRadius="12"
                         BackgroundColor="#1B8A4B"
                         TextColor="White"
-                        FontAttributes="Bold"
-                        FontSize="15" />
+                        CornerRadius="12"
+                        HeightRequest="50"
+                        Clicked="IniciarSesion_Clicked"/>
 
                     <Label
-                        Margin="0,5,0,0"
-                        Text="EcoRuta RAEE • Gestión responsable"
+                      Text="Acceso de demostración"
                         FontSize="12"
-                        TextColor="#9AA69F"
-                        HorizontalTextAlignment="Center" />
+                        TextColor="#718078"
+                        HorizontalTextAlignment="Center"/>
 
                 </VerticalStackLayout>
 
