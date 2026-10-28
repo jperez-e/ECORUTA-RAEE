@@ -1,86 +1,182 @@
 <?xml version="1.0" encoding="utf-8" ?>
-    
-<ContentPage 
+
+<ContentPage
+    x:Class="ECORUTA_RAEE.Views.LoginPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="ECORUTA_RAEE.Views.LoginPage"
-             Title="Iniciar sesión"
-             BackgroundColor="#F5F7F6">
-    
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="Iniciar sesión"
+    NavigationPage.HasNavigationBar="False"
+    BackgroundColor="#F4F7F4">
+
     <ScrollView>
         <VerticalStackLayout
-            Padding="28,60"
-            Spacing="20"
-            VerticalOptions="Center">
+            Padding="26,28,26,30"
+            Spacing="22">
 
-            <Label
-                        Text="♻ EcoRuta RAEE"
-                        FontSize="32"
-                        FontAttributes="Bold"
-                        TextColor="#176B3A"
-                        HorizontalTextAlignment="Center"/>
+            <!-- Identidad visual -->
+            <VerticalStackLayout
+                HorizontalOptions="Center"
+                Spacing="12">
 
+                <Border
+                    WidthRequest="94"
+                    HeightRequest="94"
+                    BackgroundColor="#17452F"
+                    StrokeThickness="0"
+                    StrokeShape="RoundRectangle 30"
+                    HorizontalOptions="Center">
+
+                    <Label
+                        Text="♻"
+                        FontSize="58"
+                        TextColor="#B7F36B"
+                        HorizontalTextAlignment="Center"
+                        VerticalTextAlignment="Center"/>
+                </Border>
 
                 <Label
-                    Text="Gestión inteligente de residuos electrónicos"
-                FontSize="14"
-                TextColor="#718078"
-                HorizontalTextAlignment="Center"/>
-                
+                    Text="EcoRuta-RAEE"
+                    FontSize="30"
+                    FontAttributes="Bold"
+                    TextColor="#183D2B"
+                    HorizontalTextAlignment="Center"/>
 
-                <!-- Formulario -->
+                <Label
+                    Text="Tecnología al servicio del planeta"
+                    FontSize="14"
+                    TextColor="#718078"
+                    HorizontalTextAlignment="Center"/>
+            </VerticalStackLayout>
+
+            <!-- Mensaje de bienvenida -->
+            <VerticalStackLayout
+                Margin="0,8,0,0"
+                Spacing="7">
+
+                <Label
+                    Text="¡Bienvenido!"
+                    FontSize="25"
+                    FontAttributes="Bold"
+                    TextColor="#1D2B22"/>
+
+                <Label
+                    Text="Inicia sesión para gestionar las solicitudes de recogida de residuos electrónicos."
+                    FontSize="14"
+                    LineHeight="1.4"
+                    TextColor="#718078"/>
+            </VerticalStackLayout>
+
+            <!-- Formulario -->
             <Border
-                Margin="0,20,0,0"
-                Padding="22"
+                Padding="21"
                 BackgroundColor="White"
-                Stroke="#E1E7E3"
+                Stroke="#E1E9E2"
                 StrokeThickness="1"
-                StrokeShape="RoundRectangle 18">
+                StrokeShape="RoundRectangle 22">
 
-                <VerticalStackLayout Spacing="15">
-
-                    <Label
-                        Text="Iniciar sesión"
-                        FontSize="24"
-                        FontAttributes="Bold"
-                        TextColor="#26332C" />
-
-                    <Entry
-                        x:Name="UsuarioEntry"
-                        Placeholder="Usuario"
-                        ClearButtonVisibility="WhileEditing"/>
-
-                    <Entry
-                        x:Name="ContrasenaEntry"
-                        Placeholder="Contraseña"
-                        IsPassword="True"/>
+                <VerticalStackLayout Spacing="11">
 
                     <Label
-                        x:Name="MensajeError"
-                        TextColor="#C62828"
+                        Text="Usuario"
                         FontSize="13"
-                        IsVisible="False"/>
+                        FontAttributes="Bold"
+                        TextColor="#34423A"/>
 
-                    <!-- Botón -->
-                    <Button
-                        Text="INICIAR SESIÓN"
-                        BackgroundColor="#1B8A4B"
-                        TextColor="White"
-                        CornerRadius="12"
-                        HeightRequest="50"
-                        Clicked="IniciarSesion_Clicked"/>
+                    <Border
+                        Padding="13,0"
+                        BackgroundColor="#F7F9F7"
+                        Stroke="#DCE6DD"
+                        StrokeThickness="1"
+                        StrokeShape="RoundRectangle 12">
+
+                        <Entry
+                            Placeholder="Introduce tu usuario"
+                            Text="{Binding Usuario}"
+                            TextColor="#26352B"
+                            PlaceholderColor="#89958D"
+                            BackgroundColor="Transparent"
+                            HeightRequest="52"
+                            ReturnType="Next"/>
+                    </Border>
 
                     <Label
-                      Text="Acceso de demostración"
-                        FontSize="12"
-                        TextColor="#718078"
+                        Margin="0,8,0,0"
+                        Text="Contraseña"
+                        FontSize="13"
+                        FontAttributes="Bold"
+                        TextColor="#34423A"/>
+
+                    <Border
+                        Padding="13,0"
+                        BackgroundColor="#F7F9F7"
+                        Stroke="#DCE6DD"
+                        StrokeThickness="1"
+                        StrokeShape="RoundRectangle 12">
+
+                        <Entry
+                            Placeholder="Introduce tu contraseña"
+                            Text="{Binding Contrasena}"
+                            IsPassword="True"
+                            TextColor="#26352B"
+                            PlaceholderColor="#89958D"
+                            BackgroundColor="Transparent"
+                            HeightRequest="52"
+                            ReturnType="Go"/>
+                    </Border>
+
+                    <!-- Error de inicio de sesión -->
+                    <Border
+                        Padding="11"
+                        BackgroundColor="#FCEAEA"
+                        StrokeThickness="0"
+                        StrokeShape="RoundRectangle 10"
+                        IsVisible="{Binding HayError}">
+
+                        <Label
+                            Text="{Binding MensajeError}"
+                            FontSize="12"
+                            TextColor="#B42323"/>
+                    </Border>
+
+                    <!-- Acceso -->
+                    <Button
+                        Margin="0,12,0,0"
+                        Text="Iniciar sesión   →"
+                        Command="{Binding IniciarSesionCommand}"
+                        BackgroundColor="#218653"
+                        TextColor="White"
+                        FontSize="15"
+                        FontAttributes="Bold"
+                        CornerRadius="14"
+                        HeightRequest="55"/>
+
+                    <Label
+                        Text="Acceso a la plataforma de gestión ambiental"
+                        FontSize="11"
+                        TextColor="#89958D"
                         HorizontalTextAlignment="Center"/>
-
                 </VerticalStackLayout>
-
             </Border>
+
+            <!-- Pie de página -->
+            <VerticalStackLayout
+                HorizontalOptions="Center"
+                Spacing="5">
+
+                <Label
+                    Text="♻  Reduce · Reutiliza · Recicla"
+                    FontSize="13"
+                    FontAttributes="Bold"
+                    TextColor="#218653"
+                    HorizontalTextAlignment="Center"/>
+
+                <Label
+                    Text="Una iniciativa para una gestión responsable de los RAEE."
+                    FontSize="11"
+                    TextColor="#89958D"
+                    HorizontalTextAlignment="Center"/>
+            </VerticalStackLayout>
 
         </VerticalStackLayout>
     </ScrollView>
-
 </ContentPage>

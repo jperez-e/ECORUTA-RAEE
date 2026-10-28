@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-
+﻿
 namespace ECORUTA_RAEE
 {
     public partial class App : Application

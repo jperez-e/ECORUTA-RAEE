@@ -1,76 +1,183 @@
 <?xml version="1.0" encoding="utf-8" ?>
-    
-<ContentPage 
+
+<ContentPage
+    x:Class="ECORUTA_RAEE.Views.HomePage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="ECORUTA_RAEE.Views.HomePage"
-             Title="Inicio"
-             BackgroundColor="#F5F7F6">
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="Inicio">
 
     <ScrollView>
+        <VerticalStackLayout Padding="22,24" Spacing="22">
 
-        <VerticalStackLayout
-            Padding="22"
-            Spacing="20">
+            <!-- Encabezado -->
+            <Grid ColumnDefinitions="*,Auto"
+                  ColumnSpacing="12">
 
-            <Label
-                   Text="Bienvenido a EcoRuta👋"
-                    FontSize="27"
-                    FontAttributes="Bold"
-                    TextColor="#176B3A"/>
-
-            <Label
-                Text="Organiza la recogida de residuos electrónicos."
-                FontSize="14"
-                TextColor="#718078"/>
-
-            <Border
-                Padding="20"
-                BackgroundColor="White"
-                Stroke="#E1E7E3"
-                StrokeShape="RoundRectangle 16">
-
-                <VerticalStackLayout Spacing="8">
-
+                <VerticalStackLayout Spacing="5">
                     <Label
-                        Text="Solicitudes registradas"
-                        FontSize="15"
-                        TextColor="#718078"/>
-                    
-
-                    <Label
-                        x:Name="TotalSolicitudesLabel"
-                        Text="0"
-                        FontSize="36"
-                        FontAttributes="Bold"
-                        TextColor="#1B8A4B"/>
-
-            <Label
-                        Text="Total durante esta sesión"
+                        Text="ECORUTA · RAEE"
                         FontSize="12"
-                        TextColor="#718078"/>
+                        FontAttributes="Bold"
+                        CharacterSpacing="1.5"
+                        TextColor="{StaticResource PrimaryGreen}" />
+
+                    <Label
+                        Text="¡Hola! Bienvenido"
+                        Style="{StaticResource PageTitle}"
+                        FontSize="25" />
+
+                    <Label
+                        Text="Démosle una segunda oportunidad a la tecnología."
+                        Style="{StaticResource Subtitle}" />
+                </VerticalStackLayout>
+
+                <Border
+                    Grid.Column="1"
+                    WidthRequest="50"
+                    HeightRequest="50"
+                    BackgroundColor="#E1F0E4"
+                    StrokeThickness="0"
+                    StrokeShape="RoundRectangle 17"
+                    VerticalOptions="Start">
+
+                    <Label
+                        Text="♻"
+                        FontSize="29"
+                        TextColor="{StaticResource ForestGreen}"
+                        HorizontalTextAlignment="Center"
+                        VerticalTextAlignment="Center" />
+                </Border>
+            </Grid>
+
+            <!-- Tarjeta principal -->
+            <Border
+                Padding="22"
+                BackgroundColor="{StaticResource ForestGreen}"
+                StrokeThickness="0"
+                StrokeShape="RoundRectangle 24">
+
+                <Grid RowDefinitions="Auto,Auto,Auto"
+                      ColumnDefinitions="*,Auto"
+                      RowSpacing="12">
+
+                    <Label
+                        Text="GESTIÓN RESPONSABLE"
+                        FontSize="11"
+                        FontAttributes="Bold"
+                        CharacterSpacing="1.2"
+                        TextColor="{StaticResource LimeGreen}" />
+
+                    <Label
+                        Grid.Row="1"
+                        Text="Tus electrónicos merecen&#10;un mejor destino."
+                        FontSize="25"
+                        FontAttributes="Bold"
+                        TextColor="White"
+                        LineHeight="1.15" />
+
+                    <Label
+                        Grid.Row="2"
+                        Text="Registra tus equipos y facilita su recogida."
+                        FontSize="13"
+                        TextColor="#D9E8DE" />
+
+                    <Border
+                        Grid.Column="1"
+                        Grid.RowSpan="3"
+                        WidthRequest="58"
+                        HeightRequest="58"
+                        BackgroundColor="#285640"
+                        StrokeThickness="0"
+                        StrokeShape="RoundRectangle 19"
+                        VerticalOptions="Center">
+
+                        <Label
+                            Text="↗"
+                            FontSize="30"
+                            TextColor="{StaticResource LimeGreen}"
+                            HorizontalTextAlignment="Center"
+                            VerticalTextAlignment="Center" />
+                    </Border>
+                </Grid>
+            </Border>
+
+            <!-- Resumen -->
+            <VerticalStackLayout Spacing="12">
+                <Label
+                    Text="Resumen de actividad"
+                    FontSize="19"
+                    FontAttributes="Bold"
+                    TextColor="{StaticResource TextPrimary}" />
+
+                <Border Style="{StaticResource CardBorder}">
+                    <Grid ColumnDefinitions="*,Auto"
+                          ColumnSpacing="12">
+
+                        <VerticalStackLayout Spacing="7">
+                            <Label
+                                Text="Solicitudes registradas"
+                                FontSize="14"
+                                TextColor="{StaticResource TextSecondary}" />
+
+                            <Label
+                                Text="{Binding TotalSolicitudes}"
+                                FontSize="36"
+                                FontAttributes="Bold"
+                                TextColor="{StaticResource ForestGreen}" />
+
+                            <Label
+                                Text="Durante esta sesión"
+                                FontSize="12"
+                                TextColor="{StaticResource TextSecondary}" />
+                        </VerticalStackLayout>
+
+                        <Border
+                            Grid.Column="1"
+                            WidthRequest="52"
+                            HeightRequest="52"
+                            BackgroundColor="#E8F4E9"
+                            StrokeThickness="0"
+                            StrokeShape="RoundRectangle 16"
+                            VerticalOptions="Start">
+
+                            <Label
+                                Text="▤"
+                                FontSize="25"
+                                TextColor="{StaticResource PrimaryGreen}"
+                                HorizontalTextAlignment="Center"
+                                VerticalTextAlignment="Center" />
+                        </Border>
+                    </Grid>
+                </Border>
+            </VerticalStackLayout>
+
+            <!-- Acciones -->
+            <VerticalStackLayout Spacing="12">
+                <Label
+                    Text="Accesos rápidos"
+                    FontSize="19"
+                    FontAttributes="Bold"
+                    TextColor="{StaticResource TextPrimary}" />
+
+                <Button
+                    Text="+    Crear solicitud de recogida"
+                    Style="{StaticResource PrimaryButton}"
+                    Command="{Binding NuevaSolicitudCommand}" />
+
+                <Button
+                    Text="Consultar mis solicitudes     →"
+                    Style="{StaticResource SecondaryButton}"
+                    Command="{Binding VerSolicitudesCommand}" />
+            </VerticalStackLayout>
+
+            <!-- Pie -->
+            <Label
+                Text="Pequeñas acciones, grandes cambios."
+                FontSize="12"
+                TextColor="{StaticResource TextSecondary}"
+                HorizontalTextAlignment="Center"
+                Margin="0,0,0,10" />
+
         </VerticalStackLayout>
-        </Border>
-
-            <Button
-                Text="+ Nueva solicitud"
-                BackgroundColor="#1B8A4B"
-                TextColor="White"
-                CornerRadius="12"
-                HeightRequest="52"
-                Clicked="NuevaSolicitud_Clicked"/>
-
-            <Button
-                Text="Ver solicitudes"
-                BackgroundColor="#E0EFE5"
-                TextColor="#176B3A"
-                CornerRadius="12"
-                HeightRequest="52"
-                Clicked="VerSolicitudes_Clicked"/>
-
-
-        </VerticalStackLayout>
-
     </ScrollView>
-
 </ContentPage>

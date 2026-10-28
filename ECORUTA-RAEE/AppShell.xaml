@@ -1,36 +1,119 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-    
 <Shell
     x:Class="ECORUTA_RAEE.AppShell"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:views="clr-namespace:ECORUTA_RAEE.Views"
-    FlyoutBehavior="Flyout">
+    FlyoutBehavior="Flyout"
+    FlyoutBackgroundColor="#FFFFFF"
+    FlyoutWidth="300"
+    Shell.BackgroundColor="#FFFFFF"
+    Shell.ForegroundColor="#218653"
+    Shell.TitleColor="#183D2B"
+    Shell.DisabledColor="#AAB5AD"
+    Shell.UnselectedColor="#718078"
+    Shell.NavBarHasShadow="False">
 
+    <!-- Encabezado del menú lateral -->
+    <Shell.FlyoutHeader>
+        <Grid
+            Padding="20,35,20,25"
+            BackgroundColor="#123D2B"
+            RowDefinitions="Auto,Auto,Auto"
+            RowSpacing="8">
+
+            <Border
+                Grid.Row="0"
+                WidthRequest="64"
+                HeightRequest="64"
+                BackgroundColor="#218653"
+                StrokeThickness="0"
+                StrokeShape="RoundRectangle 20"
+                HorizontalOptions="Start">
+
+                <Label
+                    Text="♻"
+                    FontSize="38"
+                    TextColor="#FFFFFF"
+                    HorizontalTextAlignment="Center"
+                    VerticalTextAlignment="Center" />
+            </Border>
+
+            <Label
+                Grid.Row="1"
+                Text="EcoRuta-RAEE"
+                FontSize="23"
+                FontAttributes="Bold"
+                TextColor="#FFFFFF" />
+
+            <Label
+                Grid.Row="2"
+                Text="Gestión inteligente de residuos electrónicos"
+                FontSize="12"
+                TextColor="#D5E8DB"
+                LineBreakMode="WordWrap" />
+
+        </Grid>
+    </Shell.FlyoutHeader>
+
+    <!-- Opciones principales de navegación -->
     <FlyoutItem
         Title="Inicio"
-        Route="inicio">
+        Route="inicio"
+        FlyoutDisplayOptions="AsSingleItem">
 
         <ShellContent
             Title="Inicio"
-            ContentTemplate="{DataTemplate views:HomePage}"
-            Route="HomePage" />
+            Route="HomePage"
+            ContentTemplate="{DataTemplate views:HomePage}" />
 
     </FlyoutItem>
 
     <FlyoutItem
-        Title="Solicitudes"
-        Route="solicitudes">
+        Title="Solicitudes de recolección"
+        Route="solicitudes"
+        FlyoutDisplayOptions="AsSingleItem">
 
         <ShellContent
             Title="Solicitudes"
-            ContentTemplate="{DataTemplate views:SolicitudesPage}"
-            Route="SolicitudesPage" />
+            Route="SolicitudesPage"
+            ContentTemplate="{DataTemplate views:SolicitudesPage}" />
 
     </FlyoutItem>
 
-    <MenuItem
-        Text="Cerrar sesión"
-        Clicked="CerrarSesion_Clicked" />
+    <!-- Módulos que incorporaremos en próximas actividades.
+         Por ahora no se agregan como destinos porque sus páginas
+         todavía no están implementadas. -->
+
+    <Shell.MenuItemTemplate>
+        <DataTemplate>
+            <Grid
+                Padding="20,14"
+                ColumnDefinitions="Auto,*"
+                ColumnSpacing="14">
+
+                <Label
+                    Grid.Column="0"
+                    Text="{Binding Title}"
+                    FontSize="16"
+                    TextColor="#1D2B22" />
+
+            </Grid>
+        </DataTemplate>
+    </Shell.MenuItemTemplate>
+
+    <Shell.FlyoutFooter>
+        <Grid Padding="20,15">
+            <Button
+                Text="Cerrar sesión"
+                BackgroundColor="#F4F7F4"
+                TextColor="#C62828"
+                BorderColor="#E1E9E2"
+                BorderWidth="1"
+                CornerRadius="12"
+                HeightRequest="48"
+                Clicked="CerrarSesion_Clicked" />
+        </Grid>
+    </Shell.FlyoutFooter>
 
 </Shell>

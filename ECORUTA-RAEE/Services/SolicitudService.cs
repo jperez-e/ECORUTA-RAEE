@@ -1,7 +1,4 @@
 ﻿using ECORUTA_RAEE.Models;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace ECORUTA_RAEE.Services;
 

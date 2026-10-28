@@ -1,4 +1,5 @@
-﻿namespace ECORUTA_RAEE;
+﻿
+namespace ECORUTA_RAEE;
 
 public partial class AppShell : Shell
 {
@@ -6,20 +7,21 @@ public partial class AppShell : Shell
     {
         InitializeComponent();
 
+        // Registrar el formulario de solicitudes.
         Routing.RegisterRoute(
-           nameof(Views.SolicitudFormPage),
-           typeof(Views.SolicitudFormPage));
+            nameof(Views.SolicitudFormPage),
+            typeof(Views.SolicitudFormPage));
     }
 
     private async void CerrarSesion_Clicked(
-       object sender,
-       EventArgs e)
+        object sender,
+        EventArgs e)
     {
         bool confirmar = await DisplayAlertAsync(
-                "Cerrar sesión",
-                "¿Deseas salir de EcoRuta RAEE?",
-                "Sí",
-                "No");
+            "Cerrar sesión",
+            "¿Deseas salir de EcoRuta-RAEE?",
+            "Sí",
+            "No");
 
         if (confirmar)
         {

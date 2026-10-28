@@ -1,34 +1,22 @@
-using ECORUTA_RAEE.Services;
+using ECORUTA_RAEE.ViewModels;
+
 
 namespace ECORUTA_RAEE.Views;
 
 public partial class HomePage : ContentPage
 {
-	public HomePage()
-	{
-		InitializeComponent();
-	}
+    private readonly HomeViewModel _viewModel;
+
+    public HomePage()
+    {
+        InitializeComponent();
+
+        BindingContext = _viewModel = new HomeViewModel();
+    }
 
     protected override void OnAppearing()
     {
         base.OnAppearing();
-
-        TotalSolicitudesLabel.Text =
-            SolicitudService.Instancia.Contar().ToString();
-    }
-
-    private async void NuevaSolicitud_Clicked(
-        object sender,
-        EventArgs e)
-    {
-        await Shell.Current.GoToAsync(
-            nameof(SolicitudFormPage));
-    }
-
-    private async void VerSolicitudes_Clicked(
-        object sender,
-        EventArgs e)
-    {
-        await Shell.Current.GoToAsync("//solicitudes");
+        _viewModel.ActualizarTotal();
     }
 }

@@ -1,87 +1,357 @@
 <?xml version="1.0" encoding="utf-8" ?>
-    
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="ECORUTA_RAEE.Views.SolicitudFormPage"
-             Title="Nueva solicitud"
-             BackgroundColor="#F5F7F6">
+
+<ContentPage
+    x:Class="ECORUTA_RAEE.Views.SolicitudFormPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="Nueva solicitud"
+    BackgroundColor="#F4F7F4">
 
     <ScrollView>
-        <VerticalStackLayout Padding="22" Spacing="16">
+        <VerticalStackLayout
+            Padding="22,20,22,30"
+            Spacing="22">
 
-            <Label
-                Text="Nueva solicitud"
-                FontSize="27"
-                FontAttributes="Bold"
-                TextColor="#176B3A"/>
+            <!-- Encabezado -->
+            <Grid ColumnDefinitions="*,Auto"
+                  ColumnSpacing="12">
 
-            <Label
-                Text="Registra dónde se encuentran los residuos electrónicos."
-                FontSize="14"
-                TextColor="#718078"/>
+                <VerticalStackLayout Spacing="7">
+                    <Label
+                        Text="GESTIÓN AMBIENTAL"
+                        FontSize="11"
+                        FontAttributes="Bold"
+                        CharacterSpacing="1.5"
+                        TextColor="#218653"/>
 
+                    <Label
+                        Text="Nueva solicitud"
+                        FontSize="29"
+                        FontAttributes="Bold"
+                        TextColor="#183D2B"/>
+
+                    <Label
+                        Text="Organicemos juntos la recogida de tus electrónicos."
+                        FontSize="14"
+                        LineHeight="1.3"
+                        TextColor="#718078"/>
+                </VerticalStackLayout>
+
+                <Border
+                    Grid.Column="1"
+                    WidthRequest="54"
+                    HeightRequest="54"
+                    Padding="0"
+                    BackgroundColor="#DFF2E3"
+                    StrokeThickness="0"
+                    StrokeShape="RoundRectangle 17"
+                    VerticalOptions="Start">
+
+                    <Label
+                        Text="♻"
+                        FontSize="31"
+                        HorizontalTextAlignment="Center"
+                        VerticalTextAlignment="Center"
+                        TextColor="#218653"/>
+                </Border>
+            </Grid>
+
+            <!-- Indicador de progreso -->
             <Border
-                Padding="18"
+                Padding="16,14"
                 BackgroundColor="White"
-                Stroke="#E1E7E3"
+                Stroke="#E1E9E2"
+                StrokeThickness="1"
                 StrokeShape="RoundRectangle 16">
 
-                <VerticalStackLayout Spacing="14">
+                <Grid ColumnDefinitions="Auto,*"
+                      ColumnSpacing="12">
+
+                    <Border
+                        WidthRequest="38"
+                        HeightRequest="38"
+                        BackgroundColor="#218653"
+                        StrokeThickness="0"
+                        StrokeShape="RoundRectangle 12">
+
+                        <Label
+                            Text="1"
+                            FontSize="17"
+                            FontAttributes="Bold"
+                            TextColor="White"
+                            HorizontalTextAlignment="Center"
+                            VerticalTextAlignment="Center"/>
+                    </Border>
+
+                    <VerticalStackLayout
+                        Grid.Column="1"
+                        VerticalOptions="Center"
+                        Spacing="3">
+
+                        <Label
+                            Text="Información de recogida"
+                            FontSize="14"
+                            FontAttributes="Bold"
+                            TextColor="#1D2B22"/>
+
+                        <Label
+                            Text="Completa los datos para registrar tu solicitud."
+                            FontSize="12"
+                            TextColor="#718078"/>
+                    </VerticalStackLayout>
+                </Grid>
+            </Border>
+
+            <!-- Sección de ubicación -->
+            <Border
+                Padding="19"
+                BackgroundColor="White"
+                Stroke="#E1E9E2"
+                StrokeThickness="1"
+                StrokeShape="RoundRectangle 20">
+
+                <VerticalStackLayout Spacing="10">
 
                     <Label
-                        Text="Zona"
+                        Text="01  ·  UBICACIÓN"
+                        FontSize="12"
                         FontAttributes="Bold"
-                        TextColor="#34423A"/>
-
-                    <Picker
-                        x:Name="ZonaPicker"
-                        Title="Selecciona una zona"
-                        ItemsSource="{Binding Zonas}"/>
+                        CharacterSpacing="1"
+                        TextColor="#218653"/>
 
                     <Label
-                        Text="Dirección o referencia"
+                        Text="¿Dónde recogeremos tus equipos?"
+                        FontSize="18"
                         FontAttributes="Bold"
-                        TextColor="#34423A"/>
-
-                    <Editor
-                        x:Name="DireccionEditor"
-                        Placeholder="Ej. Calle, sector o punto de referencia"
-                        AutoSize="TextChanges"
-                        HeightRequest="90"/>
+                        TextColor="#1D2B22"/>
 
                     <Label
-                        Text="Peso total estimado (kg)"
-                        FontAttributes="Bold"
-                        TextColor="#34423A"/>
-
-                    <Entry
-                        x:Name="PesoEntry"
-                        Placeholder="Ej. 12.5"
-                        Keyboard="Numeric"/>
-
-                    <Label
-                        x:Name="MensajeError"
-                        TextColor="#C62828"
+                        Text="Selecciona la zona y escribe una referencia para localizar el punto de recogida."
                         FontSize="13"
-                        IsVisible="False"/>
+                        LineHeight="1.3"
+                        TextColor="#718078"/>
 
-                    <Button
-                        Text="GUARDAR SOLICITUD"
-                        BackgroundColor="#1B8A4B"
-                        TextColor="White"
-                        CornerRadius="12"
-                        HeightRequest="50"
-                        Clicked="Guardar_Clicked"/>
+                    <!-- Zona -->
+                    <Label
+                        Margin="0,8,0,0"
+                        Text="Zona de recogida *"
+                        FontSize="13"
+                        FontAttributes="Bold"
+                        TextColor="#34423A"/>
 
-                    <Button
-                        Text="CANCELAR"
-                        BackgroundColor="#E7ECE8"
-                        TextColor="#34423A"
-                        CornerRadius="12"
-                        Clicked="Cancelar_Clicked"/>
+                    <Border
+                        Padding="12,0"
+                        BackgroundColor="#F7F9F7"
+                        Stroke="#DCE6DD"
+                        StrokeThickness="1"
+                        StrokeShape="RoundRectangle 12">
 
+                        <Picker
+                            Title="Selecciona una zona"
+                            ItemsSource="{Binding Zonas}"
+                            SelectedItem="{Binding ZonaSeleccionada}"
+                            TextColor="#26352B"
+                            TitleColor="#89958D"
+                            BackgroundColor="Transparent"
+                            HeightRequest="52"/>
+                    </Border>
+
+                    <Label
+                        Text="{Binding ErrorZona}"
+                        IsVisible="{Binding TieneErrorZona}"
+                        TextColor="#C62828"
+                        FontSize="12"/>
+
+                    <!-- Dirección -->
+                    <Label
+                        Margin="0,8,0,0"
+                        Text="Dirección o referencia *"
+                        FontSize="13"
+                        FontAttributes="Bold"
+                        TextColor="#34423A"/>
+
+                    <Border
+                        Padding="12,8"
+                        BackgroundColor="#F7F9F7"
+                        Stroke="#DCE6DD"
+                        StrokeThickness="1"
+                        StrokeShape="RoundRectangle 12">
+
+                        <Editor
+                            Placeholder="Ej. Calle principal, edificio, sector o punto cercano"
+                            Text="{Binding DireccionReferencia}"
+                            AutoSize="TextChanges"
+                            HeightRequest="100"
+                            TextColor="#26352B"
+                            PlaceholderColor="#89958D"
+                            BackgroundColor="Transparent"/>
+                    </Border>
+
+                    <Label
+                        Text="{Binding ErrorDireccion}"
+                        IsVisible="{Binding TieneErrorDireccion}"
+                        TextColor="#C62828"
+                        FontSize="12"/>
+
+                    <Label
+                        Text="Evita incluir información personal que no sea necesaria para localizar el punto."
+                        FontSize="11"
+                        LineHeight="1.3"
+                        TextColor="#718078"/>
                 </VerticalStackLayout>
             </Border>
+
+            <!-- Sección de peso -->
+            <Border
+                Padding="19"
+                BackgroundColor="White"
+                Stroke="#E1E9E2"
+                StrokeThickness="1"
+                StrokeShape="RoundRectangle 20">
+
+                <VerticalStackLayout Spacing="10">
+
+                    <Label
+                        Text="02  ·  ESTIMACIÓN"
+                        FontSize="12"
+                        FontAttributes="Bold"
+                        CharacterSpacing="1"
+                        TextColor="#218653"/>
+
+                    <Label
+                        Text="¿Cuánto material entregarás?"
+                        FontSize="18"
+                        FontAttributes="Bold"
+                        TextColor="#1D2B22"/>
+
+                    <Label
+                        Text="Indica el peso aproximado de todos los residuos electrónicos."
+                        FontSize="13"
+                        LineHeight="1.3"
+                        TextColor="#718078"/>
+
+                    <Label
+                        Margin="0,8,0,0"
+                        Text="Peso total estimado *"
+                        FontSize="13"
+                        FontAttributes="Bold"
+                        TextColor="#34423A"/>
+
+                    <Grid ColumnDefinitions="*,Auto"
+                          ColumnSpacing="10">
+
+                        <Border
+                            Padding="12,0"
+                            BackgroundColor="#F7F9F7"
+                            Stroke="#DCE6DD"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 12">
+
+                            <Entry
+                                Placeholder="Ej. 12.5"
+                                Keyboard="Numeric"
+                                Text="{Binding PesoTexto}"
+                                TextColor="#26352B"
+                                PlaceholderColor="#89958D"
+                                BackgroundColor="Transparent"
+                                HeightRequest="52"/>
+                        </Border>
+
+                        <Border
+                            Grid.Column="1"
+                            Padding="15,0"
+                            BackgroundColor="#E8F4EA"
+                            StrokeThickness="0"
+                            StrokeShape="RoundRectangle 12">
+
+                            <Label
+                                Text="kg"
+                                FontSize="15"
+                                FontAttributes="Bold"
+                                TextColor="#218653"
+                                VerticalTextAlignment="Center"/>
+                        </Border>
+                    </Grid>
+
+                    <Label
+                        Text="{Binding ErrorPeso}"
+                        IsVisible="{Binding TieneErrorPeso}"
+                        TextColor="#C62828"
+                        FontSize="12"/>
+
+                    <Border
+                        Padding="12"
+                        BackgroundColor="#F0F7F0"
+                        StrokeThickness="0"
+                        StrokeShape="RoundRectangle 12">
+
+                        <Label
+                            Text="Consejo: si no conoces el peso exacto, utiliza una estimación razonable."
+                            FontSize="12"
+                            LineHeight="1.3"
+                            TextColor="#4D6755"/>
+                    </Border>
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Mensaje de éxito -->
+            <Border
+                Padding="13"
+                BackgroundColor="#E5F5E8"
+                Stroke="#B7E2C0"
+                StrokeThickness="1"
+                StrokeShape="RoundRectangle 12"
+                IsVisible="{Binding GuardadoExitoso}">
+
+                <Label
+                    Text="{Binding MensajeExito}"
+                    FontSize="13"
+                    TextColor="#176B3A"/>
+            </Border>
+
+            <!-- Acciones -->
+            <VerticalStackLayout Spacing="11">
+
+                <Button
+                    Text="Registrar solicitud   →"
+                    Command="{Binding GuardarCommand}"
+                    BackgroundColor="#218653"
+                    TextColor="White"
+                    FontSize="15"
+                    FontAttributes="Bold"
+                    CornerRadius="15"
+                    HeightRequest="56"
+                    Padding="16,0"/>
+
+                <Button
+                    Text="Cancelar"
+                    Command="{Binding CancelarCommand}"
+                    BackgroundColor="Transparent"
+                    TextColor="#526158"
+                    FontSize="14"
+                    CornerRadius="12"
+                    HeightRequest="46"
+                    BorderColor="#DCE6DD"
+                    BorderWidth="1"/>
+            </VerticalStackLayout>
+
+            <!-- Nota ambiental -->
+            <HorizontalStackLayout
+                HorizontalOptions="Center"
+                Spacing="7">
+
+                <Label
+                    Text="🌱"
+                    FontSize="15"
+                    VerticalTextAlignment="Center"/>
+
+                <Label
+                    Text="Cada dispositivo bien gestionado cuenta."
+                    FontSize="12"
+                    TextColor="#718078"
+                    VerticalTextAlignment="Center"/>
+            </HorizontalStackLayout>
+
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>
