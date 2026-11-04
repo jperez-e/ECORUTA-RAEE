@@ -175,7 +175,7 @@ public partial class SolicitudFormViewModel : ObservableObject
         SolicitudesViewModel? listado = null;
 
         // Mostrar la confirmación solicitada por el profesor.
-        await Shell.Current.DisplayAlert(
+        await Shell.Current.DisplayAlertAsync(
             "Registro exitoso",
             MensajeExito,
             "Aceptar");
