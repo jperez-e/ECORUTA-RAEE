@@ -1,5 +1,8 @@
 ﻿
+using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ECORUTA_RAEE.Models;
@@ -17,24 +20,77 @@ public partial class SolicitudesViewModel : ObservableObject
     [ObservableProperty]
     private int totalSolicitudes;
 
+    // Texto introducido en el buscador (enlazado con SearchBar).
+    [ObservableProperty]
+    private string textoBusqueda = string.Empty;
+
+    // Mensajes para distinguir una lista vacía de una búsqueda sin coincidencias.
+    [ObservableProperty]
+    private string tituloListaVacia = "Todavía no hay solicitudes";
+
+    [ObservableProperty]
+    private string descripcionListaVacia =
+        "Cuando registres una recogida, aparecerá aquí para que puedas consultar sus datos.";
+
+    [ObservableProperty]
+    private bool hayBusqueda;
+
+    [ObservableProperty]
+    private string resumenBusqueda = string.Empty;
+
     public SolicitudesViewModel()
     {
         CargarSolicitudes();
     }
 
-    // READ
+    // READ: conserva la búsqueda activa al volver de un formulario.
     [RelayCommand]
     public void CargarSolicitudes()
     {
+        AplicarFiltro();
+    }
+
+    // CommunityToolkit.Mvvm llama a este método cuando cambia TextoBusqueda.
+    partial void OnTextoBusquedaChanged(string value)
+    {
+        AplicarFiltro();
+    }
+
+    private void AplicarFiltro()
+    {
+        // No se modifican los datos del servicio: solo la colección visible.
+        var todas = SolicitudService.Instancia.ObtenerTodas().ToList();
+        string termino = TextoBusqueda?.Trim() ?? string.Empty;
+
+        TotalSolicitudes = todas.Count;
+        HaySolicitudes = TotalSolicitudes > 0;
+        HayBusqueda = termino.Length > 0;
+
+        var filtradas = HayBusqueda
+            ? todas.Where(s =>
+                (s.CodigoSolicitud?.Contains(termino, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (s.Zona?.Contains(termino, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (s.DireccionReferencia?.Contains(termino, StringComparison.OrdinalIgnoreCase) ?? false))
+            : todas.AsEnumerable();
+
         Solicitudes.Clear();
 
-        foreach (var solicitud in SolicitudService.Instancia.ObtenerTodas())
+        foreach (var solicitud in filtradas)
         {
             Solicitudes.Add(solicitud);
         }
 
-        TotalSolicitudes = Solicitudes.Count;
-        HaySolicitudes = TotalSolicitudes > 0;
+        ResumenBusqueda = HayBusqueda
+            ? $"{Solicitudes.Count} de {TotalSolicitudes} solicitudes encontradas"
+            : string.Empty;
+
+        TituloListaVacia = HayBusqueda
+            ? "No se encontraron solicitudes"
+            : "Todavía no hay solicitudes";
+
+        DescripcionListaVacia = HayBusqueda
+            ? "Prueba con otro código, zona o dirección, o borra el texto de búsqueda."
+            : "Cuando registres una recogida, aparecerá aquí para que puedas consultar sus datos.";
     }
 
     // CREATE: navegar al formulario vacío.
@@ -62,15 +118,15 @@ public partial class SolicitudesViewModel : ObservableObject
             parametros);
     }
 
-    // DELETE: eliminar desde la lista con advertencia.
+    // DELETE: eliminar directamente desde la lista, con advertencia
+    // de eliminación en cascada cuando existan residuos asociados.
     [RelayCommand]
     private async Task Eliminar(SolicitudRecoleccion solicitud)
     {
         if (solicitud == null)
             return;
 
-        var existente = SolicitudService.Instancia
-            .ObtenerPorId(solicitud.Id);
+        var existente = SolicitudService.Instancia.ObtenerPorId(solicitud.Id);
 
         if (existente == null)
         {
@@ -83,7 +139,6 @@ public partial class SolicitudesViewModel : ObservableObject
             return;
         }
 
-        // Consultar residuos asociados.
         int cantidadResiduos = ResiduoElectronicoService.Instancia
             .ObtenerPorSolicitudId(solicitud.Id).Count;
 
@@ -103,9 +158,8 @@ public partial class SolicitudesViewModel : ObservableObject
         if (!confirmar)
             return;
 
-        // El servicio realiza la eliminación en cascada.
-        bool eliminado = SolicitudService.Instancia
-            .Eliminar(solicitud.Id);
+        // El servicio ya se encarga de eliminar los residuos asociados.
+        bool eliminado = SolicitudService.Instancia.Eliminar(solicitud.Id);
 
         if (!eliminado)
         {
@@ -117,7 +171,6 @@ public partial class SolicitudesViewModel : ObservableObject
             return;
         }
 
-        // Actualizar listado y contador.
         CargarSolicitudes();
 
         await Shell.Current.DisplayAlertAsync(

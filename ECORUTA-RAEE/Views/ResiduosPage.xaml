@@ -118,6 +118,23 @@
                 CornerRadius="14"
                 HeightRequest="52"/>
 
+            <!-- BUSCADOR -->
+            <SearchBar
+                Placeholder="Buscar equipo, categoría o solicitud"
+                Text="{Binding TextoBusqueda, Mode=TwoWay}"
+                BackgroundColor="White"
+                TextColor="#26352B"
+                PlaceholderColor="#718078"
+                FontSize="14"
+                HeightRequest="50"/>
+
+            <!-- RESULTADOS DE BÚSQUEDA -->
+            <Label
+                Text="{Binding ResumenBusqueda}"
+                IsVisible="{Binding HayBusqueda}"
+                FontSize="12"
+                TextColor="#526158"/>
+
             <Label
                 Text="LISTADO DE EQUIPOS"
                 FontSize="11"
@@ -134,6 +151,7 @@
             ItemsSource="{Binding Residuos}"
             SelectionMode="None">
 
+            <!-- ESTADO VACÍO -->
             <CollectionView.EmptyView>
 
                 <VerticalStackLayout
@@ -149,14 +167,14 @@
                         HorizontalTextAlignment="Center"/>
 
                     <Label
-                        Text="No hay residuos registrados"
+                        Text="{Binding TituloListaVacia}"
                         FontSize="18"
                         FontAttributes="Bold"
                         TextColor="#26352B"
                         HorizontalTextAlignment="Center"/>
 
                     <Label
-                        Text="Registra los equipos electrónicos que serán entregados en una solicitud de recogida."
+                        Text="{Binding DescripcionListaVacia}"
                         FontSize="13"
                         TextColor="#718078"
                         HorizontalTextAlignment="Center"
@@ -166,6 +184,7 @@
 
             </CollectionView.EmptyView>
 
+            <!-- TARJETAS DE RESIDUOS -->
             <CollectionView.ItemTemplate>
 
                 <DataTemplate>
@@ -306,6 +325,7 @@
                                 ColumnDefinitions="*,Auto"
                                 ColumnSpacing="10">
 
+                                <!-- EDITAR -->
                                 <Button
                                     Text="Editar"
                                     Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.EditarCommand}"
@@ -317,6 +337,7 @@
                                     CornerRadius="10"
                                     HeightRequest="40"/>
 
+                                <!-- ELIMINAR -->
                                 <Button
                                     Grid.Column="1"
                                     Text="Eliminar"

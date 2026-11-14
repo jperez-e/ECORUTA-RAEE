@@ -122,6 +122,23 @@
                 CornerRadius="14"
                 HeightRequest="52"/>
 
+            <!-- BUSCADOR -->
+            <SearchBar
+                Placeholder="Buscar por código, zona o dirección"
+                Text="{Binding TextoBusqueda, Mode=TwoWay}"
+                BackgroundColor="White"
+                TextColor="#26352B"
+                PlaceholderColor="#718078"
+                FontSize="14"
+                HeightRequest="50"/>
+
+            <!-- RESUMEN DE RESULTADOS -->
+            <Label
+                Text="{Binding ResumenBusqueda}"
+                IsVisible="{Binding HayBusqueda}"
+                FontSize="12"
+                TextColor="#526158"/>
+
             <Label
                 Text="HISTORIAL DE SOLICITUDES"
                 FontSize="11"
@@ -165,14 +182,14 @@
                     </Border>
 
                     <Label
-                        Text="Todavía no hay solicitudes"
+                        Text="{Binding TituloListaVacia}"
                         FontSize="18"
                         FontAttributes="Bold"
                         TextColor="#26352B"
                         HorizontalTextAlignment="Center"/>
 
                     <Label
-                        Text="Cuando registres una recogida, aparecerá aquí para que puedas consultar sus datos."
+                        Text="{Binding DescripcionListaVacia}"
                         FontSize="13"
                         TextColor="#718078"
                         HorizontalTextAlignment="Center"
@@ -485,7 +502,7 @@
 
                             </Grid>
 
-                            <!-- NUEVO: VER EQUIPOS ASOCIADOS -->
+                            <!-- VER RESIDUOS DE ESTA SOLICITUD -->
                             <Button
                                 Text="Ver equipos asociados"
                                 Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.VerResiduosCommand}"
