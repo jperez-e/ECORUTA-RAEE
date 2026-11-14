@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
+
 <Shell
     x:Class="ECORUTA_RAEE.AppShell"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
@@ -14,8 +15,9 @@
     Shell.UnselectedColor="#718078"
     Shell.NavBarHasShadow="False">
 
-    <!-- Encabezado del menú lateral -->
+    <!-- ENCABEZADO DEL MENÚ LATERAL -->
     <Shell.FlyoutHeader>
+
         <Grid
             Padding="20,35,20,25"
             BackgroundColor="#123D2B"
@@ -36,7 +38,8 @@
                     FontSize="38"
                     TextColor="#FFFFFF"
                     HorizontalTextAlignment="Center"
-                    VerticalTextAlignment="Center" />
+                    VerticalTextAlignment="Center"/>
+
             </Border>
 
             <Label
@@ -44,19 +47,20 @@
                 Text="EcoRuta-RAEE"
                 FontSize="23"
                 FontAttributes="Bold"
-                TextColor="#FFFFFF" />
+                TextColor="#FFFFFF"/>
 
             <Label
                 Grid.Row="2"
                 Text="Gestión inteligente de residuos electrónicos"
                 FontSize="12"
                 TextColor="#D5E8DB"
-                LineBreakMode="WordWrap" />
+                LineBreakMode="WordWrap"/>
 
         </Grid>
+
     </Shell.FlyoutHeader>
 
-    <!-- Opciones principales de navegación -->
+    <!-- OPCIÓN 1: INICIO -->
     <FlyoutItem
         Title="Inicio"
         Route="inicio"
@@ -65,10 +69,11 @@
         <ShellContent
             Title="Inicio"
             Route="HomePage"
-            ContentTemplate="{DataTemplate views:HomePage}" />
+            ContentTemplate="{DataTemplate views:HomePage}"/>
 
     </FlyoutItem>
 
+    <!-- OPCIÓN 2: SOLICITUDES DE RECOLECCIÓN -->
     <FlyoutItem
         Title="Solicitudes de recolección"
         Route="solicitudes"
@@ -77,16 +82,28 @@
         <ShellContent
             Title="Solicitudes"
             Route="SolicitudesPage"
-            ContentTemplate="{DataTemplate views:SolicitudesPage}" />
+            ContentTemplate="{DataTemplate views:SolicitudesPage}"/>
 
     </FlyoutItem>
 
-    <!-- Módulos que incorporaremos en próximas actividades.
-         Por ahora no se agregan como destinos porque sus páginas
-         todavía no están implementadas. -->
+    <!-- OPCIÓN 3: RESIDUOS ELECTRÓNICOS -->
+    <FlyoutItem
+        Title="Residuos electrónicos"
+        Route="residuos"
+        FlyoutDisplayOptions="AsSingleItem">
 
+        <ShellContent
+            Title="Residuos electrónicos"
+            Route="ResiduosPage"
+            ContentTemplate="{DataTemplate views:ResiduosPage}"/>
+
+    </FlyoutItem>
+
+    <!-- PLANTILLA DE ELEMENTOS DEL MENÚ -->
     <Shell.MenuItemTemplate>
+
         <DataTemplate>
+
             <Grid
                 Padding="20,14"
                 ColumnDefinitions="Auto,*"
@@ -96,14 +113,19 @@
                     Grid.Column="0"
                     Text="{Binding Title}"
                     FontSize="16"
-                    TextColor="#1D2B22" />
+                    TextColor="#1D2B22"/>
 
             </Grid>
+
         </DataTemplate>
+
     </Shell.MenuItemTemplate>
 
+    <!-- PIE DEL MENÚ: CERRAR SESIÓN -->
     <Shell.FlyoutFooter>
+
         <Grid Padding="20,15">
+
             <Button
                 Text="Cerrar sesión"
                 BackgroundColor="#F4F7F4"
@@ -112,8 +134,10 @@
                 BorderWidth="1"
                 CornerRadius="12"
                 HeightRequest="48"
-                Clicked="CerrarSesion_Clicked" />
+                Clicked="CerrarSesion_Clicked"/>
+
         </Grid>
+
     </Shell.FlyoutFooter>
 
 </Shell>

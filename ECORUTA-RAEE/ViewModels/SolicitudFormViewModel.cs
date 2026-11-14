@@ -1,5 +1,8 @@
-﻿using System.Collections.ObjectModel;
+﻿
+using System;
+using System.Collections.ObjectModel;
 using System.Globalization;
+using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ECORUTA_RAEE.Models;
@@ -9,6 +12,9 @@ namespace ECORUTA_RAEE.ViewModels;
 
 public partial class SolicitudFormViewModel : ObservableObject
 {
+    private int solicitudId;
+    private string codigoSolicitud = string.Empty;
+
     public ObservableCollection<string> Zonas { get; } = new()
     {
         "Herrera",
@@ -43,21 +49,48 @@ public partial class SolicitudFormViewModel : ObservableObject
     [ObservableProperty]
     private string mensajeExito = string.Empty;
 
+    [ObservableProperty]
+    private bool esEdicion;
+
+    // Indica que el peso procede de los residuos asociados.
+    [ObservableProperty]
+    private bool pesoEsCalculado;
+
+    public bool PesoEditable => !PesoEsCalculado;
+
+    // Propiedades dinámicas para la interfaz.
+    public string TituloFormulario =>
+        EsEdicion ? "Editar solicitud" : "Nueva solicitud";
+
+    public string TextoBotonGuardar =>
+        EsEdicion ? "Guardar cambios   →" : "Registrar solicitud   →";
+
+    public bool MostrarBotonEliminar => EsEdicion;
+
     public bool TieneErrorZona => !string.IsNullOrEmpty(ErrorZona);
-
-    public bool TieneErrorDireccion =>
-        !string.IsNullOrEmpty(ErrorDireccion);
-
+    public bool TieneErrorDireccion => !string.IsNullOrEmpty(ErrorDireccion);
     public bool TieneErrorPeso => !string.IsNullOrEmpty(ErrorPeso);
 
-    partial void OnErrorZonaChanged(string value)
-        => OnPropertyChanged(nameof(TieneErrorZona));
+    partial void OnEsEdicionChanged(bool value)
+    {
+        OnPropertyChanged(nameof(TituloFormulario));
+        OnPropertyChanged(nameof(TextoBotonGuardar));
+        OnPropertyChanged(nameof(MostrarBotonEliminar));
+    }
 
-    partial void OnErrorDireccionChanged(string value)
-        => OnPropertyChanged(nameof(TieneErrorDireccion));
+    partial void OnPesoEsCalculadoChanged(bool value)
+    {
+        OnPropertyChanged(nameof(PesoEditable));
+    }
 
-    partial void OnErrorPesoChanged(string value)
-        => OnPropertyChanged(nameof(TieneErrorPeso));
+    partial void OnErrorZonaChanged(string value) =>
+        OnPropertyChanged(nameof(TieneErrorZona));
+
+    partial void OnErrorDireccionChanged(string value) =>
+        OnPropertyChanged(nameof(TieneErrorDireccion));
+
+    partial void OnErrorPesoChanged(string value) =>
+        OnPropertyChanged(nameof(TieneErrorPeso));
 
     partial void OnZonaSeleccionadaChanged(string? value)
     {
@@ -77,6 +110,47 @@ public partial class SolicitudFormViewModel : ObservableObject
         GuardadoExitoso = false;
     }
 
+    // Preparar el formulario para una nueva solicitud.
+    // El peso debe estar habilitado para entrada manual.
+    public void PrepararNuevaSolicitud()
+    {
+        solicitudId = 0;
+        codigoSolicitud = string.Empty;
+
+        EsEdicion = false;
+        PesoEsCalculado = false;
+
+        ZonaSeleccionada = null;
+        DireccionReferencia = string.Empty;
+        PesoTexto = string.Empty;
+
+        LimpiarErrores();
+    }
+
+    // Cargar los datos de una solicitud para editar.
+    public void CargarParaEditar(SolicitudRecoleccion solicitud)
+    {
+        solicitudId = solicitud.Id;
+        codigoSolicitud = solicitud.CodigoSolicitud;
+
+        ZonaSeleccionada = solicitud.Zona;
+        DireccionReferencia = solicitud.DireccionReferencia;
+
+        var servicioResiduos = ResiduoElectronicoService.Instancia;
+
+        PesoEsCalculado = servicioResiduos
+            .ObtenerPorSolicitudId(solicitud.Id).Count > 0;
+
+        double pesoMostrar = PesoEsCalculado
+            ? servicioResiduos.CalcularPesoTotalPorSolicitud(solicitud.Id)
+            : solicitud.PesoTotalEstimado;
+
+        PesoTexto = pesoMostrar.ToString(CultureInfo.InvariantCulture);
+
+        LimpiarErrores();
+        EsEdicion = true;
+    }
+
     [RelayCommand]
     private async Task Guardar()
     {
@@ -84,65 +158,96 @@ public partial class SolicitudFormViewModel : ObservableObject
 
         bool valido = true;
 
-        // Validación de la zona.
+        // Validar zona.
         if (string.IsNullOrWhiteSpace(ZonaSeleccionada))
         {
             ErrorZona = "Selecciona la zona de recogida.";
             valido = false;
         }
 
-        // Validación de la dirección.
-        string direccion = DireccionReferencia.Trim();
+        // Validar dirección.
+        string direccion = (DireccionReferencia ?? string.Empty).Trim();
 
         if (string.IsNullOrWhiteSpace(direccion))
         {
-            ErrorDireccion =
-                "Introduce la dirección o referencia de recogida.";
+            ErrorDireccion = "Introduce la dirección o referencia de recogida.";
             valido = false;
         }
         else if (direccion.Length < 5)
         {
-            ErrorDireccion =
-                "La dirección debe contener al menos 5 caracteres.";
+            ErrorDireccion = "La dirección debe contener al menos 5 caracteres.";
             valido = false;
         }
         else if (direccion.Length > 150)
         {
-            ErrorDireccion =
-                "La dirección no puede superar los 150 caracteres.";
+            ErrorDireccion = "La dirección no puede superar los 150 caracteres.";
             valido = false;
         }
 
-        // Validación del peso.
-        string pesoNormalizado = PesoTexto.Trim().Replace(',', '.');
+        // Consultar el estado ACTUAL de los residuos al guardar.
+        var servicioResiduos = ResiduoElectronicoService.Instancia;
 
-        bool pesoValido = double.TryParse(
-            pesoNormalizado,
-            NumberStyles.AllowDecimalPoint,
-            CultureInfo.InvariantCulture,
-            out double peso);
+        bool tieneResiduos = EsEdicion && servicioResiduos
+            .ObtenerPorSolicitudId(solicitudId).Count > 0;
 
-        if (string.IsNullOrWhiteSpace(PesoTexto))
+        PesoEsCalculado = tieneResiduos;
+
+        double peso = 0;
+
+        if (tieneResiduos)
         {
-            ErrorPeso = "Introduce el peso estimado en kilogramos.";
-            valido = false;
+            // El peso se calcula, no se acepta un valor manual.
+            peso = servicioResiduos
+                .CalcularPesoTotalPorSolicitud(solicitudId);
+
+            PesoTexto = peso.ToString(CultureInfo.InvariantCulture);
         }
-        else if (!pesoValido ||
-                 double.IsNaN(peso) ||
-                 double.IsInfinity(peso))
+        else
         {
-            ErrorPeso = "Introduce un peso numérico válido.";
-            valido = false;
-        }
-        else if (peso <= 0)
-        {
-            ErrorPeso = "El peso debe ser mayor que 0 kg.";
-            valido = false;
-        }
-        else if (peso > 10000)
-        {
-            ErrorPeso = "El peso supera el límite de 10,000 kg.";
-            valido = false;
+            // Si no hay residuos, conservar el peso manual.
+            string pesoNormalizado = (PesoTexto ?? string.Empty)
+                .Trim().Replace(',', '.');
+
+            bool pesoValido = double.TryParse(
+                pesoNormalizado,
+                NumberStyles.AllowDecimalPoint,
+                CultureInfo.InvariantCulture,
+                out peso);
+
+            if (string.IsNullOrWhiteSpace(PesoTexto))
+            {
+                ErrorPeso = "Introduce el peso estimado en kilogramos.";
+                valido = false;
+            }
+            else if (!pesoValido ||
+                     double.IsNaN(peso) ||
+                     double.IsInfinity(peso))
+            {
+                ErrorPeso = "Introduce un peso numérico válido.";
+                valido = false;
+            }
+            else
+            {
+                // Se puede conservar 0 kg si el último residuo
+                // se eliminó y la solicitud ya quedó en 0.
+                bool conservaCeroCalculado =
+                    EsEdicion &&
+                    peso == 0 &&
+                    SolicitudService.Instancia
+                        .ObtenerPorId(solicitudId)?
+                        .PesoTotalEstimado == 0;
+
+                if (peso <= 0 && !conservaCeroCalculado)
+                {
+                    ErrorPeso = "El peso debe ser mayor que 0 kg.";
+                    valido = false;
+                }
+                else if (peso > 10000)
+                {
+                    ErrorPeso = "El peso supera el límite de 10,000 kg.";
+                    valido = false;
+                }
+            }
         }
 
         if (!valido)
@@ -151,7 +256,44 @@ public partial class SolicitudFormViewModel : ObservableObject
             return;
         }
 
-        var solicitud = new SolicitudRecoleccion
+        // MODO EDICIÓN.
+        if (EsEdicion)
+        {
+            var solicitudActualizada = new SolicitudRecoleccion
+            {
+                Id = solicitudId,
+                Zona = ZonaSeleccionada!,
+                DireccionReferencia = direccion,
+                PesoTotalEstimado = peso
+            };
+
+            bool actualizado = SolicitudService.Instancia.Actualizar(
+                solicitudActualizada);
+
+            if (!actualizado)
+            {
+                await Shell.Current.DisplayAlertAsync(
+                    "Error",
+                    "No se encontró la solicitud que deseas actualizar.",
+                    "Aceptar");
+
+                return;
+            }
+
+            MensajeExito =
+                $"La solicitud {codigoSolicitud} se actualizó correctamente.";
+
+            await Shell.Current.DisplayAlertAsync(
+                "Actualización exitosa",
+                MensajeExito,
+                "Aceptar");
+
+            await Shell.Current.GoToAsync("//solicitudes");
+            return;
+        }
+
+        // MODO CREACIÓN.
+        var nuevaSolicitud = new SolicitudRecoleccion
         {
             Zona = ZonaSeleccionada!,
             DireccionReferencia = direccion,
@@ -159,25 +301,59 @@ public partial class SolicitudFormViewModel : ObservableObject
             Estado = "Pendiente"
         };
 
-        SolicitudService.Instancia.Crear(solicitud);
+        SolicitudService.Instancia.Crear(nuevaSolicitud);
 
         MensajeExito =
-            $"La solicitud {solicitud.CodigoSolicitud} se guardó correctamente.";
+            $"La solicitud {nuevaSolicitud.CodigoSolicitud} se guardó correctamente.";
 
         GuardadoExitoso = true;
 
-        // Limpiar los campos después de guardar.
-        ZonaSeleccionada = null;
-        DireccionReferencia = string.Empty;
-        PesoTexto = string.Empty;
-
-        // Actualizar el listado.
-        SolicitudesViewModel? listado = null;
-
-        // Mostrar la confirmación solicitada por el profesor.
         await Shell.Current.DisplayAlertAsync(
             "Registro exitoso",
             MensajeExito,
+            "Aceptar");
+
+        await Shell.Current.GoToAsync("//solicitudes");
+    }
+
+    // Eliminar desde el formulario.
+    [RelayCommand]
+    private async Task Eliminar()
+    {
+        if (!EsEdicion)
+            return;
+
+        int cantidadResiduos = ResiduoElectronicoService.Instancia
+            .ObtenerPorSolicitudId(solicitudId).Count;
+
+        string mensaje = cantidadResiduos > 0
+            ? $"¿Estás seguro de que deseas eliminar la solicitud {codigoSolicitud} y sus {cantidadResiduos} residuos asociados? Esta acción no se puede deshacer."
+            : $"¿Estás seguro de que deseas eliminar la solicitud {codigoSolicitud}?";
+
+        bool confirmar = await Shell.Current.DisplayAlertAsync(
+            "Eliminar solicitud",
+            mensaje,
+            "Sí, eliminar",
+            "Cancelar");
+
+        if (!confirmar)
+            return;
+
+        bool eliminado = SolicitudService.Instancia.Eliminar(solicitudId);
+
+        if (!eliminado)
+        {
+            await Shell.Current.DisplayAlertAsync(
+                "Error",
+                "No se pudo eliminar la solicitud.",
+                "Aceptar");
+
+            return;
+        }
+
+        await Shell.Current.DisplayAlertAsync(
+            "Solicitud eliminada",
+            "La solicitud y sus residuos asociados se eliminaron correctamente.",
             "Aceptar");
 
         await Shell.Current.GoToAsync("//solicitudes");
@@ -194,6 +370,7 @@ public partial class SolicitudFormViewModel : ObservableObject
         ErrorZona = string.Empty;
         ErrorDireccion = string.Empty;
         ErrorPeso = string.Empty;
+
         GuardadoExitoso = false;
         MensajeExito = string.Empty;
     }

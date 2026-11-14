@@ -1,0 +1,285 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<ContentPage
+    x:Class="ECORUTA_RAEE.Views.ResiduosSolicitudPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="Equipos asociados"
+    BackgroundColor="#F4F7F4">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <!-- ENCABEZADO -->
+        <VerticalStackLayout
+            Grid.Row="0"
+            Padding="22,24,22,16"
+            Spacing="14">
+
+            <Label
+                Text="DETALLE DE SOLICITUD"
+                FontSize="11"
+                FontAttributes="Bold"
+                CharacterSpacing="1.5"
+                TextColor="#218653"/>
+
+            <Label
+                Text="Equipos asociados"
+                FontSize="27"
+                FontAttributes="Bold"
+                TextColor="#183D2B"/>
+
+            <!-- INFORMACIÓN DE LA SOLICITUD -->
+            <Border
+                Padding="18"
+                BackgroundColor="#17452F"
+                StrokeThickness="0"
+                StrokeShape="RoundRectangle 20">
+
+                <VerticalStackLayout Spacing="9">
+
+                    <Label
+                        Text="SOLICITUD"
+                        FontSize="11"
+                        FontAttributes="Bold"
+                        TextColor="#D4E9D9"/>
+
+                    <Label
+                        Text="{Binding CodigoSolicitud}"
+                        FontSize="23"
+                        FontAttributes="Bold"
+                        TextColor="White"/>
+
+                    <Label
+                        Text="{Binding Zona, StringFormat='Zona: {0}'}"
+                        FontSize="13"
+                        TextColor="#D4E9D9"/>
+
+                </VerticalStackLayout>
+
+            </Border>
+
+            <!-- RESUMEN -->
+            <Grid
+                ColumnDefinitions="*,*,*"
+                ColumnSpacing="8">
+
+                <Border
+                    Grid.Column="0"
+                    Padding="10"
+                    BackgroundColor="White"
+                    Stroke="#E1E9E2"
+                    StrokeShape="RoundRectangle 13">
+
+                    <VerticalStackLayout Spacing="5">
+
+                        <Label
+                            Text="REGISTROS"
+                            FontSize="10"
+                            TextColor="#718078"
+                            HorizontalTextAlignment="Center"/>
+
+                        <Label
+                            Text="{Binding TotalRegistros}"
+                            FontSize="20"
+                            FontAttributes="Bold"
+                            TextColor="#218653"
+                            HorizontalTextAlignment="Center"/>
+
+                    </VerticalStackLayout>
+
+                </Border>
+
+                <Border
+                    Grid.Column="1"
+                    Padding="10"
+                    BackgroundColor="White"
+                    Stroke="#E1E9E2"
+                    StrokeShape="RoundRectangle 13">
+
+                    <VerticalStackLayout Spacing="5">
+
+                        <Label
+                            Text="EQUIPOS"
+                            FontSize="10"
+                            TextColor="#718078"
+                            HorizontalTextAlignment="Center"/>
+
+                        <Label
+                            Text="{Binding TotalEquipos}"
+                            FontSize="20"
+                            FontAttributes="Bold"
+                            TextColor="#218653"
+                            HorizontalTextAlignment="Center"/>
+
+                    </VerticalStackLayout>
+
+                </Border>
+
+                <Border
+                    Grid.Column="2"
+                    Padding="10"
+                    BackgroundColor="White"
+                    Stroke="#E1E9E2"
+                    StrokeShape="RoundRectangle 13">
+
+                    <VerticalStackLayout Spacing="5">
+
+                        <Label
+                            Text="PESO (KG)"
+                            FontSize="10"
+                            TextColor="#718078"
+                            HorizontalTextAlignment="Center"/>
+
+                        <Label
+                            Text="{Binding PesoTotal, StringFormat='{0:F2}'}"
+                            FontSize="20"
+                            FontAttributes="Bold"
+                            TextColor="#218653"
+                            HorizontalTextAlignment="Center"/>
+
+                    </VerticalStackLayout>
+
+                </Border>
+
+            </Grid>
+
+
+            <!-- AGREGAR EQUIPO A ESTA SOLICITUD -->
+            <Button
+    Text="+   Agregar equipo"
+    Command="{Binding AgregarEquipoCommand}"
+    BackgroundColor="#218653"
+    TextColor="White"
+    FontSize="15"
+    FontAttributes="Bold"
+    CornerRadius="14"
+    HeightRequest="52"/>
+
+
+            <Label
+                Text="RESIDUOS REGISTRADOS"
+                FontSize="11"
+                FontAttributes="Bold"
+                CharacterSpacing="1.2"
+                TextColor="#718078"/>
+
+        </VerticalStackLayout>
+
+        <!-- LISTADO DE RESIDUOS -->
+        <CollectionView
+            Grid.Row="1"
+            Margin="22,0,22,16"
+            ItemsSource="{Binding Residuos}"
+            SelectionMode="None">
+
+            <CollectionView.EmptyView>
+
+                <VerticalStackLayout
+                    Padding="25"
+                    Spacing="12"
+                    VerticalOptions="Center">
+
+                    <Label
+                        Text="♻"
+                        FontSize="50"
+                        TextColor="#218653"
+                        HorizontalTextAlignment="Center"/>
+
+                    <Label
+                        Text="Sin equipos asociados"
+                        FontSize="18"
+                        FontAttributes="Bold"
+                        TextColor="#183D2B"
+                        HorizontalTextAlignment="Center"/>
+
+                    <Label
+                        Text="Esta solicitud todavía no tiene residuos electrónicos registrados."
+                        FontSize="13"
+                        TextColor="#718078"
+                        HorizontalTextAlignment="Center"/>
+
+                </VerticalStackLayout>
+
+            </CollectionView.EmptyView>
+
+            <CollectionView.ItemTemplate>
+
+                <DataTemplate>
+
+                    <Border
+                        Margin="0,0,0,12"
+                        Padding="16"
+                        BackgroundColor="White"
+                        Stroke="#E1E9E2"
+                        StrokeThickness="1"
+                        StrokeShape="RoundRectangle 17">
+
+                        <VerticalStackLayout Spacing="11">
+
+                            <Label
+                                Text="{Binding Categoria}"
+                                FontSize="17"
+                                FontAttributes="Bold"
+                                TextColor="#218653"/>
+
+                            <Label
+                                Text="{Binding Descripcion}"
+                                FontSize="14"
+                                TextColor="#26352B"
+                                LineBreakMode="WordWrap"/>
+
+                            <BoxView
+                                HeightRequest="1"
+                                Color="#E8EEE9"/>
+
+                            <Grid
+                                ColumnDefinitions="*,*"
+                                ColumnSpacing="12">
+
+                                <VerticalStackLayout Spacing="4">
+
+                                    <Label
+                                        Text="CANTIDAD"
+                                        FontSize="10"
+                                        TextColor="#718078"/>
+
+                                    <Label
+                                        Text="{Binding Cantidad}"
+                                        FontSize="16"
+                                        FontAttributes="Bold"
+                                        TextColor="#183D2B"/>
+
+                                </VerticalStackLayout>
+
+                                <VerticalStackLayout
+                                    Grid.Column="1"
+                                    Spacing="4">
+
+                                    <Label
+                                        Text="PESO ESTIMADO"
+                                        FontSize="10"
+                                        TextColor="#718078"/>
+
+                                    <Label
+                                        Text="{Binding PesoEstimado, StringFormat='{0:F2} kg'}"
+                                        FontSize="16"
+                                        FontAttributes="Bold"
+                                        TextColor="#183D2B"/>
+
+                                </VerticalStackLayout>
+
+                            </Grid>
+
+                        </VerticalStackLayout>
+
+                    </Border>
+
+                </DataTemplate>
+
+            </CollectionView.ItemTemplate>
+
+        </CollectionView>
+
+    </Grid>
+
+</ContentPage>

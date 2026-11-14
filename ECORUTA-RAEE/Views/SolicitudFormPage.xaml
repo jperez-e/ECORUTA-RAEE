@@ -4,7 +4,7 @@
     x:Class="ECORUTA_RAEE.Views.SolicitudFormPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    Title="Nueva solicitud"
+    Title="{Binding TituloFormulario}"
     BackgroundColor="#F4F7F4">
 
     <ScrollView>
@@ -25,7 +25,7 @@
                         TextColor="#218653"/>
 
                     <Label
-                        Text="Nueva solicitud"
+                        Text="{Binding TituloFormulario}"
                         FontSize="29"
                         FontAttributes="Bold"
                         TextColor="#183D2B"/>
@@ -250,11 +250,13 @@
                             <Entry
                                 Placeholder="Ej. 12.5"
                                 Keyboard="Numeric"
-                                Text="{Binding PesoTexto}"
+                                Text="{Binding PesoTexto, Mode=TwoWay}"
+                                IsReadOnly="{Binding PesoEsCalculado}"
                                 TextColor="#26352B"
                                 PlaceholderColor="#89958D"
                                 BackgroundColor="Transparent"
                                 HeightRequest="52"/>
+
                         </Border>
 
                         <Border
@@ -272,6 +274,12 @@
                                 VerticalTextAlignment="Center"/>
                         </Border>
                     </Grid>
+                    <Label
+    Text="Este peso se calcula automáticamente a partir de los equipos asociados."
+    IsVisible="{Binding PesoEsCalculado}"
+    FontSize="12"
+    TextColor="#218653"
+    LineBreakMode="WordWrap"/>
 
                     <Label
                         Text="{Binding ErrorPeso}"
@@ -313,15 +321,28 @@
             <VerticalStackLayout Spacing="11">
 
                 <Button
-                    Text="Registrar solicitud   →"
-                    Command="{Binding GuardarCommand}"
-                    BackgroundColor="#218653"
-                    TextColor="White"
-                    FontSize="15"
-                    FontAttributes="Bold"
-                    CornerRadius="15"
-                    HeightRequest="56"
-                    Padding="16,0"/>
+    Text="{Binding TextoBotonGuardar}"
+    Command="{Binding GuardarCommand}"
+    BackgroundColor="#218653"
+    TextColor="White"
+    FontSize="15"
+    FontAttributes="Bold"
+    CornerRadius="15"
+    HeightRequest="56"
+    Padding="16,0"/>
+
+                <Button
+    Text="Eliminar solicitud"
+    Command="{Binding EliminarCommand}"
+    IsVisible="{Binding MostrarBotonEliminar}"
+    BackgroundColor="#FCE4E4"
+    TextColor="#B42323"
+    FontSize="14"
+    FontAttributes="Bold"
+    CornerRadius="12"
+    HeightRequest="46"
+    BorderColor="#F3C5C5"
+    BorderWidth="1"/>
 
                 <Button
                     Text="Cancelar"

@@ -1,0 +1,347 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<ContentPage
+    x:Class="ECORUTA_RAEE.Views.ResiduosPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="Residuos electrónicos"
+    BackgroundColor="#F4F7F4">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <!-- ENCABEZADO -->
+        <VerticalStackLayout
+            Grid.Row="0"
+            Padding="22,22,22,16"
+            Spacing="15">
+
+            <Label
+                Text="GESTIÓN DE RESIDUOS"
+                FontSize="11"
+                FontAttributes="Bold"
+                CharacterSpacing="1.5"
+                TextColor="#218653"/>
+
+            <Grid
+                ColumnDefinitions="*,Auto"
+                ColumnSpacing="12">
+
+                <VerticalStackLayout Spacing="5">
+
+                    <Label
+                        Text="Residuos electrónicos"
+                        FontSize="27"
+                        FontAttributes="Bold"
+                        TextColor="#183D2B"/>
+
+                    <Label
+                        Text="Administra los equipos asociados a las solicitudes."
+                        FontSize="13"
+                        TextColor="#718078"/>
+
+                </VerticalStackLayout>
+
+                <Border
+                    Grid.Column="1"
+                    WidthRequest="52"
+                    HeightRequest="52"
+                    BackgroundColor="#DFF2E3"
+                    StrokeThickness="0"
+                    StrokeShape="RoundRectangle 16">
+
+                    <Label
+                        Text="♻"
+                        FontSize="29"
+                        TextColor="#218653"
+                        HorizontalTextAlignment="Center"
+                        VerticalTextAlignment="Center"/>
+
+                </Border>
+
+            </Grid>
+
+            <!-- RESUMEN -->
+            <Border
+                Padding="18"
+                BackgroundColor="#17452F"
+                StrokeThickness="0"
+                StrokeShape="RoundRectangle 20">
+
+                <Grid ColumnDefinitions="*,Auto">
+
+                    <VerticalStackLayout
+                        VerticalOptions="Center"
+                        Spacing="5">
+
+                        <Label
+                            Text="RESIDUOS REGISTRADOS"
+                            FontSize="11"
+                            FontAttributes="Bold"
+                            TextColor="#D4E9D9"/>
+
+                        <Label
+                            Text="Equipos registrados en EcoRuta-RAEE"
+                            FontSize="12"
+                            TextColor="White"/>
+
+                    </VerticalStackLayout>
+
+                    <Border
+                        Grid.Column="1"
+                        Padding="15,8"
+                        BackgroundColor="#B7F36B"
+                        StrokeThickness="0"
+                        StrokeShape="RoundRectangle 14"
+                        VerticalOptions="Center">
+
+                        <Label
+                            Text="{Binding TotalResiduos}"
+                            FontSize="25"
+                            FontAttributes="Bold"
+                            TextColor="#183D2B"
+                            HorizontalTextAlignment="Center"/>
+
+                    </Border>
+
+                </Grid>
+
+            </Border>
+
+            <!-- NUEVO RESIDUO -->
+            <Button
+                Text="+   Nuevo residuo"
+                Command="{Binding NuevoResiduoCommand}"
+                BackgroundColor="#218653"
+                TextColor="White"
+                FontSize="15"
+                FontAttributes="Bold"
+                CornerRadius="14"
+                HeightRequest="52"/>
+
+            <Label
+                Text="LISTADO DE EQUIPOS"
+                FontSize="11"
+                FontAttributes="Bold"
+                CharacterSpacing="1.2"
+                TextColor="#718078"/>
+
+        </VerticalStackLayout>
+
+        <!-- LISTADO -->
+        <CollectionView
+            Grid.Row="1"
+            Margin="22,0,22,10"
+            ItemsSource="{Binding Residuos}"
+            SelectionMode="None">
+
+            <CollectionView.EmptyView>
+
+                <VerticalStackLayout
+                    Padding="24"
+                    Spacing="12"
+                    VerticalOptions="Center"
+                    HorizontalOptions="Center">
+
+                    <Label
+                        Text="♻"
+                        FontSize="55"
+                        TextColor="#218653"
+                        HorizontalTextAlignment="Center"/>
+
+                    <Label
+                        Text="No hay residuos registrados"
+                        FontSize="18"
+                        FontAttributes="Bold"
+                        TextColor="#26352B"
+                        HorizontalTextAlignment="Center"/>
+
+                    <Label
+                        Text="Registra los equipos electrónicos que serán entregados en una solicitud de recogida."
+                        FontSize="13"
+                        TextColor="#718078"
+                        HorizontalTextAlignment="Center"
+                        MaximumWidthRequest="300"/>
+
+                </VerticalStackLayout>
+
+            </CollectionView.EmptyView>
+
+            <CollectionView.ItemTemplate>
+
+                <DataTemplate>
+
+                    <Border
+                        Margin="0,0,0,14"
+                        Padding="17"
+                        BackgroundColor="White"
+                        Stroke="#E1E9E2"
+                        StrokeThickness="1"
+                        StrokeShape="RoundRectangle 19">
+
+                        <VerticalStackLayout Spacing="13">
+
+                            <!-- INFORMACIÓN EDITABLE -->
+                            <VerticalStackLayout Spacing="12">
+
+                                <VerticalStackLayout.GestureRecognizers>
+
+                                    <TapGestureRecognizer
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.EditarCommand}"
+                                        CommandParameter="{Binding .}"/>
+
+                                </VerticalStackLayout.GestureRecognizers>
+
+                                <!-- CATEGORÍA -->
+                                <Grid
+                                    ColumnDefinitions="*,Auto"
+                                    ColumnSpacing="8">
+
+                                    <VerticalStackLayout Spacing="4">
+
+                                        <Label
+                                            Text="CATEGORÍA"
+                                            FontSize="10"
+                                            FontAttributes="Bold"
+                                            TextColor="#89958D"/>
+
+                                        <Label
+                                            Text="{Binding Categoria}"
+                                            FontSize="18"
+                                            FontAttributes="Bold"
+                                            TextColor="#218653"/>
+
+                                    </VerticalStackLayout>
+
+                                    <Border
+                                        Grid.Column="1"
+                                        Padding="10,6"
+                                        BackgroundColor="#E4F2E6"
+                                        StrokeThickness="0"
+                                        StrokeShape="RoundRectangle 10"
+                                        VerticalOptions="Center">
+
+                                        <Label
+                                            Text="{Binding SolicitudId, StringFormat='Solicitud #{0}'}"
+                                            FontSize="11"
+                                            FontAttributes="Bold"
+                                            TextColor="#176B3A"/>
+
+                                    </Border>
+
+                                </Grid>
+
+                                <BoxView
+                                    HeightRequest="1"
+                                    Color="#E8EEE9"/>
+
+                                <!-- DESCRIPCIÓN -->
+                                <VerticalStackLayout Spacing="4">
+
+                                    <Label
+                                        Text="Descripción del equipo"
+                                        FontSize="11"
+                                        TextColor="#89958D"/>
+
+                                    <Label
+                                        Text="{Binding Descripcion}"
+                                        FontSize="14"
+                                        TextColor="#26352B"
+                                        LineBreakMode="WordWrap"/>
+
+                                </VerticalStackLayout>
+
+                                <!-- CANTIDAD Y PESO -->
+                                <Border
+                                    Padding="12"
+                                    BackgroundColor="#F4F8F4"
+                                    StrokeThickness="0"
+                                    StrokeShape="RoundRectangle 13">
+
+                                    <Grid
+                                        ColumnDefinitions="*,*"
+                                        ColumnSpacing="12">
+
+                                        <VerticalStackLayout Spacing="4">
+
+                                            <Label
+                                                Text="CANTIDAD"
+                                                FontSize="10"
+                                                FontAttributes="Bold"
+                                                TextColor="#89958D"/>
+
+                                            <Label
+                                                Text="{Binding Cantidad}"
+                                                FontSize="16"
+                                                FontAttributes="Bold"
+                                                TextColor="#218653"/>
+
+                                        </VerticalStackLayout>
+
+                                        <VerticalStackLayout
+                                            Grid.Column="1"
+                                            Spacing="4">
+
+                                            <Label
+                                                Text="PESO ESTIMADO"
+                                                FontSize="10"
+                                                FontAttributes="Bold"
+                                                TextColor="#89958D"/>
+
+                                            <Label
+                                                Text="{Binding PesoEstimado, StringFormat='{0:F2} kg'}"
+                                                FontSize="16"
+                                                FontAttributes="Bold"
+                                                TextColor="#218653"/>
+
+                                        </VerticalStackLayout>
+
+                                    </Grid>
+
+                                </Border>
+
+                            </VerticalStackLayout>
+
+                            <!-- ACCIONES -->
+                            <Grid
+                                ColumnDefinitions="*,Auto"
+                                ColumnSpacing="10">
+
+                                <Button
+                                    Text="Editar"
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.EditarCommand}"
+                                    CommandParameter="{Binding .}"
+                                    BackgroundColor="#E4F2E6"
+                                    TextColor="#176B3A"
+                                    FontSize="12"
+                                    FontAttributes="Bold"
+                                    CornerRadius="10"
+                                    HeightRequest="40"/>
+
+                                <Button
+                                    Grid.Column="1"
+                                    Text="Eliminar"
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.EliminarCommand}"
+                                    CommandParameter="{Binding .}"
+                                    BackgroundColor="#FCE4E4"
+                                    TextColor="#B42323"
+                                    FontSize="12"
+                                    FontAttributes="Bold"
+                                    CornerRadius="10"
+                                    HeightRequest="40"
+                                    Padding="15,0"/>
+
+                            </Grid>
+
+                        </VerticalStackLayout>
+
+                    </Border>
+
+                </DataTemplate>
+
+            </CollectionView.ItemTemplate>
+
+        </CollectionView>
+
+    </Grid>
+
+</ContentPage>
