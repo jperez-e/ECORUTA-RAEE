@@ -9,49 +9,47 @@
 
     <Grid RowDefinitions="Auto,*">
 
-        <!-- ENCABEZADO -->
+        <!-- ENCABEZADO COMPACTO -->
         <VerticalStackLayout
             Grid.Row="0"
-            Padding="22,22,22,16"
-            Spacing="16">
+            Padding="18,16,18,12"
+            Spacing="11">
 
             <Label
                 Text="GESTIÓN DE RECOLECCIÓN"
-                FontSize="11"
+                FontSize="10"
                 FontAttributes="Bold"
-                CharacterSpacing="1.5"
+                CharacterSpacing="1.2"
                 TextColor="#218653"/>
 
-            <Grid
-                ColumnDefinitions="*,Auto"
-                ColumnSpacing="12">
+            <Grid ColumnDefinitions="*,Auto">
 
-                <VerticalStackLayout Spacing="5">
+                <VerticalStackLayout Spacing="3">
 
                     <Label
                         Text="Mis solicitudes"
-                        FontSize="29"
+                        FontSize="25"
                         FontAttributes="Bold"
                         TextColor="#183D2B"/>
 
                     <Label
-                        Text="Consulta el estado de tus recogidas."
-                        FontSize="14"
+                        Text="Consulta y administra tus recogidas"
+                        FontSize="12"
                         TextColor="#718078"/>
 
                 </VerticalStackLayout>
 
                 <Border
                     Grid.Column="1"
-                    WidthRequest="52"
-                    HeightRequest="52"
+                    WidthRequest="44"
+                    HeightRequest="44"
                     BackgroundColor="#DFF2E3"
                     StrokeThickness="0"
-                    StrokeShape="RoundRectangle 16">
+                    StrokeShape="RoundRectangle 13">
 
                     <Label
                         Text="♻"
-                        FontSize="29"
+                        FontSize="25"
                         TextColor="#218653"
                         HorizontalTextAlignment="Center"
                         VerticalTextAlignment="Center"/>
@@ -60,50 +58,45 @@
 
             </Grid>
 
-            <!-- RESUMEN -->
+            <!-- CONTADOR -->
             <Border
-                Padding="18"
+                Padding="14,11"
                 BackgroundColor="#17452F"
                 StrokeThickness="0"
-                StrokeShape="RoundRectangle 20">
+                StrokeShape="RoundRectangle 15">
 
-                <Grid
-                    ColumnDefinitions="*,Auto"
-                    ColumnSpacing="12">
+                <Grid ColumnDefinitions="*,Auto">
 
                     <VerticalStackLayout
                         VerticalOptions="Center"
-                        Spacing="5">
+                        Spacing="3">
 
                         <Label
                             Text="SOLICITUDES REGISTRADAS"
-                            FontSize="11"
+                            FontSize="10"
                             FontAttributes="Bold"
-                            CharacterSpacing="1"
                             TextColor="#D4E9D9"/>
 
                         <Label
-                            Text="Sigue el progreso de tus recogidas"
-                            FontSize="13"
+                            Text="Historial de recolecciones"
+                            FontSize="12"
                             TextColor="White"/>
 
                     </VerticalStackLayout>
 
                     <Border
                         Grid.Column="1"
-                        Padding="15,8"
+                        Padding="13,6"
                         BackgroundColor="#B7F36B"
                         StrokeThickness="0"
-                        StrokeShape="RoundRectangle 14"
+                        StrokeShape="RoundRectangle 11"
                         VerticalOptions="Center">
 
                         <Label
                             Text="{Binding TotalSolicitudes}"
-                            FontSize="25"
+                            FontSize="23"
                             FontAttributes="Bold"
-                            TextColor="#183D2B"
-                            HorizontalTextAlignment="Center"
-                            VerticalTextAlignment="Center"/>
+                            TextColor="#183D2B"/>
 
                     </Border>
 
@@ -111,113 +104,105 @@
 
             </Border>
 
-            <!-- NUEVA SOLICITUD -->
+            <!-- CREAR -->
             <Button
-                Text="+   Nueva solicitud"
+                Text="+  Nueva solicitud"
                 Command="{Binding NuevaSolicitudCommand}"
                 BackgroundColor="#218653"
                 TextColor="White"
-                FontSize="15"
+                FontSize="14"
                 FontAttributes="Bold"
-                CornerRadius="14"
-                HeightRequest="52"/>
+                CornerRadius="12"
+                HeightRequest="46"/>
 
             <!-- BUSCADOR -->
             <SearchBar
-                Placeholder="Buscar por código, zona o dirección"
+                Placeholder="Buscar código, zona o dirección"
                 Text="{Binding TextoBusqueda, Mode=TwoWay}"
                 BackgroundColor="White"
                 TextColor="#26352B"
                 PlaceholderColor="#718078"
-                FontSize="14"
-                HeightRequest="50"/>
+                FontSize="13"
+                HeightRequest="46"/>
 
-            <!-- RESUMEN DE RESULTADOS -->
-            <Label
-                Text="{Binding ResumenBusqueda}"
-                IsVisible="{Binding HayBusqueda}"
-                FontSize="12"
-                TextColor="#526158"/>
+            <Grid ColumnDefinitions="*,Auto">
 
-            <Label
-                Text="HISTORIAL DE SOLICITUDES"
-                FontSize="11"
-                FontAttributes="Bold"
-                CharacterSpacing="1.2"
-                TextColor="#718078"/>
+                <Label
+                    Text="HISTORIAL DE SOLICITUDES"
+                    FontSize="10"
+                    FontAttributes="Bold"
+                    CharacterSpacing="1"
+                    TextColor="#718078"
+                    VerticalTextAlignment="Center"/>
+
+                <Label
+                    Grid.Column="1"
+                    Text="{Binding ResumenBusqueda}"
+                    IsVisible="{Binding HayBusqueda}"
+                    FontSize="11"
+                    TextColor="#218653"
+                    VerticalTextAlignment="Center"/>
+
+            </Grid>
 
         </VerticalStackLayout>
 
-        <!-- LISTA DE SOLICITUDES -->
+        <!-- LISTADO -->
         <CollectionView
             Grid.Row="1"
-            Margin="22,0,22,10"
+            Margin="18,0,18,10"
             ItemsSource="{Binding Solicitudes}"
             SelectionMode="None">
 
-            <!-- ESTADO VACÍO -->
             <CollectionView.EmptyView>
 
                 <VerticalStackLayout
                     Padding="24"
-                    Spacing="12"
+                    Spacing="10"
                     VerticalOptions="Center"
                     HorizontalOptions="Center">
 
-                    <Border
-                        WidthRequest="86"
-                        HeightRequest="86"
-                        BackgroundColor="#E4F2E6"
-                        StrokeThickness="0"
-                        StrokeShape="RoundRectangle 28"
-                        HorizontalOptions="Center">
-
-                        <Label
-                            Text="♻"
-                            FontSize="43"
-                            TextColor="#218653"
-                            HorizontalTextAlignment="Center"
-                            VerticalTextAlignment="Center"/>
-
-                    </Border>
+                    <Label
+                        Text="♻"
+                        FontSize="45"
+                        TextColor="#218653"
+                        HorizontalTextAlignment="Center"/>
 
                     <Label
                         Text="{Binding TituloListaVacia}"
-                        FontSize="18"
+                        FontSize="17"
                         FontAttributes="Bold"
                         TextColor="#26352B"
                         HorizontalTextAlignment="Center"/>
 
                     <Label
                         Text="{Binding DescripcionListaVacia}"
-                        FontSize="13"
+                        FontSize="12"
                         TextColor="#718078"
                         HorizontalTextAlignment="Center"
-                        HorizontalOptions="Center"
-                        MaximumWidthRequest="300"
-                        LineHeight="1.3"/>
+                        MaximumWidthRequest="290"/>
 
                 </VerticalStackLayout>
 
             </CollectionView.EmptyView>
 
-            <!-- TARJETAS -->
             <CollectionView.ItemTemplate>
 
                 <DataTemplate>
 
+                    <!-- TARJETA COMPACTA -->
                     <Border
-                        Margin="0,0,0,14"
-                        Padding="17"
+                        Margin="0,0,0,11"
+                        Padding="14"
                         BackgroundColor="White"
                         Stroke="#E1E9E2"
                         StrokeThickness="1"
-                        StrokeShape="RoundRectangle 19">
+                        StrokeShape="RoundRectangle 16">
 
-                        <VerticalStackLayout Spacing="13">
+                        <VerticalStackLayout Spacing="11">
 
-                            <!-- CONTENIDO EDITABLE -->
-                            <VerticalStackLayout Spacing="13">
+                            <!-- ÁREA QUE ABRE EDICIÓN -->
+                            <VerticalStackLayout Spacing="10">
 
                                 <VerticalStackLayout.GestureRecognizers>
 
@@ -232,30 +217,30 @@
                                     ColumnDefinitions="*,Auto"
                                     ColumnSpacing="8">
 
-                                    <VerticalStackLayout Spacing="4">
+                                    <VerticalStackLayout Spacing="3">
 
                                         <Label
-                                            Text="CÓDIGO DE SOLICITUD"
-                                            FontSize="10"
+                                            Text="SOLICITUD DE RECOLECCIÓN"
+                                            FontSize="9"
                                             FontAttributes="Bold"
-                                            CharacterSpacing="1"
+                                            CharacterSpacing="0.6"
                                             TextColor="#89958D"/>
 
                                         <Label
                                             Text="{Binding CodigoSolicitud}"
-                                            FontSize="17"
+                                            FontSize="19"
                                             FontAttributes="Bold"
                                             TextColor="#218653"/>
 
                                     </VerticalStackLayout>
 
-                                    <!-- ESTADO -->
+                                    <!-- INDICADOR DE ESTADO -->
                                     <Border
                                         Grid.Column="1"
-                                        Padding="10,6"
+                                        Padding="9,5"
                                         BackgroundColor="#FFF1D2"
                                         StrokeThickness="0"
-                                        StrokeShape="RoundRectangle 10"
+                                        StrokeShape="RoundRectangle 9"
                                         VerticalOptions="Center">
 
                                         <Border.Triggers>
@@ -264,43 +249,36 @@
                                                 TargetType="Border"
                                                 Binding="{Binding Estado}"
                                                 Value="En proceso">
-
                                                 <Setter
                                                     Property="BackgroundColor"
                                                     Value="#DDEBFF"/>
-
                                             </DataTrigger>
 
                                             <DataTrigger
                                                 TargetType="Border"
                                                 Binding="{Binding Estado}"
                                                 Value="Completada">
-
                                                 <Setter
                                                     Property="BackgroundColor"
                                                     Value="#DDF4E2"/>
-
                                             </DataTrigger>
 
                                             <DataTrigger
                                                 TargetType="Border"
                                                 Binding="{Binding Estado}"
                                                 Value="Cancelada">
-
                                                 <Setter
                                                     Property="BackgroundColor"
                                                     Value="#FCE4E4"/>
-
                                             </DataTrigger>
 
                                         </Border.Triggers>
 
                                         <Label
                                             Text="{Binding Estado}"
-                                            FontSize="11"
+                                            FontSize="10"
                                             FontAttributes="Bold"
-                                            TextColor="#8A6415"
-                                            VerticalTextAlignment="Center">
+                                            TextColor="#8A6415">
 
                                             <Label.Triggers>
 
@@ -308,33 +286,27 @@
                                                     TargetType="Label"
                                                     Binding="{Binding Estado}"
                                                     Value="En proceso">
-
                                                     <Setter
                                                         Property="TextColor"
                                                         Value="#245DA8"/>
-
                                                 </DataTrigger>
 
                                                 <DataTrigger
                                                     TargetType="Label"
                                                     Binding="{Binding Estado}"
                                                     Value="Completada">
-
                                                     <Setter
                                                         Property="TextColor"
                                                         Value="#176B3A"/>
-
                                                 </DataTrigger>
 
                                                 <DataTrigger
                                                     TargetType="Label"
                                                     Binding="{Binding Estado}"
                                                     Value="Cancelada">
-
                                                     <Setter
                                                         Property="TextColor"
                                                         Value="#B42323"/>
-
                                                 </DataTrigger>
 
                                             </Label.Triggers>
@@ -347,27 +319,22 @@
 
                                 <BoxView
                                     HeightRequest="1"
-                                    Color="#E8EEE9"/>
+                                    Color="#EDF1ED"/>
 
-                                <!-- ZONA -->
+                                <!-- ZONA Y DIRECCIÓN AGRUPADAS -->
                                 <Grid
-                                    ColumnDefinitions="30,*"
-                                    ColumnSpacing="9">
+                                    ColumnDefinitions="22,*"
+                                    ColumnSpacing="8">
 
                                     <Label
                                         Text="⌖"
-                                        FontSize="23"
+                                        FontSize="22"
                                         TextColor="#218653"
                                         VerticalTextAlignment="Start"/>
 
                                     <VerticalStackLayout
                                         Grid.Column="1"
-                                        Spacing="4">
-
-                                        <Label
-                                            Text="Zona de recogida"
-                                            FontSize="11"
-                                            TextColor="#89958D"/>
+                                        Spacing="3">
 
                                         <Label
                                             Text="{Binding Zona}"
@@ -375,144 +342,95 @@
                                             FontAttributes="Bold"
                                             TextColor="#26352B"/>
 
-                                    </VerticalStackLayout>
-
-                                </Grid>
-
-                                <!-- DIRECCIÓN -->
-                                <Grid
-                                    ColumnDefinitions="30,*"
-                                    ColumnSpacing="9">
-
-                                    <Label
-                                        Text="⌂"
-                                        FontSize="22"
-                                        TextColor="#218653"
-                                        VerticalTextAlignment="Start"/>
-
-                                    <VerticalStackLayout
-                                        Grid.Column="1"
-                                        Spacing="4">
-
-                                        <Label
-                                            Text="Dirección o referencia"
-                                            FontSize="11"
-                                            TextColor="#89958D"/>
-
                                         <Label
                                             Text="{Binding DireccionReferencia}"
-                                            FontSize="13"
-                                            TextColor="#526158"
+                                            FontSize="12"
+                                            TextColor="#718078"
                                             LineBreakMode="WordWrap"/>
 
                                     </VerticalStackLayout>
 
                                 </Grid>
 
-                                <!-- PESO Y FECHA -->
-                                <Border
-                                    Padding="12"
-                                    BackgroundColor="#F4F8F4"
-                                    StrokeThickness="0"
-                                    StrokeShape="RoundRectangle 13">
+                                <!-- PESO Y FECHA EN UNA SOLA FILA -->
+                                <Grid
+                                    ColumnDefinitions="Auto,*"
+                                    ColumnSpacing="8">
 
-                                    <Grid
-                                        ColumnDefinitions="*,*"
-                                        ColumnSpacing="12">
+                                    <HorizontalStackLayout
+                                        Spacing="6"
+                                        VerticalOptions="Center">
 
-                                        <VerticalStackLayout Spacing="4">
+                                        <Label
+                                            Text="⚖"
+                                            FontSize="15"
+                                            TextColor="#218653"/>
 
-                                            <Label
-                                                Text="PESO ESTIMADO"
-                                                FontSize="10"
-                                                FontAttributes="Bold"
-                                                TextColor="#89958D"/>
+                                        <Label
+                                            Text="{Binding PesoTotalEstimado, StringFormat='{0:F2} kg'}"
+                                            FontSize="13"
+                                            FontAttributes="Bold"
+                                            TextColor="#218653"/>
 
-                                            <Label
-                                                Text="{Binding PesoTotalEstimado, StringFormat='{0:F2} kg'}"
-                                                FontSize="15"
-                                                FontAttributes="Bold"
-                                                TextColor="#218653"/>
+                                    </HorizontalStackLayout>
 
-                                        </VerticalStackLayout>
+                                    <Label
+                                        Grid.Column="1"
+                                        Text="{Binding FechaRegistro, StringFormat='{0:dd/MM/yyyy · hh:mm tt}'}"
+                                        FontSize="11"
+                                        TextColor="#718078"
+                                        HorizontalTextAlignment="End"
+                                        VerticalTextAlignment="Center"/>
 
-                                        <VerticalStackLayout
-                                            Grid.Column="1"
-                                            Spacing="4">
-
-                                            <Label
-                                                Text="FECHA DE REGISTRO"
-                                                FontSize="10"
-                                                FontAttributes="Bold"
-                                                TextColor="#89958D"/>
-
-                                            <Label
-                                                Text="{Binding FechaRegistro, StringFormat='{0:dd/MM/yyyy}'}"
-                                                FontSize="13"
-                                                FontAttributes="Bold"
-                                                TextColor="#34423A"/>
-
-                                            <Label
-                                                Text="{Binding FechaRegistro, StringFormat='{0:hh:mm tt}'}"
-                                                FontSize="11"
-                                                TextColor="#718078"/>
-
-                                        </VerticalStackLayout>
-
-                                    </Grid>
-
-                                </Border>
+                                </Grid>
 
                             </VerticalStackLayout>
 
                             <!-- ACCIONES -->
                             <Grid
-                                ColumnDefinitions="*,Auto"
-                                ColumnSpacing="10">
+                                ColumnDefinitions="*,1.3*,*"
+                                ColumnSpacing="6">
 
-                                <Label
-                                    Text="Toca la tarjeta para editar"
-                                    FontSize="11"
-                                    TextColor="#89958D"
-                                    VerticalTextAlignment="Center">
+                                <Button
+                                    Grid.Column="0"
+                                    Text="Editar"
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.EditarCommand}"
+                                    CommandParameter="{Binding .}"
+                                    BackgroundColor="#E4F2E6"
+                                    TextColor="#176B3A"
+                                    FontSize="12"
+                                    FontAttributes="Bold"
+                                    CornerRadius="10"
+                                    HeightRequest="44"
+                                    Padding="5,0"/>
 
-                                    <Label.GestureRecognizers>
-
-                                        <TapGestureRecognizer
-                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.EditarCommand}"
-                                            CommandParameter="{Binding .}"/>
-
-                                    </Label.GestureRecognizers>
-
-                                </Label>
-
-                                <!-- ELIMINAR -->
                                 <Button
                                     Grid.Column="1"
+                                    Text="Ver equipos"
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.VerResiduosCommand}"
+                                    CommandParameter="{Binding .}"
+                                    BackgroundColor="#E4F2E6"
+                                    TextColor="#176B3A"
+                                    FontSize="11"
+                                    FontAttributes="Bold"
+                                    CornerRadius="10"
+                                    HeightRequest="44"
+                                    Padding="4,0"/>
+
+                                <Button
+                                    Grid.Column="2"
                                     Text="Eliminar"
                                     Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.EliminarCommand}"
                                     CommandParameter="{Binding .}"
                                     BackgroundColor="#FCE4E4"
                                     TextColor="#B42323"
-                                    FontSize="12"
+                                    FontSize="11"
                                     FontAttributes="Bold"
                                     CornerRadius="10"
-                                    HeightRequest="38"
-                                    Padding="12,0"/>
+                                    HeightRequest="44"
+                                    Padding="4,0"/>
 
                             </Grid>
-
-                            <!-- VER RESIDUOS DE ESTA SOLICITUD -->
-                            <Button
-                                Text="Ver equipos asociados"
-                                Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.VerResiduosCommand}"
-                                CommandParameter="{Binding .}"
-                                BackgroundColor="#E4F2E6"
-                                TextColor="#176B3A"
-                                FontSize="13"
-                                FontAttributes="Bold"
-                                CornerRadius="12"
-                                HeightRequest="44"/>
 
                         </VerticalStackLayout>
 
