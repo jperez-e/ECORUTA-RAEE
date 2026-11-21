@@ -318,6 +318,45 @@
             </Border>
 
             <!-- Acciones -->
+            <Border
+                Padding="16,10"
+                BackgroundColor="White"
+                Stroke="#E3ECE5"
+                StrokeShape="RoundRectangle 18">
+
+                <VerticalStackLayout Spacing="6">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                        <Label
+                            Text="Personalizar código"
+                            TextColor="#183D2B"
+                            FontSize="14"
+                            VerticalOptions="Center"/>
+                        <Switch
+                            Grid.Column="1"
+                            IsToggled="{Binding PersonalizarCodigo, Mode=TwoWay}"
+                            OnColor="#218653"
+                            SemanticProperties.Description="Personalizar código"/>
+                    </Grid>
+
+                    <VerticalStackLayout
+                        Spacing="4"
+                        IsVisible="{Binding PersonalizarCodigo}">
+                        <Entry
+                            Text="{Binding CodigoTexto, Mode=TwoWay}"
+                            Placeholder="SOL-0001"
+                            SemanticProperties.Description="Código de solicitud"
+                            Style="{StaticResource ModernEntry}"
+                            IsSpellCheckEnabled="False"
+                            IsTextPredictionEnabled="False"/>
+                        <Label
+                            Text="{Binding ErrorCodigo}"
+                            IsVisible="{Binding TieneErrorCodigo}"
+                            TextColor="{StaticResource ErrorColor}"
+                            FontSize="12"/>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </Border>
+
             <VerticalStackLayout Spacing="11">
 
                 <Button

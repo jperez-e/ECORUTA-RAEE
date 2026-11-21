@@ -35,6 +35,15 @@ public partial class SolicitudFormViewModel : ObservableObject
     private string pesoTexto = string.Empty;
 
     [ObservableProperty]
+    private bool personalizarCodigo;
+
+    [ObservableProperty]
+    private string codigoTexto = string.Empty;
+
+    [ObservableProperty]
+    private string errorCodigo = string.Empty;
+
+    [ObservableProperty]
     private string errorZona = string.Empty;
 
     [ObservableProperty]
@@ -70,6 +79,7 @@ public partial class SolicitudFormViewModel : ObservableObject
     public bool TieneErrorZona => !string.IsNullOrEmpty(ErrorZona);
     public bool TieneErrorDireccion => !string.IsNullOrEmpty(ErrorDireccion);
     public bool TieneErrorPeso => !string.IsNullOrEmpty(ErrorPeso);
+    public bool TieneErrorCodigo => !string.IsNullOrEmpty(ErrorCodigo);
 
     partial void OnEsEdicionChanged(bool value)
     {
@@ -91,6 +101,13 @@ public partial class SolicitudFormViewModel : ObservableObject
 
     partial void OnErrorPesoChanged(string value) =>
         OnPropertyChanged(nameof(TieneErrorPeso));
+
+    partial void OnErrorCodigoChanged(string value) =>
+        OnPropertyChanged(nameof(TieneErrorCodigo));
+
+    partial void OnCodigoTextoChanged(string value) => ErrorCodigo = string.Empty;
+
+    partial void OnPersonalizarCodigoChanged(bool value) => ErrorCodigo = string.Empty;
 
     partial void OnZonaSeleccionadaChanged(string? value)
     {
@@ -116,6 +133,8 @@ public partial class SolicitudFormViewModel : ObservableObject
     {
         solicitudId = 0;
         codigoSolicitud = string.Empty;
+        PersonalizarCodigo = false;
+        CodigoTexto = string.Empty;
 
         EsEdicion = false;
         PesoEsCalculado = false;
@@ -141,6 +160,8 @@ public partial class SolicitudFormViewModel : ObservableObject
         PesoEsCalculado = await ResiduoElectronicoService.Instancia.ContarPorSolicitudIdAsync(id) > 0;
         solicitudId = solicitud.Id;
         codigoSolicitud = solicitud.CodigoSolicitud;
+        PersonalizarCodigo = false;
+        CodigoTexto = codigoSolicitud;
 
         ZonaSeleccionada = solicitud.Zona;
         DireccionReferencia = solicitud.DireccionReferencia;
@@ -163,6 +184,24 @@ public partial class SolicitudFormViewModel : ObservableObject
         LimpiarErrores();
 
         bool valido = true;
+
+        int? numeroPersonalizado = null;
+        bool conservaCodigo = EsEdicion && string.Equals(
+            CodigoTexto?.Trim(), codigoSolicitud, StringComparison.OrdinalIgnoreCase);
+        if (PersonalizarCodigo && !conservaCodigo)
+        {
+            if (SolicitudService.TryLeerNumeroCodigo(CodigoTexto, out int numero))
+            {
+                numeroPersonalizado = numero;
+            }
+            else
+            {
+                ErrorCodigo = string.IsNullOrWhiteSpace(CodigoTexto)
+                    ? "Introduce un código de solicitud."
+                    : "Usa el formato SOL-0001, con un número del 1 al 2 147 483 647.";
+                valido = false;
+            }
+        }
 
         // Validar zona.
         if (string.IsNullOrWhiteSpace(ZonaSeleccionada))
@@ -271,60 +310,54 @@ public partial class SolicitudFormViewModel : ObservableObject
             return;
         }
 
-        // MODO EDICIÓN.
-        if (EsEdicion)
+        var solicitud = new SolicitudRecoleccion
         {
-            var solicitudActualizada = new SolicitudRecoleccion
-            {
-                Id = solicitudId,
-                Zona = ZonaSeleccionada!,
-                DireccionReferencia = direccion,
-                PesoTotalEstimado = peso
-            };
-
-            bool actualizado = await SolicitudService.Instancia.ActualizarAsync(
-                solicitudActualizada, actualizarPesoManual: !conservarPesoRegistrado);
-
-            if (!actualizado)
-            {
-                await Shell.Current.DisplayAlertAsync(
-                    "Solicitud no disponible",
-                    "No se encontró la solicitud que deseas actualizar.",
-                    "Aceptar");
-
-                return;
-            }
-
-            MensajeExito =
-                $"La solicitud {codigoSolicitud} se actualizó correctamente.";
-
-            await Shell.Current.DisplayAlertAsync(
-                "Actualización exitosa",
-                MensajeExito,
-                "Aceptar");
-
-            await Shell.Current.GoToAsync("//solicitudes");
-            return;
-        }
-
-        // MODO CREACIÓN.
-        var nuevaSolicitud = new SolicitudRecoleccion
-        {
+            Id = solicitudId,
+            CodigoSolicitud = solicitudActual?.CodigoSolicitud ?? string.Empty,
             Zona = ZonaSeleccionada!,
             DireccionReferencia = direccion,
-            PesoTotalEstimado = peso,
-            Estado = "Pendiente"
+            PesoTotalEstimado = peso
         };
 
-        await SolicitudService.Instancia.CrearAsync(nuevaSolicitud);
+        try
+        {
+            if (EsEdicion)
+            {
+                bool actualizado = await SolicitudService.Instancia.ActualizarAsync(
+                    solicitud, actualizarPesoManual: !conservarPesoRegistrado,
+                    numeroPersonalizado: numeroPersonalizado);
 
-        MensajeExito =
-            $"La solicitud {nuevaSolicitud.CodigoSolicitud} se guardó correctamente.";
+                if (!actualizado)
+                {
+                    await Shell.Current.DisplayAlertAsync(
+                        "Solicitud no disponible",
+                        "No se encontró la solicitud que deseas actualizar.",
+                        "Aceptar");
+                    return;
+                }
+            }
+            else
+            {
+                await SolicitudService.Instancia.CrearAsync(solicitud, numeroPersonalizado);
+            }
+        }
+        catch (CodigoSolicitudDuplicadoException) when (numeroPersonalizado.HasValue)
+        {
+            ErrorCodigo = "Ya existe una solicitud con este código. Introduce uno diferente.";
+            return;
+        }
+        catch (CodigoSolicitudDuplicadoException ex)
+        {
+            throw new InvalidOperationException("La secuencia generó un código existente.", ex);
+        }
 
-        GuardadoExitoso = true;
+        codigoSolicitud = solicitud.CodigoSolicitud;
+        string accion = EsEdicion ? "actualizó" : "guardó";
+        MensajeExito = $"La solicitud {codigoSolicitud} se {accion} correctamente.";
+        GuardadoExitoso = !EsEdicion;
 
         await Shell.Current.DisplayAlertAsync(
-            "Registro exitoso",
+            EsEdicion ? "Actualización exitosa" : "Registro exitoso",
             MensajeExito,
             "Aceptar");
 
@@ -385,6 +418,7 @@ public partial class SolicitudFormViewModel : ObservableObject
         ErrorZona = string.Empty;
         ErrorDireccion = string.Empty;
         ErrorPeso = string.Empty;
+        ErrorCodigo = string.Empty;
 
         GuardadoExitoso = false;
         MensajeExito = string.Empty;
