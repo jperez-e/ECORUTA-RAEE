@@ -1,4 +1,4 @@
-﻿
+
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -38,16 +38,21 @@ public partial class SolicitudesViewModel : ObservableObject
     [ObservableProperty]
     private string resumenBusqueda = string.Empty;
 
-    public SolicitudesViewModel()
-    {
-        CargarSolicitudes();
-    }
+    private List<SolicitudRecoleccion> _todas = new();
+    private readonly SemaphoreSlim _carga = new(1, 1);
 
-    // READ: conserva la búsqueda activa al volver de un formulario.
-    [RelayCommand]
-    public void CargarSolicitudes()
+    public async Task CargarSolicitudesAsync()
     {
-        AplicarFiltro();
+        await _carga.WaitAsync();
+        try
+        {
+            _todas = await SolicitudService.Instancia.ObtenerTodasAsync();
+            AplicarFiltro();
+        }
+        finally
+        {
+            _carga.Release();
+        }
     }
 
     // CommunityToolkit.Mvvm llama a este método cuando cambia TextoBusqueda.
@@ -59,7 +64,7 @@ public partial class SolicitudesViewModel : ObservableObject
     private void AplicarFiltro()
     {
         // No se modifican los datos del servicio: solo la colección visible.
-        var todas = SolicitudService.Instancia.ObtenerTodas().ToList();
+        var todas = _todas;
         string termino = TextoBusqueda?.Trim() ?? string.Empty;
 
         TotalSolicitudes = todas.Count;
@@ -110,7 +115,7 @@ public partial class SolicitudesViewModel : ObservableObject
 
         var parametros = new Dictionary<string, object>
         {
-            ["Solicitud"] = solicitud
+            ["SolicitudId"] = solicitud.Id
         };
 
         await Shell.Current.GoToAsync(
@@ -121,12 +126,12 @@ public partial class SolicitudesViewModel : ObservableObject
     // DELETE: eliminar directamente desde la lista, con advertencia
     // de eliminación en cascada cuando existan residuos asociados.
     [RelayCommand]
-    private async Task Eliminar(SolicitudRecoleccion solicitud)
+    private Task Eliminar(SolicitudRecoleccion solicitud) => OperacionBaseDatos.EjecutarAsync(async () =>
     {
         if (solicitud == null)
             return;
 
-        var existente = SolicitudService.Instancia.ObtenerPorId(solicitud.Id);
+        var existente = await SolicitudService.Instancia.ObtenerPorIdAsync(solicitud.Id);
 
         if (existente == null)
         {
@@ -135,12 +140,12 @@ public partial class SolicitudesViewModel : ObservableObject
                 "La solicitud ya no existe.",
                 "Aceptar");
 
-            CargarSolicitudes();
+            await CargarSolicitudesAsync();
             return;
         }
 
-        int cantidadResiduos = ResiduoElectronicoService.Instancia
-            .ObtenerPorSolicitudId(solicitud.Id).Count;
+        int cantidadResiduos = await ResiduoElectronicoService.Instancia
+            .ContarPorSolicitudIdAsync(solicitud.Id);
 
         string mensaje = cantidadResiduos > 0
             ? $"¿Deseas eliminar la solicitud {solicitud.CodigoSolicitud}?\n\n" +
@@ -159,25 +164,25 @@ public partial class SolicitudesViewModel : ObservableObject
             return;
 
         // El servicio ya se encarga de eliminar los residuos asociados.
-        bool eliminado = SolicitudService.Instancia.Eliminar(solicitud.Id);
+        bool eliminado = await SolicitudService.Instancia.EliminarAsync(solicitud.Id);
 
         if (!eliminado)
         {
             await Shell.Current.DisplayAlertAsync(
-                "Error",
-                "No se pudo eliminar la solicitud.",
+                "Solicitud no disponible",
+                "La solicitud ya no existe.",
                 "Aceptar");
 
             return;
         }
 
-        CargarSolicitudes();
+        await CargarSolicitudesAsync();
 
         await Shell.Current.DisplayAlertAsync(
             "Solicitud eliminada",
             "La solicitud y sus residuos asociados se eliminaron correctamente.",
             "Aceptar");
-    }
+    });
 
     // Consultar los residuos asociados a una solicitud.
     [RelayCommand]

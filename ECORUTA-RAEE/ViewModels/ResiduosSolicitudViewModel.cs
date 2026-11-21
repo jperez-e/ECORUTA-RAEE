@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Input;
 using System.Collections.ObjectModel;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -33,17 +33,14 @@ public partial class ResiduosSolicitudViewModel : ObservableObject
 
 
     // Consultar los residuos asociados a una solicitud
-    public void CargarResiduos(int solicitudId)
+    public async Task CargarResiduosAsync(int solicitudId)
     {
         _solicitudId = solicitudId;
-        Residuos.Clear();
-
-        // Buscar la solicitud
-        var solicitud = SolicitudService.Instancia
-            .ObtenerPorId(solicitudId);
+        var solicitud = await SolicitudService.Instancia.ObtenerPorIdAsync(solicitudId);
 
         if (solicitud == null)
         {
+            Residuos.Clear();
             CodigoSolicitud = "Solicitud no disponible";
             Zona = string.Empty;
             TotalRegistros = 0;
@@ -56,8 +53,10 @@ public partial class ResiduosSolicitudViewModel : ObservableObject
         Zona = solicitud.Zona;
 
         // Obtener únicamente los residuos de esta solicitud
-        var registros = ResiduoElectronicoService.Instancia
-            .ObtenerPorSolicitudId(solicitudId);
+        var registros = await ResiduoElectronicoService.Instancia
+            .ObtenerPorSolicitudIdAsync(solicitudId);
+
+        Residuos.Clear();
 
         foreach (var residuo in registros)
         {
@@ -76,11 +75,10 @@ public partial class ResiduosSolicitudViewModel : ObservableObject
 
     // Agregar un equipo a la solicitud actual
     [RelayCommand]
-    private async Task AgregarEquipo()
+    private Task AgregarEquipo() => OperacionBaseDatos.EjecutarAsync(async () =>
     {
         if (_solicitudId <= 0 ||
-            SolicitudService.Instancia
-                .ObtenerPorId(_solicitudId) == null)
+            await SolicitudService.Instancia.ObtenerPorIdAsync(_solicitudId) == null)
         {
             await Shell.Current.DisplayAlertAsync(
                 "Solicitud no disponible",
@@ -98,6 +96,6 @@ public partial class ResiduosSolicitudViewModel : ObservableObject
         await Shell.Current.GoToAsync(
             nameof(ECORUTA_RAEE.Views.ResiduoFormPage),
             parametros);
-    }
+    });
 
 }

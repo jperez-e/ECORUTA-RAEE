@@ -9,13 +9,12 @@ public partial class SolicitudesPage : ContentPage
     public SolicitudesPage()
     {
         InitializeComponent();
-
         BindingContext = _viewModel = new SolicitudesViewModel();
     }
 
-    protected override void OnAppearing()
+    protected override async void OnAppearing()
     {
         base.OnAppearing();
-        _viewModel.CargarSolicitudes();
+        await OperacionBaseDatos.EjecutarAsync(_viewModel.CargarSolicitudesAsync);
     }
 }

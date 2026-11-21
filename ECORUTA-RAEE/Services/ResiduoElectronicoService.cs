@@ -1,183 +1,140 @@
-﻿
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using ECORUTA_RAEE.Models;
+using SQLite;
 
 namespace ECORUTA_RAEE.Services;
 
 public class ResiduoElectronicoService
 {
-    // Almacenamiento temporal en memoria.
-    private readonly List<ResiduoElectronico> _residuos = new();
-
-    // Identificador automático.
-    private int _siguienteId = 1;
-
-    // Instancia única del servicio.
     public static ResiduoElectronicoService Instancia { get; } = new();
+    private EcoRutaDatabase Database => EcoRutaDatabase.Instance;
 
-    private ResiduoElectronicoService()
+    private ResiduoElectronicoService() { }
+
+    public async Task<List<ResiduoElectronico>> ObtenerTodosAsync()
     {
+        var db = await Database.GetConnectionAsync();
+        return await db.Table<ResiduoElectronico>().OrderByDescending(r => r.Id).ToListAsync();
     }
 
-    // READ: Obtener todos los residuos.
-    public List<ResiduoElectronico> ObtenerTodos()
+    internal async Task<(List<ResiduoElectronico> Residuos, Dictionary<int, string> Codigos)> ObtenerListadoAsync()
     {
-        return _residuos
-            .OrderByDescending(r => r.Id)
-            .ToList();
+        var db = await Database.GetConnectionAsync();
+        List<ResiduoElectronico> residuos = new();
+        Dictionary<int, string> codigos = new();
+
+        await db.RunInTransactionAsync(connection =>
+        {
+            residuos = connection.Table<ResiduoElectronico>().OrderByDescending(r => r.Id).ToList();
+            codigos = connection.Table<SolicitudRecoleccion>()
+                .ToDictionary(s => s.Id, s => s.CodigoSolicitud);
+        });
+
+        return (residuos, codigos);
     }
 
-    // READ: Obtener un residuo por ID.
-    public ResiduoElectronico? ObtenerPorId(int id)
+    public async Task<ResiduoElectronico?> ObtenerPorIdAsync(int id)
     {
-        return _residuos.FirstOrDefault(r => r.Id == id);
+        var db = await Database.GetConnectionAsync();
+        return await db.FindAsync<ResiduoElectronico>(id);
     }
 
-    // READ: Obtener los residuos de una solicitud.
-    public List<ResiduoElectronico> ObtenerPorSolicitudId(int solicitudId)
+    public async Task<List<ResiduoElectronico>> ObtenerPorSolicitudIdAsync(int solicitudId)
     {
-        return _residuos
+        var db = await Database.GetConnectionAsync();
+        return await db.Table<ResiduoElectronico>()
             .Where(r => r.SolicitudId == solicitudId)
-            .ToList();
+            .OrderBy(r => r.Id)
+            .ToListAsync();
     }
 
-    // Calcular el peso total de los residuos de una solicitud.
-    // PesoEstimado ya representa el peso total del registro,
-    // por lo que NO se multiplica nuevamente por Cantidad.
-    public double CalcularPesoTotalPorSolicitud(int solicitudId)
+    public async Task<int> ContarPorSolicitudIdAsync(int solicitudId)
     {
-        return _residuos
+        var db = await Database.GetConnectionAsync();
+        return await db.Table<ResiduoElectronico>()
             .Where(r => r.SolicitudId == solicitudId)
-            .Sum(r => r.PesoEstimado);
+            .CountAsync();
     }
 
-    // CREATE: Registrar un residuo electrónico.
-    public bool Crear(ResiduoElectronico residuo)
+    public async Task<bool> CrearAsync(ResiduoElectronico residuo)
     {
         if (!EsValido(residuo))
             return false;
 
-        residuo.Id = _siguienteId++;
-        _residuos.Add(residuo);
+        var db = await Database.GetConnectionAsync();
+        int id = 0;
+        await db.RunInTransactionAsync(connection =>
+        {
+            connection.Execute("""
+                INSERT INTO Residuos (SolicitudId, Categoria, Descripcion, Cantidad, PesoEstimado)
+                VALUES (?, ?, ?, ?, ?)
+                """, residuo.SolicitudId, residuo.Categoria, residuo.Descripcion,
+                residuo.Cantidad, residuo.PesoEstimado);
+            id = connection.ExecuteScalar<int>("SELECT last_insert_rowid()");
+            SincronizarPesoSolicitud(connection, residuo.SolicitudId);
+        });
 
-        SincronizarPesoSolicitud(residuo.SolicitudId);
-
+        residuo.Id = id;
         return true;
     }
 
-    // UPDATE: Actualizar un residuo existente.
-    public bool Actualizar(ResiduoElectronico residuo)
+    public async Task<bool> ActualizarAsync(ResiduoElectronico residuo)
     {
         if (!EsValido(residuo))
             return false;
 
-        var existente = ObtenerPorId(residuo.Id);
-
-        if (existente == null)
-            return false;
-
-        // Guardar la solicitud anterior por si cambia la asociación.
-        int solicitudAnteriorId = existente.SolicitudId;
-
-        existente.SolicitudId = residuo.SolicitudId;
-        existente.Categoria = residuo.Categoria;
-        existente.Descripcion = residuo.Descripcion;
-        existente.Cantidad = residuo.Cantidad;
-        existente.PesoEstimado = residuo.PesoEstimado;
-
-        // Actualizar el total de la solicitud nueva o actual.
-        SincronizarPesoSolicitud(existente.SolicitudId);
-
-        // Si cambió de solicitud, actualizar también la anterior.
-        if (solicitudAnteriorId != existente.SolicitudId)
+        var db = await Database.GetConnectionAsync();
+        bool actualizado = false;
+        await db.RunInTransactionAsync(connection =>
         {
-            SincronizarPesoSolicitud(solicitudAnteriorId);
-        }
+            var anterior = connection.Find<ResiduoElectronico>(residuo.Id);
+            if (anterior is null)
+                return;
 
-        return true;
+            connection.Update(residuo);
+            SincronizarPesoSolicitud(connection, residuo.SolicitudId);
+            if (anterior.SolicitudId != residuo.SolicitudId)
+                SincronizarPesoSolicitud(connection, anterior.SolicitudId);
+            actualizado = true;
+        });
+
+        return actualizado;
     }
 
-    // DELETE: Eliminar un residuo por ID.
-    public bool Eliminar(int id)
+    public async Task<bool> EliminarAsync(int id)
     {
-        var residuo = ObtenerPorId(id);
-
-        if (residuo == null)
-            return false;
-
-        int solicitudId = residuo.SolicitudId;
-
-        bool eliminado = _residuos.Remove(residuo);
-
-        if (eliminado)
+        var db = await Database.GetConnectionAsync();
+        bool eliminado = false;
+        await db.RunInTransactionAsync(connection =>
         {
-            SincronizarPesoSolicitud(solicitudId);
-        }
+            var residuo = connection.Find<ResiduoElectronico>(id);
+            if (residuo is null)
+                return;
+
+            connection.Delete(residuo);
+            SincronizarPesoSolicitud(connection, residuo.SolicitudId);
+            eliminado = true;
+        });
 
         return eliminado;
     }
 
-    // Contar todos los residuos.
-    public int Contar()
+    private static void SincronizarPesoSolicitud(SQLiteConnection connection, int solicitudId)
     {
-        return _residuos.Count;
+        // PesoEstimado representa el total de la fila; SUM da NULL si no quedan filas.
+        connection.Execute("""
+            UPDATE Solicitudes
+            SET PesoTotalEstimado = (
+                SELECT COALESCE(SUM(PesoEstimado), 0) FROM Residuos WHERE SolicitudId = ?
+            )
+            WHERE Id = ?
+            """, solicitudId, solicitudId);
     }
 
-    // Eliminar todos los residuos de una solicitud.
-    public int EliminarPorSolicitudId(int solicitudId)
-    {
-        int eliminados = _residuos.RemoveAll(
-            r => r.SolicitudId == solicitudId);
-
-        if (eliminados > 0)
-        {
-            SincronizarPesoSolicitud(solicitudId);
-        }
-
-        return eliminados;
-    }
-
-    // Mantener sincronizado el peso en la entidad principal.
-    private void SincronizarPesoSolicitud(int solicitudId)
-    {
-        var solicitud = SolicitudService.Instancia
-            .ObtenerPorId(solicitudId);
-
-        if (solicitud == null)
-            return;
-
-        // Si se eliminó el último residuo, el resultado es 0.
-        solicitud.PesoTotalEstimado =
-            CalcularPesoTotalPorSolicitud(solicitudId);
-    }
-
-    // Validación básica de los datos.
-    private static bool EsValido(ResiduoElectronico residuo)
-    {
-        if (residuo == null)
-            return false;
-
-        // La solicitud asociada debe existir.
-        if (SolicitudService.Instancia
-            .ObtenerPorId(residuo.SolicitudId) == null)
-            return false;
-
-        if (string.IsNullOrWhiteSpace(residuo.Categoria))
-            return false;
-
-        if (string.IsNullOrWhiteSpace(residuo.Descripcion))
-            return false;
-
-        if (residuo.Cantidad <= 0)
-            return false;
-
-        if (double.IsNaN(residuo.PesoEstimado) ||
-            double.IsInfinity(residuo.PesoEstimado) ||
-            residuo.PesoEstimado <= 0)
-            return false;
-
-        return true;
-    }
+    private static bool EsValido(ResiduoElectronico residuo) =>
+        residuo is not null &&
+        !string.IsNullOrWhiteSpace(residuo.Categoria) &&
+        !string.IsNullOrWhiteSpace(residuo.Descripcion) &&
+        residuo.Cantidad > 0 &&
+        double.IsFinite(residuo.PesoEstimado) &&
+        residuo.PesoEstimado > 0;
 }

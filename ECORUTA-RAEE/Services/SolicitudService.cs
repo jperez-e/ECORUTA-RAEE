@@ -1,92 +1,94 @@
-﻿
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Globalization;
 using ECORUTA_RAEE.Models;
 
 namespace ECORUTA_RAEE.Services;
 
 public class SolicitudService
 {
-    private readonly List<SolicitudRecoleccion> _solicitudes = new();
-    private int _siguienteId = 1;
-
     public static SolicitudService Instancia { get; } = new();
+    private EcoRutaDatabase Database => EcoRutaDatabase.Instance;
 
-    private SolicitudService()
-    {
-    }
+    private SolicitudService() { }
 
-    // READ: Obtener todas las solicitudes.
-    public List<SolicitudRecoleccion> ObtenerTodas()
+    public async Task<List<SolicitudRecoleccion>> ObtenerTodasAsync()
     {
-        return _solicitudes
+        var db = await Database.GetConnectionAsync();
+        return await db.Table<SolicitudRecoleccion>()
             .OrderByDescending(s => s.FechaRegistro)
-            .ToList();
+            .ThenByDescending(s => s.Id)
+            .ToListAsync();
     }
 
-    // READ: Obtener una solicitud por ID.
-    public SolicitudRecoleccion? ObtenerPorId(int id)
+    public async Task<SolicitudRecoleccion?> ObtenerPorIdAsync(int id)
     {
-        return _solicitudes.FirstOrDefault(s => s.Id == id);
+        var db = await Database.GetConnectionAsync();
+        return await db.FindAsync<SolicitudRecoleccion>(id);
     }
 
-    // CREATE: Registrar una nueva solicitud.
-    public void Crear(SolicitudRecoleccion solicitud)
+    public async Task CrearAsync(SolicitudRecoleccion solicitud)
     {
-        solicitud.Id = _siguienteId++;
-        solicitud.CodigoSolicitud = $"SOL-{solicitud.Id:0000}";
-        solicitud.FechaRegistro = DateTime.Now;
-
-        // Inicialmente, sin residuos, se conserva el peso manual.
-        _solicitudes.Add(solicitud);
-    }
-
-    // UPDATE: Actualizar sin sobrescribir el peso calculado.
-    public bool Actualizar(SolicitudRecoleccion solicitud)
-    {
-        var existente = ObtenerPorId(solicitud.Id);
-
-        if (existente == null)
-            return false;
-
-        existente.Zona = solicitud.Zona;
-        existente.DireccionReferencia = solicitud.DireccionReferencia;
-
-        var servicioResiduos = ResiduoElectronicoService.Instancia;
-
-        bool tieneResiduos = servicioResiduos
-            .ObtenerPorSolicitudId(existente.Id).Count > 0;
-
-        if (tieneResiduos)
+        var nueva = new SolicitudRecoleccion
         {
-            // El peso lo determinan los residuos asociados.
-            existente.PesoTotalEstimado = servicioResiduos
-                .CalcularPesoTotalPorSolicitud(existente.Id);
-        }
-        else
+            FechaRegistro = DateTime.Now,
+            Zona = solicitud.Zona,
+            DireccionReferencia = solicitud.DireccionReferencia,
+            Latitud = solicitud.Latitud,
+            Longitud = solicitud.Longitud,
+            Estado = solicitud.Estado,
+            PesoTotalEstimado = solicitud.PesoTotalEstimado
+        };
+
+        var db = await Database.GetConnectionAsync();
+        await db.RunInTransactionAsync(connection =>
         {
-            // Sin residuos, se permite editar el peso manualmente.
-            existente.PesoTotalEstimado = solicitud.PesoTotalEstimado;
-        }
+            int actualizadas = connection.Execute("""
+                UPDATE SecuenciaCodigoSolicitud
+                SET UltimoNumero = UltimoNumero + 1
+                WHERE Id = 1 AND UltimoNumero < 9223372036854775807
+                """);
+            if (actualizadas != 1)
+                throw new InvalidOperationException("La secuencia de códigos no está disponible.");
 
-        return true;
+            long numero = connection.ExecuteScalar<long>(
+                "SELECT UltimoNumero FROM SecuenciaCodigoSolicitud WHERE Id = 1");
+            nueva.CodigoSolicitud = "SOL-" + numero.ToString("D4", CultureInfo.InvariantCulture);
+            connection.Insert(nueva);
+        });
+
+        solicitud.Id = nueva.Id;
+        solicitud.CodigoSolicitud = nueva.CodigoSolicitud;
+        solicitud.FechaRegistro = nueva.FechaRegistro;
     }
 
-    // DELETE: Eliminar una solicitud y sus residuos asociados.
-    public bool Eliminar(int id)
+    public async Task<bool> ActualizarAsync(
+        SolicitudRecoleccion solicitud, bool actualizarPesoManual = true)
     {
-        var solicitud = ObtenerPorId(id);
+        var db = await Database.GetConnectionAsync();
 
-        if (solicitud == null)
-            return false;
-
-        // Evita dejar residuos huérfanos.
-        ResiduoElectronicoService.Instancia
-            .EliminarPorSolicitudId(id);
-
-        return _solicitudes.Remove(solicitud);
+        // Una sola sentencia mantiene el peso actual si hay residuos o si
+        // el formulario presentó un peso calculado en lugar de un valor manual.
+        int actualizadas = await db.ExecuteAsync("""
+            UPDATE Solicitudes
+            SET Zona = ?, DireccionReferencia = ?,
+                PesoTotalEstimado = CASE
+                    WHEN ? AND NOT EXISTS (SELECT 1 FROM Residuos WHERE SolicitudId = Solicitudes.Id)
+                    THEN ? ELSE PesoTotalEstimado END
+            WHERE Id = ?
+            """, solicitud.Zona, solicitud.DireccionReferencia, actualizarPesoManual,
+            solicitud.PesoTotalEstimado, solicitud.Id);
+        return actualizadas == 1;
     }
 
-    public int Contar() => _solicitudes.Count;
+    public async Task<bool> EliminarAsync(int id)
+    {
+        var db = await Database.GetConnectionAsync();
+        // SQLite elimina los residuos asociados dentro de la misma sentencia.
+        return await db.DeleteAsync<SolicitudRecoleccion>(id) == 1;
+    }
+
+    public async Task<int> ContarAsync()
+    {
+        var db = await Database.GetConnectionAsync();
+        return await db.Table<SolicitudRecoleccion>().CountAsync();
+    }
 }

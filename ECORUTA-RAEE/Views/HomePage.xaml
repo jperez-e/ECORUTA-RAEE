@@ -126,7 +126,7 @@
                                 TextColor="{StaticResource ForestGreen}" />
 
                             <Label
-                                Text="Durante esta sesión"
+                                Text="Guardadas en este dispositivo"
                                 FontSize="12"
                                 TextColor="{StaticResource TextSecondary}" />
                         </VerticalStackLayout>

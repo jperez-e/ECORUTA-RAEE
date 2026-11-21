@@ -1,4 +1,4 @@
-﻿
+
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -39,16 +39,22 @@ public partial class ResiduosViewModel : ObservableObject
     private string descripcionListaVacia =
         "Registra los equipos electrónicos que serán entregados en una solicitud de recogida.";
 
-    public ResiduosViewModel()
-    {
-        CargarResiduos();
-    }
+    private List<ResiduoElectronico> _todos = new();
+    private Dictionary<int, string> _codigos = new();
+    private readonly SemaphoreSlim _carga = new(1, 1);
 
-    // READ: cargar y filtrar los residuos registrados.
-    [RelayCommand]
-    public void CargarResiduos()
+    public async Task CargarResiduosAsync()
     {
-        AplicarFiltro();
+        await _carga.WaitAsync();
+        try
+        {
+            (_todos, _codigos) = await ResiduoElectronicoService.Instancia.ObtenerListadoAsync();
+            AplicarFiltro();
+        }
+        finally
+        {
+            _carga.Release();
+        }
     }
 
     // Se ejecuta automáticamente cuando cambia el texto del SearchBar.
@@ -60,9 +66,7 @@ public partial class ResiduosViewModel : ObservableObject
     // FILTRADO EN TIEMPO REAL
     private void AplicarFiltro()
     {
-        var todos = ResiduoElectronicoService.Instancia
-            .ObtenerTodos()
-            .ToList();
+        var todos = _todos;
 
         string termino = TextoBusqueda?.Trim() ?? string.Empty;
 
@@ -100,10 +104,7 @@ public partial class ResiduosViewModel : ObservableObject
         ResiduoElectronico residuo,
         string termino)
     {
-        // Obtener la solicitud asociada para permitir búsquedas
-        // por códigos como SOL-0001.
-        var solicitud = SolicitudService.Instancia
-            .ObtenerPorId(residuo.SolicitudId);
+        _codigos.TryGetValue(residuo.SolicitudId, out var codigo);
 
         bool coincideCategoria =
             residuo.Categoria?.Contains(
@@ -121,7 +122,7 @@ public partial class ResiduosViewModel : ObservableObject
                 StringComparison.OrdinalIgnoreCase);
 
         bool coincideCodigoSolicitud =
-            solicitud?.CodigoSolicitud?.Contains(
+            codigo?.Contains(
                 termino,
                 StringComparison.OrdinalIgnoreCase) ?? false;
 
@@ -133,10 +134,10 @@ public partial class ResiduosViewModel : ObservableObject
 
     // CREATE: navegar al formulario de creación.
     [RelayCommand]
-    private async Task NuevoResiduo()
+    private Task NuevoResiduo() => OperacionBaseDatos.EjecutarAsync(async () =>
     {
         // Primero debe existir una solicitud.
-        if (SolicitudService.Instancia.Contar() == 0)
+        if (await SolicitudService.Instancia.ContarAsync() == 0)
         {
             await Shell.Current.DisplayAlertAsync(
                 "No hay solicitudes",
@@ -148,7 +149,7 @@ public partial class ResiduosViewModel : ObservableObject
 
         await Shell.Current.GoToAsync(
             nameof(ResiduoFormPage));
-    }
+    });
 
     // UPDATE: abrir el formulario con el residuo seleccionado.
     [RelayCommand]
@@ -159,7 +160,7 @@ public partial class ResiduosViewModel : ObservableObject
 
         var parametros = new Dictionary<string, object>
         {
-            ["Residuo"] = residuo
+            ["ResiduoId"] = residuo.Id
         };
 
         await Shell.Current.GoToAsync(
@@ -169,7 +170,7 @@ public partial class ResiduosViewModel : ObservableObject
 
     // DELETE: eliminar desde el listado con confirmación.
     [RelayCommand]
-    private async Task Eliminar(ResiduoElectronico residuo)
+    private Task Eliminar(ResiduoElectronico residuo) => OperacionBaseDatos.EjecutarAsync(async () =>
     {
         if (residuo == null)
             return;
@@ -183,25 +184,25 @@ public partial class ResiduosViewModel : ObservableObject
         if (!confirmar)
             return;
 
-        bool eliminado = ResiduoElectronicoService.Instancia
-            .Eliminar(residuo.Id);
+        bool eliminado = await ResiduoElectronicoService.Instancia
+            .EliminarAsync(residuo.Id);
 
         if (!eliminado)
         {
             await Shell.Current.DisplayAlertAsync(
-                "Error",
-                "No se pudo eliminar el residuo.",
+                "Residuo no disponible",
+                "El residuo ya no existe.",
                 "Aceptar");
 
             return;
         }
 
         // Actualizar la lista respetando el filtro actual.
-        CargarResiduos();
+        await CargarResiduosAsync();
 
         await Shell.Current.DisplayAlertAsync(
             "Residuo eliminado",
             "El registro se eliminó correctamente.",
             "Aceptar");
-    }
+    });
 }

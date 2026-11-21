@@ -1,4 +1,4 @@
-﻿
+
 using System;
 using System.Collections.ObjectModel;
 using System.Globalization;
@@ -128,31 +128,37 @@ public partial class SolicitudFormViewModel : ObservableObject
     }
 
     // Cargar los datos de una solicitud para editar.
-    public void CargarParaEditar(SolicitudRecoleccion solicitud)
+    public async Task<bool> CargarParaEditarAsync(int id)
     {
+        var solicitud = await SolicitudService.Instancia.ObtenerPorIdAsync(id);
+        if (solicitud is null)
+        {
+            await Shell.Current.DisplayAlertAsync(
+                "Solicitud no disponible", "La solicitud ya no existe.", "Aceptar");
+            return false;
+        }
+
+        PesoEsCalculado = await ResiduoElectronicoService.Instancia.ContarPorSolicitudIdAsync(id) > 0;
         solicitudId = solicitud.Id;
         codigoSolicitud = solicitud.CodigoSolicitud;
 
         ZonaSeleccionada = solicitud.Zona;
         DireccionReferencia = solicitud.DireccionReferencia;
 
-        var servicioResiduos = ResiduoElectronicoService.Instancia;
-
-        PesoEsCalculado = servicioResiduos
-            .ObtenerPorSolicitudId(solicitud.Id).Count > 0;
-
-        double pesoMostrar = PesoEsCalculado
-            ? servicioResiduos.CalcularPesoTotalPorSolicitud(solicitud.Id)
-            : solicitud.PesoTotalEstimado;
-
-        PesoTexto = pesoMostrar.ToString(CultureInfo.InvariantCulture);
+        PesoTexto = solicitud.PesoTotalEstimado.ToString(CultureInfo.InvariantCulture);
 
         LimpiarErrores();
         EsEdicion = true;
+        return true;
     }
 
-    [RelayCommand]
-    private async Task Guardar()
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(GuardarCommand), nameof(EliminarCommand))]
+    private bool formularioDisponible;
+
+
+    [RelayCommand(CanExecute = nameof(FormularioDisponible))]
+    private Task Guardar() => OperacionBaseDatos.EjecutarAsync(async () =>
     {
         LimpiarErrores();
 
@@ -187,18 +193,29 @@ public partial class SolicitudFormViewModel : ObservableObject
         // Consultar el estado ACTUAL de los residuos al guardar.
         var servicioResiduos = ResiduoElectronicoService.Instancia;
 
-        bool tieneResiduos = EsEdicion && servicioResiduos
-            .ObtenerPorSolicitudId(solicitudId).Count > 0;
+        var solicitudActual = EsEdicion
+            ? await SolicitudService.Instancia.ObtenerPorIdAsync(solicitudId)
+            : null;
 
+        if (EsEdicion && solicitudActual is null)
+        {
+            await Shell.Current.DisplayAlertAsync(
+                "Solicitud no disponible", "La solicitud ya no existe.", "Aceptar");
+            return;
+        }
+
+        bool tieneResiduos = EsEdicion &&
+            await servicioResiduos.ContarPorSolicitudIdAsync(solicitudId) > 0;
+
+        bool conservarPesoRegistrado = tieneResiduos || PesoEsCalculado;
         PesoEsCalculado = tieneResiduos;
 
         double peso = 0;
 
-        if (tieneResiduos)
+        if (conservarPesoRegistrado)
         {
             // El peso se calcula, no se acepta un valor manual.
-            peso = servicioResiduos
-                .CalcularPesoTotalPorSolicitud(solicitudId);
+            peso = solicitudActual!.PesoTotalEstimado;
 
             PesoTexto = peso.ToString(CultureInfo.InvariantCulture);
         }
@@ -233,9 +250,7 @@ public partial class SolicitudFormViewModel : ObservableObject
                 bool conservaCeroCalculado =
                     EsEdicion &&
                     peso == 0 &&
-                    SolicitudService.Instancia
-                        .ObtenerPorId(solicitudId)?
-                        .PesoTotalEstimado == 0;
+                    solicitudActual?.PesoTotalEstimado == 0;
 
                 if (peso <= 0 && !conservaCeroCalculado)
                 {
@@ -267,13 +282,13 @@ public partial class SolicitudFormViewModel : ObservableObject
                 PesoTotalEstimado = peso
             };
 
-            bool actualizado = SolicitudService.Instancia.Actualizar(
-                solicitudActualizada);
+            bool actualizado = await SolicitudService.Instancia.ActualizarAsync(
+                solicitudActualizada, actualizarPesoManual: !conservarPesoRegistrado);
 
             if (!actualizado)
             {
                 await Shell.Current.DisplayAlertAsync(
-                    "Error",
+                    "Solicitud no disponible",
                     "No se encontró la solicitud que deseas actualizar.",
                     "Aceptar");
 
@@ -301,7 +316,7 @@ public partial class SolicitudFormViewModel : ObservableObject
             Estado = "Pendiente"
         };
 
-        SolicitudService.Instancia.Crear(nuevaSolicitud);
+        await SolicitudService.Instancia.CrearAsync(nuevaSolicitud);
 
         MensajeExito =
             $"La solicitud {nuevaSolicitud.CodigoSolicitud} se guardó correctamente.";
@@ -314,17 +329,17 @@ public partial class SolicitudFormViewModel : ObservableObject
             "Aceptar");
 
         await Shell.Current.GoToAsync("//solicitudes");
-    }
+    });
 
     // Eliminar desde el formulario.
-    [RelayCommand]
-    private async Task Eliminar()
+    [RelayCommand(CanExecute = nameof(FormularioDisponible))]
+    private Task Eliminar() => OperacionBaseDatos.EjecutarAsync(async () =>
     {
         if (!EsEdicion)
             return;
 
-        int cantidadResiduos = ResiduoElectronicoService.Instancia
-            .ObtenerPorSolicitudId(solicitudId).Count;
+        int cantidadResiduos = await ResiduoElectronicoService.Instancia
+            .ContarPorSolicitudIdAsync(solicitudId);
 
         string mensaje = cantidadResiduos > 0
             ? $"¿Estás seguro de que deseas eliminar la solicitud {codigoSolicitud} y sus {cantidadResiduos} residuos asociados? Esta acción no se puede deshacer."
@@ -339,13 +354,13 @@ public partial class SolicitudFormViewModel : ObservableObject
         if (!confirmar)
             return;
 
-        bool eliminado = SolicitudService.Instancia.Eliminar(solicitudId);
+        bool eliminado = await SolicitudService.Instancia.EliminarAsync(solicitudId);
 
         if (!eliminado)
         {
             await Shell.Current.DisplayAlertAsync(
-                "Error",
-                "No se pudo eliminar la solicitud.",
+                "Solicitud no disponible",
+                "La solicitud ya no existe.",
                 "Aceptar");
 
             return;
@@ -357,7 +372,7 @@ public partial class SolicitudFormViewModel : ObservableObject
             "Aceptar");
 
         await Shell.Current.GoToAsync("//solicitudes");
-    }
+    });
 
     [RelayCommand]
     private async Task Cancelar()

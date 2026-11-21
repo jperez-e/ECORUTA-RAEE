@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ECORUTA_RAEE.Services;
 
@@ -9,14 +9,9 @@ public partial class HomeViewModel : ObservableObject
     [ObservableProperty]
     private int totalSolicitudes;
 
-    public HomeViewModel()
+    public async Task ActualizarTotalAsync()
     {
-        ActualizarTotal();
-    }
-
-    public void ActualizarTotal()
-    {
-        TotalSolicitudes = SolicitudService.Instancia.Contar();
+        TotalSolicitudes = await SolicitudService.Instancia.ContarAsync();
     }
 
     [RelayCommand]

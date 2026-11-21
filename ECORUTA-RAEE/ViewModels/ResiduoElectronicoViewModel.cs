@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -100,11 +100,6 @@ public partial class ResiduoElectronicoViewModel : ObservableObject
     public bool TieneErrorPeso =>
         !string.IsNullOrWhiteSpace(ErrorPeso);
 
-    public ResiduoElectronicoViewModel()
-    {
-        CargarSolicitudesDisponibles();
-    }
-
     // Actualizar título y botones al cambiar de modo
     partial void OnEsEdicionChanged(bool value)
     {
@@ -140,12 +135,11 @@ public partial class ResiduoElectronicoViewModel : ObservableObject
     }
 
     // Cargar solicitudes existentes
-    public void CargarSolicitudesDisponibles()
+    private async Task CargarSolicitudesDisponiblesAsync()
     {
         SolicitudesDisponibles.Clear();
 
-        var solicitudes =
-            SolicitudService.Instancia.ObtenerTodas();
+        var solicitudes = await SolicitudService.Instancia.ObtenerTodasAsync();
 
         foreach (var solicitud in solicitudes)
         {
@@ -153,36 +147,31 @@ public partial class ResiduoElectronicoViewModel : ObservableObject
         }
     }
 
-    // Preparar el formulario para un registro nuevo
-    public void PrepararNuevo()
+    public async Task<bool> PrepararAsync(int? idResiduo, int? idSolicitud)
     {
-        residuoId = 0;
+        await CargarSolicitudesDisponiblesAsync();
 
-        SolicitudId = 0;
-        SolicitudSeleccionada = null;
+        if (idResiduo is null)
+        {
+            SolicitudSeleccionada = SolicitudesDisponibles.FirstOrDefault(s => s.Id == idSolicitud);
+            if (idSolicitud is not null && SolicitudSeleccionada is null)
+            {
+                await Shell.Current.DisplayAlertAsync(
+                    "Solicitud no disponible", "La solicitud ya no existe.", "Aceptar");
+                return false;
+            }
 
-        Categoria = string.Empty;
-        Descripcion = string.Empty;
+            SolicitudId = SolicitudSeleccionada?.Id ?? 0;
+            return true;
+        }
 
-        Cantidad = 1;
-        PesoEstimado = 0;
-
-        CantidadTexto = "1";
-        PesoTexto = string.Empty;
-
-        EsEdicion = false;
-
-        LimpiarErrores();
-        CargarSolicitudesDisponibles();
-    }
-
-    // Cargar los datos de un residuo para editar
-    public void CargarParaEditar(ResiduoElectronico residuo)
-    {
-        if (residuo == null)
-            return;
-
-        CargarSolicitudesDisponibles();
+        var residuo = await ResiduoElectronicoService.Instancia.ObtenerPorIdAsync(idResiduo.Value);
+        if (residuo is null)
+        {
+            await Shell.Current.DisplayAlertAsync(
+                "Residuo no disponible", "El residuo ya no existe.", "Aceptar");
+            return false;
+        }
 
         residuoId = residuo.Id;
 
@@ -202,27 +191,24 @@ public partial class ResiduoElectronicoViewModel : ObservableObject
             residuo.Cantidad.ToString(
                 CultureInfo.InvariantCulture);
 
-        PesoTexto =
-            residuo.PesoEstimado.ToString(
-                "0.##",
-                CultureInfo.InvariantCulture);
+        PesoTexto = residuo.PesoEstimado.ToString(CultureInfo.InvariantCulture);
 
         EsEdicion = true;
-
         LimpiarErrores();
+        return true;
     }
 
     // Validar los campos del formulario
-    private bool Validar()
+    private async Task<bool> ValidarAsync()
     {
         LimpiarErrores();
 
         bool valido = true;
 
         // Validar solicitud
-        if (SolicitudSeleccionada == null ||
-            SolicitudService.Instancia.ObtenerPorId(
-                SolicitudSeleccionada.Id) == null)
+        var seleccion = SolicitudSeleccionada;
+        if (seleccion is null ||
+            await SolicitudService.Instancia.ObtenerPorIdAsync(seleccion.Id) is null)
         {
             ErrorSolicitud =
                 "Debes seleccionar una solicitud válida.";
@@ -297,7 +283,7 @@ public partial class ResiduoElectronicoViewModel : ObservableObject
             return false;
 
         // Actualizar las propiedades del modelo
-        SolicitudId = SolicitudSeleccionada!.Id;
+        SolicitudId = seleccion!.Id;
         Categoria = Categoria.Trim();
         Descripcion = descripcionLimpia;
 
@@ -322,10 +308,15 @@ public partial class ResiduoElectronicoViewModel : ObservableObject
     }
 
     // CREATE / UPDATE
-    [RelayCommand]
-    private async Task Guardar()
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(GuardarCommand), nameof(EliminarCommand))]
+    private bool formularioDisponible;
+
+
+    [RelayCommand(CanExecute = nameof(FormularioDisponible))]
+    private Task Guardar() => OperacionBaseDatos.EjecutarAsync(async () =>
     {
-        if (!Validar())
+        if (!await ValidarAsync())
             return;
 
         var residuo = CrearModelo();
@@ -334,22 +325,18 @@ public partial class ResiduoElectronicoViewModel : ObservableObject
 
         if (EsEdicion)
         {
-            resultado =
-                ResiduoElectronicoService.Instancia
-                    .Actualizar(residuo);
+            resultado = await ResiduoElectronicoService.Instancia.ActualizarAsync(residuo);
         }
         else
         {
-            resultado =
-                ResiduoElectronicoService.Instancia
-                    .Crear(residuo);
+            resultado = await ResiduoElectronicoService.Instancia.CrearAsync(residuo);
         }
 
         if (!resultado)
         {
             await Shell.Current.DisplayAlertAsync(
-                "Error",
-                "No se pudo guardar el residuo electrónico.",
+                EsEdicion ? "Residuo no disponible" : "Datos inválidos",
+                EsEdicion ? "El residuo ya no existe." : "Revisa los datos del residuo.",
                 "Aceptar");
 
             return;
@@ -365,11 +352,11 @@ public partial class ResiduoElectronicoViewModel : ObservableObject
             "Aceptar");
 
         await Shell.Current.GoToAsync("..");
-    }
+    });
 
     // DELETE
-    [RelayCommand]
-    private async Task Eliminar()
+    [RelayCommand(CanExecute = nameof(FormularioDisponible))]
+    private Task Eliminar() => OperacionBaseDatos.EjecutarAsync(async () =>
     {
         if (!EsEdicion || residuoId <= 0)
             return;
@@ -384,15 +371,13 @@ public partial class ResiduoElectronicoViewModel : ObservableObject
         if (!confirmar)
             return;
 
-        bool eliminado =
-            ResiduoElectronicoService.Instancia
-                .Eliminar(residuoId);
+        bool eliminado = await ResiduoElectronicoService.Instancia.EliminarAsync(residuoId);
 
         if (!eliminado)
         {
             await Shell.Current.DisplayAlertAsync(
-                "Error",
-                "No se pudo eliminar el residuo.",
+                "Residuo no disponible",
+                "El residuo ya no existe.",
                 "Aceptar");
 
             return;
@@ -404,7 +389,7 @@ public partial class ResiduoElectronicoViewModel : ObservableObject
             "Aceptar");
 
         await Shell.Current.GoToAsync("..");
-    }
+    });
 
     // Cancelar y regresar
     [RelayCommand]
@@ -421,24 +406,6 @@ public partial class ResiduoElectronicoViewModel : ObservableObject
         ErrorDescripcion = string.Empty;
         ErrorCantidad = string.Empty;
         ErrorPeso = string.Empty;
-    }
-
-    // Preparar nuevo residuo asociado a una solicitud
-    public void PrepararNuevoParaSolicitud(int solicitudId)
-    {
-        // Limpiar el formulario y cargar solicitudes
-        PrepararNuevo();
-
-        // Buscar la solicitud correspondiente
-        var solicitud = SolicitudesDisponibles
-            .FirstOrDefault(s => s.Id == solicitudId);
-
-        if (solicitud == null)
-            return;
-
-        // Seleccionar automáticamente la solicitud
-        SolicitudSeleccionada = solicitud;
-        SolicitudId = solicitud.Id;
     }
 
 }

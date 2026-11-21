@@ -1,49 +1,46 @@
-
-using ECORUTA_RAEE.Models;
 using ECORUTA_RAEE.ViewModels;
 
 namespace ECORUTA_RAEE.Views;
 
-public partial class ResiduoFormPage :
-    ContentPage, IQueryAttributable
+public partial class ResiduoFormPage : ContentPage, IQueryAttributable
 {
     private readonly ResiduoElectronicoViewModel _viewModel;
+    private int? _residuoId;
+    private int? _solicitudId;
+    private bool _cargando;
 
     public ResiduoFormPage()
     {
         InitializeComponent();
-
-        _viewModel = new ResiduoElectronicoViewModel();
-
-        BindingContext = _viewModel;
-
-        // Preparar formulario limpio
-        _viewModel.PrepararNuevo();
+        BindingContext = _viewModel = new ResiduoElectronicoViewModel();
     }
 
-    public void ApplyQueryAttributes(
-        IDictionary<string, object> query)
+    public void ApplyQueryAttributes(IDictionary<string, object> query)
     {
-        // CASO 1: Editar un residuo existente
-        if (query.TryGetValue("Residuo", out var valor)
-            && valor is ResiduoElectronico residuo)
-        {
-            _viewModel.CargarParaEditar(residuo);
-        }
+        if (query.TryGetValue("ResiduoId", out var residuo) && residuo is int residuoId)
+            _residuoId = residuoId;
 
-        // CASO 2: Crear un residuo desde una solicitud
-        else if (
-            query.TryGetValue("SolicitudId", out var idValor)
-            && idValor is int solicitudId)
-        {
-            _viewModel.PrepararNuevoParaSolicitud(
-                solicitudId);
-        }
+        if (query.TryGetValue("SolicitudId", out var solicitud) && solicitud is int solicitudId)
+            _solicitudId = solicitudId;
+    }
 
-        // CASO 3: Crear un residuo desde el menú
-        else
+    protected override async void OnAppearing()
+    {
+        base.OnAppearing();
+        if (_cargando || _viewModel.FormularioDisponible)
+            return;
+
+        _cargando = true;
+        try
         {
-            _viewModel.PrepararNuevo();
+            await OperacionBaseDatos.EjecutarAsync(async () =>
+            {
+                _viewModel.FormularioDisponible = await _viewModel.PrepararAsync(_residuoId, _solicitudId);
+            });
+        }
+        finally
+        {
+            _cargando = false;
         }
     }
 }
