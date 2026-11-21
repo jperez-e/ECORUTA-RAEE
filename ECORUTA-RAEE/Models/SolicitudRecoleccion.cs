@@ -1,10 +1,15 @@
 ﻿
+using SQLite;
+
 namespace ECORUTA_RAEE.Models;
 
+[Table("Solicitudes")]
 public class SolicitudRecoleccion
 {
+    [PrimaryKey, AutoIncrement]
     public int Id { get; set; }
 
+    [NotNull, Unique(Name = "UX_Solicitudes_CodigoSolicitud"), Collation("NOCASE")]
     public string CodigoSolicitud { get; set; } = string.Empty;
 
     public DateTime FechaRegistro { get; set; } = DateTime.Now;

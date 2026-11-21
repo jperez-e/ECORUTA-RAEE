@@ -1,8 +1,12 @@
 ﻿
+using SQLite;
+
 namespace ECORUTA_RAEE.Models;
 
+[Table("Residuos")]
 public class ResiduoElectronico
 {
+    [PrimaryKey, AutoIncrement]
     public int Id { get; set; }
 
     public int SolicitudId { get; set; }
