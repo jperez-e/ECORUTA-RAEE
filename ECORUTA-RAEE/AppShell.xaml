@@ -99,6 +99,11 @@
 
     </FlyoutItem>
 
+    <FlyoutItem Title="Jornadas" Route="jornadas" FlyoutDisplayOptions="AsSingleItem">
+        <ShellContent Title="Jornadas" Route="JornadasPage"
+                      ContentTemplate="{DataTemplate views:JornadasPage}"/>
+    </FlyoutItem>
+
     <!-- PLANTILLA DE ELEMENTOS DEL MENÚ -->
     <Shell.MenuItemTemplate>
 

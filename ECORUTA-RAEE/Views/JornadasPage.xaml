@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Class="ECORUTA_RAEE.Views.JornadasPage"
+    Title="Jornadas">
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="16">
+            <Label Text="Jornadas de recolección" Style="{StaticResource PageTitle}" />
+            <Border Style="{StaticResource CardBorder}" Padding="14">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Umbrales por zona" FontAttributes="Bold" TextColor="{StaticResource ForestGreen}" />
+                    <Label Text="Se puede programar una jornada al alcanzar cualquiera de los dos mínimos."
+                           Style="{StaticResource Subtitle}" />
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="Solicitudes" Style="{StaticResource Subtitle}" />
+                            <Entry Text="{Binding CantidadTexto, Mode=TwoWay}"
+                                   SemanticProperties.Description="Mínimo de solicitudes"
+                                   Keyboard="Numeric" Style="{StaticResource ModernEntry}" />
+                        </VerticalStackLayout>
+                        <VerticalStackLayout Grid.Column="1" Spacing="4">
+                            <Label Text="Peso (kg)" Style="{StaticResource Subtitle}" />
+                            <Entry Text="{Binding PesoTexto, Mode=TwoWay}"
+                                   SemanticProperties.Description="Peso mínimo en kilogramos"
+                                   Keyboard="Numeric" Style="{StaticResource ModernEntry}" />
+                        </VerticalStackLayout>
+                    </Grid>
+                    <Label Text="{Binding ErrorUmbrales}" FontSize="12" TextColor="{StaticResource ErrorColor}" />
+                    <Button Text="Guardar umbrales" Command="{Binding GuardarUmbralesCommand}"
+                            Style="{StaticResource SecondaryButton}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Label Text="Disponibilidad por zona" FontSize="19" FontAttributes="Bold"
+                   TextColor="{StaticResource ForestGreen}" />
+            <Label IsVisible="{Binding HaySolicitudesSinZona}"
+                   Text="{Binding SinZonaEspecifica, StringFormat='{0} solicitudes sin zona específica. Elige una zona en su formulario para incluirlas.'}"
+                   Style="{StaticResource Subtitle}" />
+            <VerticalStackLayout Spacing="8" BindableLayout.ItemsSource="{Binding Zonas}">
+                <BindableLayout.EmptyView>
+                    <Label Text="No hay solicitudes disponibles en zonas específicas." Style="{StaticResource Subtitle}" />
+                </BindableLayout.EmptyView>
+                <BindableLayout.ItemTemplate>
+                    <DataTemplate>
+                        <Border Style="{StaticResource CardBorder}" Padding="14">
+                            <VerticalStackLayout Spacing="5">
+                                <Label Text="{Binding Zona}" FontAttributes="Bold" TextColor="{StaticResource ForestGreen}" />
+                                <HorizontalStackLayout Spacing="12">
+                                    <Label Text="{Binding Cantidad, StringFormat='{0} solicitudes'}"
+                                           Style="{StaticResource Subtitle}" />
+                                    <Label Text="{Binding Peso, StringFormat='{0:0.##} kg'}"
+                                           Style="{StaticResource Subtitle}" />
+                                </HorizontalStackLayout>
+                                <Label Text="{Binding EstadoUmbral}" TextColor="{StaticResource TextSecondary}">
+                                    <Label.Triggers>
+                                        <DataTrigger TargetType="Label" Binding="{Binding AlcanzaUmbral}" Value="True">
+                                            <Setter Property="TextColor" Value="{StaticResource PrimaryGreen}" />
+                                            <Setter Property="FontAttributes" Value="Bold" />
+                                        </DataTrigger>
+                                    </Label.Triggers>
+                                </Label>
+                                <Button Text="Ver solicitudes" Style="{StaticResource SecondaryButton}"
+                                        CommandParameter="{Binding .}"
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.PrevisualizarCommand}" />
+                            </VerticalStackLayout>
+                        </Border>
+                    </DataTemplate>
+                </BindableLayout.ItemTemplate>
+            </VerticalStackLayout>
+
+            <Label Text="Jornadas registradas" FontSize="19" FontAttributes="Bold"
+                   TextColor="{StaticResource ForestGreen}" />
+            <VerticalStackLayout Spacing="8" BindableLayout.ItemsSource="{Binding Jornadas}">
+                <BindableLayout.EmptyView>
+                    <Label Text="Todavía no se han registrado jornadas." Style="{StaticResource Subtitle}" />
+                </BindableLayout.EmptyView>
+                <BindableLayout.ItemTemplate>
+                    <DataTemplate>
+                        <Border Style="{StaticResource CardBorder}" Padding="14">
+                            <VerticalStackLayout Spacing="5">
+                                <Label Text="{Binding Nombre}" FontAttributes="Bold" TextColor="{StaticResource ForestGreen}" />
+                                <HorizontalStackLayout Spacing="12">
+                                    <Label Text="{Binding Estado}" TextColor="{StaticResource PrimaryGreen}" />
+                                    <Label Text="{Binding FechaProgramada, StringFormat='{0:dd/MM/yyyy}'}"
+                                           Style="{StaticResource Subtitle}" />
+                                </HorizontalStackLayout>
+                                <Button Text="Ver jornada" Style="{StaticResource SecondaryButton}"
+                                        CommandParameter="{Binding .}"
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.AbrirCommand}" />
+                            </VerticalStackLayout>
+                        </Border>
+                    </DataTemplate>
+                </BindableLayout.ItemTemplate>
+            </VerticalStackLayout>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

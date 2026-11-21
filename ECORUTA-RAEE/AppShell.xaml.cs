@@ -22,6 +22,8 @@ public partial class AppShell : Shell
         Routing.RegisterRoute(
             nameof(Views.ResiduosSolicitudPage),
             typeof(Views.ResiduosSolicitudPage));
+
+        Routing.RegisterRoute(nameof(Views.JornadaDetallePage), typeof(Views.JornadaDetallePage));
     }
 
     // Cerrar sesión

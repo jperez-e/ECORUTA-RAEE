@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Class="ECORUTA_RAEE.Views.JornadaDetallePage"
+    Title="Jornada">
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="16">
+            <Label Text="{Binding Mensaje}" TextColor="{StaticResource ErrorColor}" />
+
+            <Border IsVisible="{Binding EsVistaPrevia}" Style="{StaticResource CardBorder}" Padding="14">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="{Binding Disponibilidad.Zona}" Style="{StaticResource PageTitle}" />
+                    <HorizontalStackLayout Spacing="12">
+                        <Label Text="{Binding Disponibilidad.Cantidad, StringFormat='{0} solicitudes disponibles'}"
+                               Style="{StaticResource Subtitle}" />
+                        <Label Text="{Binding Disponibilidad.Peso, StringFormat='{0:0.##} kg'}"
+                               Style="{StaticResource Subtitle}" />
+                    </HorizontalStackLayout>
+                    <Label Text="{Binding Disponibilidad.EstadoUmbral}" TextColor="{StaticResource PrimaryGreen}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Border IsVisible="{Binding TieneDetalle}" Style="{StaticResource CardBorder}" Padding="14">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="{Binding Jornada.Nombre}" Style="{StaticResource PageTitle}" />
+                    <Label Text="{Binding Jornada.Estado}" TextColor="{StaticResource PrimaryGreen}" FontAttributes="Bold" />
+                    <Label Text="{Binding Jornada.FechaCreacion, StringFormat='Creada el {0:dd/MM/yyyy}'}"
+                           Style="{StaticResource Subtitle}" />
+                    <Label Text="{Binding Jornada.FechaProgramada, StringFormat='Programada para el {0:dd/MM/yyyy}'}"
+                           Style="{StaticResource Subtitle}" />
+                    <HorizontalStackLayout Spacing="12">
+                        <Label Text="{Binding Jornada.CantidadSolicitudes, StringFormat='{0} solicitudes'}"
+                               Style="{StaticResource Subtitle}" />
+                        <Label Text="{Binding Jornada.PesoTotal, StringFormat='{0:0.##} kg'}"
+                               Style="{StaticResource Subtitle}" />
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Border>
+
+            <Label Text="Solicitudes" FontSize="19" FontAttributes="Bold" TextColor="{StaticResource ForestGreen}" />
+            <VerticalStackLayout Spacing="8" BindableLayout.ItemsSource="{Binding Solicitudes}">
+                <BindableLayout.EmptyView>
+                    <Label Text="No hay solicitudes para mostrar." Style="{StaticResource Subtitle}" />
+                </BindableLayout.EmptyView>
+                <BindableLayout.ItemTemplate>
+                    <DataTemplate>
+                        <Border Style="{StaticResource CardBorder}" Padding="12">
+                            <VerticalStackLayout Spacing="4">
+                                <Label Text="{Binding CodigoSolicitud}" FontAttributes="Bold" TextColor="{StaticResource ForestGreen}" />
+                                <Label Text="{Binding DireccionReferencia}" Style="{StaticResource Subtitle}" />
+                                <HorizontalStackLayout Spacing="12">
+                                    <Label Text="{Binding Zona}" Style="{StaticResource Subtitle}" />
+                                    <Label Text="{Binding PesoTotalEstimado, StringFormat='{0:0.##} kg'}"
+                                           Style="{StaticResource Subtitle}" />
+                                </HorizontalStackLayout>
+                            </VerticalStackLayout>
+                        </Border>
+                    </DataTemplate>
+                </BindableLayout.ItemTemplate>
+            </VerticalStackLayout>
+
+            <VerticalStackLayout IsVisible="{Binding EsVistaPrevia}" Spacing="8">
+                <Grid IsVisible="{Binding Disponibilidad.AlcanzaUmbral}" ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                    <Label Text="Fecha de recogida" VerticalOptions="Center" Style="{StaticResource Subtitle}" />
+                    <DatePicker Grid.Column="1" Date="{Binding FechaProgramada, Mode=TwoWay}"
+                                SemanticProperties.Description="Fecha de recogida" TextColor="{StaticResource ForestGreen}" />
+                </Grid>
+                <Button IsVisible="{Binding Disponibilidad.AlcanzaUmbral}" Text="Generar jornada"
+                        Command="{Binding CrearJornadaCommand}" Style="{StaticResource PrimaryButton}" />
+            </VerticalStackLayout>
+            <Button IsVisible="{Binding PuedeCancelar}" Text="Cancelar jornada"
+                    Command="{Binding CancelarJornadaCommand}" Style="{StaticResource SecondaryButton}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

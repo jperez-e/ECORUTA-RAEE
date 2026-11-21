@@ -7,6 +7,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ECORUTA_RAEE.Models;
 using ECORUTA_RAEE.Services;
+using SQLite;
 
 namespace ECORUTA_RAEE.ViewModels;
 
@@ -350,6 +351,13 @@ public partial class SolicitudFormViewModel : ObservableObject
         {
             throw new InvalidOperationException("La secuencia generó un código existente.", ex);
         }
+        catch (SQLiteException ex) when (
+            ((int)ex.Result & 0xff) == (int)SQLite3.Result.Constraint &&
+            ex.Message == "La solicitud está asignada a una jornada activa.")
+        {
+            ErrorZona = "Cancela la jornada activa antes de cambiar la zona de esta solicitud.";
+            return;
+        }
 
         codigoSolicitud = solicitud.CodigoSolicitud;
         string accion = EsEdicion ? "actualizó" : "guardó";
@@ -377,6 +385,9 @@ public partial class SolicitudFormViewModel : ObservableObject
         string mensaje = cantidadResiduos > 0
             ? $"¿Estás seguro de que deseas eliminar la solicitud {codigoSolicitud} y sus {cantidadResiduos} residuos asociados? Esta acción no se puede deshacer."
             : $"¿Estás seguro de que deseas eliminar la solicitud {codigoSolicitud}?";
+
+        if (await JornadaService.Instancia.TieneJornadasAsync(solicitudId))
+            mensaje += "\n\nTambién se quitará de sus jornadas. Si era la última solicitud de una jornada activa, esa jornada se cancelará.";
 
         bool confirmar = await Shell.Current.DisplayAlertAsync(
             "Eliminar solicitud",

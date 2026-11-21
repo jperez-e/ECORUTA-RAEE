@@ -154,6 +154,9 @@ public partial class SolicitudesViewModel : ObservableObject
             : $"¿Deseas eliminar la solicitud {solicitud.CodigoSolicitud}?\n\n" +
               "Esta acción no se puede deshacer.";
 
+        if (await JornadaService.Instancia.TieneJornadasAsync(solicitud.Id))
+            mensaje += "\n\nTambién se quitará de sus jornadas. Si era la última solicitud de una jornada activa, esa jornada se cancelará.";
+
         bool confirmar = await Shell.Current.DisplayAlertAsync(
             "Eliminar solicitud",
             mensaje,

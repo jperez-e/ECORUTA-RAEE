@@ -5,7 +5,7 @@ namespace ECORUTA_RAEE.Services;
 
 internal sealed class EcoRutaDatabase
 {
-    private const int SchemaVersion = 1;
+    private const int SchemaVersion = 2;
     private const string FileName = "ecoruta-raee.db3";
     private static readonly Lazy<EcoRutaDatabase> DefaultInstance =
         new(() => new EcoRutaDatabase(Path.Combine(FileSystem.AppDataDirectory, FileName)));
@@ -62,6 +62,8 @@ internal sealed class EcoRutaDatabase
 
         if (version == 0)
             CreateInitialSchema(connection);
+        if (version < 2)
+            CrearEsquemaJornadas(connection);
     }
 
     private static void CreateInitialSchema(SQLiteConnection connection)
@@ -105,5 +107,98 @@ internal sealed class EcoRutaDatabase
             """);
         connection.Execute("INSERT INTO SecuenciaCodigoSolicitud (Id, UltimoNumero) VALUES (1, 0)");
         connection.Execute("PRAGMA user_version = 1");
+    }
+
+    private static void CrearEsquemaJornadas(SQLiteConnection connection)
+    {
+        connection.Execute("""
+            CREATE TABLE Jornadas (
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                Zona TEXT NOT NULL COLLATE NOCASE
+                    CHECK (length(trim(Zona)) > 0 AND trim(Zona) <> 'Otra zona' COLLATE NOCASE),
+                FechaCreacion INTEGER NOT NULL,
+                FechaProgramada INTEGER NOT NULL,
+                Estado TEXT NOT NULL CHECK (Estado IN ('Programada', 'Cancelada'))
+            )
+            """);
+        connection.Execute("""
+            CREATE TABLE JornadaSolicitudes (
+                JornadaId INTEGER NOT NULL REFERENCES Jornadas(Id) ON DELETE CASCADE,
+                SolicitudId INTEGER NOT NULL REFERENCES Solicitudes(Id) ON DELETE CASCADE,
+                Activa INTEGER NOT NULL DEFAULT 1 CHECK (Activa IN (0, 1)),
+                PRIMARY KEY (JornadaId, SolicitudId)
+            )
+            """);
+        connection.Execute("""
+            CREATE UNIQUE INDEX UX_JornadaSolicitudes_Activa ON JornadaSolicitudes(SolicitudId)
+            WHERE Activa = 1
+            """);
+        connection.Execute("CREATE INDEX IX_JornadaSolicitudes_SolicitudId ON JornadaSolicitudes(SolicitudId)");
+        connection.Execute("""
+            CREATE TABLE ConfiguracionJornadas (
+                Id INTEGER PRIMARY KEY CHECK (Id = 1),
+                Cantidad INTEGER NOT NULL CHECK (Cantidad > 0),
+                Peso REAL NOT NULL CHECK (Peso > 0)
+            )
+            """);
+        connection.Execute("INSERT INTO ConfiguracionJornadas(Id, Cantidad, Peso) VALUES (1, 3, 50)");
+
+        connection.Execute("""
+            CREATE TRIGGER ValidarAsignacionJornada BEFORE INSERT ON JornadaSolicitudes
+            WHEN NEW.Activa <> 1 OR NOT EXISTS (
+                SELECT 1 FROM Jornadas j JOIN Solicitudes s ON s.Id = NEW.SolicitudId
+                WHERE j.Id = NEW.JornadaId AND j.Estado = 'Programada' AND s.Estado = 'Pendiente'
+                AND trim(s.Zona) = j.Zona COLLATE NOCASE
+            )
+            BEGIN
+                SELECT RAISE(ABORT, 'La solicitud ya no cumple los criterios de la jornada.');
+            END
+            """);
+        connection.Execute("""
+            CREATE TRIGGER ProtegerAsignacionJornada
+            BEFORE UPDATE OF JornadaId, SolicitudId, Activa ON JornadaSolicitudes
+            WHEN NEW.JornadaId <> OLD.JornadaId OR NEW.SolicitudId <> OLD.SolicitudId
+              OR (NEW.Activa <> OLD.Activa AND (
+                  NEW.Activa <> 0 OR NOT EXISTS (
+                      SELECT 1 FROM Jornadas WHERE Id = OLD.JornadaId AND Estado = 'Cancelada'
+                  )
+              ))
+            BEGIN
+                SELECT RAISE(ABORT, 'La asignación de la jornada no se puede modificar.');
+            END
+            """);
+        connection.Execute("""
+            CREATE TRIGGER ProtegerZonaSolicitudAsignada BEFORE UPDATE OF Zona ON Solicitudes
+            WHEN trim(NEW.Zona) <> trim(OLD.Zona) COLLATE NOCASE
+              AND EXISTS (SELECT 1 FROM JornadaSolicitudes WHERE SolicitudId = OLD.Id AND Activa = 1)
+            BEGIN
+                SELECT RAISE(ABORT, 'La solicitud está asignada a una jornada activa.');
+            END
+            """);
+        connection.Execute("""
+            CREATE TRIGGER ProtegerEstadoJornada BEFORE UPDATE OF Estado, Zona ON Jornadas
+            WHEN NEW.Zona <> OLD.Zona COLLATE NOCASE
+              OR (OLD.Estado = 'Cancelada' AND NEW.Estado <> OLD.Estado)
+            BEGIN
+                SELECT RAISE(ABORT, 'No se puede cambiar la zona ni reactivar una jornada cancelada.');
+            END
+            """);
+        connection.Execute("""
+            CREATE TRIGGER LiberarSolicitudesJornada AFTER UPDATE OF Estado ON Jornadas
+            WHEN OLD.Estado = 'Programada' AND NEW.Estado = 'Cancelada'
+            BEGIN
+                UPDATE JornadaSolicitudes SET Activa = 0 WHERE JornadaId = NEW.Id AND Activa = 1;
+            END
+            """);
+        connection.Execute("""
+            CREATE TRIGGER CancelarJornadaVacia AFTER DELETE ON JornadaSolicitudes
+            WHEN OLD.Activa = 1 AND NOT EXISTS (
+                SELECT 1 FROM JornadaSolicitudes WHERE JornadaId = OLD.JornadaId AND Activa = 1
+            )
+            BEGIN
+                UPDATE Jornadas SET Estado = 'Cancelada' WHERE Id = OLD.JornadaId AND Estado = 'Programada';
+            END
+            """);
+        connection.Execute("PRAGMA user_version = 2");
     }
 }
