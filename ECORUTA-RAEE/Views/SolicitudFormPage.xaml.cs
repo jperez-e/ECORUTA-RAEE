@@ -18,6 +18,8 @@ public partial class SolicitudFormPage : ContentPage, IQueryAttributable
     {
         if (query.TryGetValue("SolicitudId", out var valor) && valor is int solicitudId)
             _solicitudId = solicitudId;
+        if (query.TryGetValue("VolverAJornada", out var volver) && volver is true)
+            _viewModel.VolverAJornada = true;
     }
 
     protected override async void OnAppearing()

@@ -71,13 +71,13 @@ public class SolicitudService
             int actualizadas = EjecutarEscrituraCodigo(connection, () => connection.Execute("""
                 UPDATE Solicitudes
                 SET CodigoSolicitud = COALESCE(?, CodigoSolicitud),
-                    Zona = ?, DireccionReferencia = ?,
+                    Zona = ?, DireccionReferencia = ?, Latitud = ?, Longitud = ?,
                     PesoTotalEstimado = CASE
                         WHEN ? AND NOT EXISTS (SELECT 1 FROM Residuos WHERE SolicitudId = Solicitudes.Id)
                         THEN ? ELSE PesoTotalEstimado END
                 WHERE Id = ?
-                """, codigo, solicitud.Zona, solicitud.DireccionReferencia, actualizarPesoManual,
-                solicitud.PesoTotalEstimado, solicitud.Id));
+                """, codigo, solicitud.Zona, solicitud.DireccionReferencia, solicitud.Latitud,
+                solicitud.Longitud, actualizarPesoManual, solicitud.PesoTotalEstimado, solicitud.Id));
 
             actualizado = actualizadas == 1;
             if (actualizado && numeroPersonalizado is int numeroManual)

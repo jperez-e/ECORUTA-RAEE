@@ -38,8 +38,21 @@
                 </VerticalStackLayout>
             </Border>
 
+            <Border IsVisible="{Binding PuedePlanificar}" Style="{StaticResource CardBorder}" Padding="14">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Orden sugerido de recogida" FontAttributes="Bold"
+                           TextColor="{StaticResource ForestGreen}" />
+                    <Label IsVisible="{Binding HayCoordenadasIncompletas}"
+                           Text="{Binding CoordenadasIncompletas, StringFormat='Solicitudes sin coordenadas válidas: {0}. Puedes completarlas o generar un orden por antigüedad.'}"
+                           Style="{StaticResource Subtitle}" />
+                    <Label Text="{Binding EstadoRuta}" TextColor="{StaticResource TextSecondary}" />
+                    <Button Text="{Binding AccionRuta}" Command="{Binding PlanificarRutaCommand}"
+                            Style="{StaticResource PrimaryButton}" />
+                </VerticalStackLayout>
+            </Border>
+
             <Label Text="Solicitudes" FontSize="19" FontAttributes="Bold" TextColor="{StaticResource ForestGreen}" />
-            <VerticalStackLayout Spacing="8" BindableLayout.ItemsSource="{Binding Solicitudes}">
+            <VerticalStackLayout Spacing="8" BindableLayout.ItemsSource="{Binding Paradas}">
                 <BindableLayout.EmptyView>
                     <Label Text="No hay solicitudes para mostrar." Style="{StaticResource Subtitle}" />
                 </BindableLayout.EmptyView>
@@ -47,13 +60,20 @@
                     <DataTemplate>
                         <Border Style="{StaticResource CardBorder}" Padding="12">
                             <VerticalStackLayout Spacing="4">
-                                <Label Text="{Binding CodigoSolicitud}" FontAttributes="Bold" TextColor="{StaticResource ForestGreen}" />
-                                <Label Text="{Binding DireccionReferencia}" Style="{StaticResource Subtitle}" />
+                                <Label Text="{Binding Titulo}" FontAttributes="Bold" TextColor="{StaticResource ForestGreen}" />
+                                <Label Text="{Binding Solicitud.DireccionReferencia}" Style="{StaticResource Subtitle}" />
                                 <HorizontalStackLayout Spacing="12">
-                                    <Label Text="{Binding Zona}" Style="{StaticResource Subtitle}" />
-                                    <Label Text="{Binding PesoTotalEstimado, StringFormat='{0:0.##} kg'}"
+                                    <Label Text="{Binding Solicitud.Zona}" Style="{StaticResource Subtitle}" />
+                                    <Label Text="{Binding Solicitud.PesoTotalEstimado, StringFormat='{0:0.##} kg'}"
                                            Style="{StaticResource Subtitle}" />
                                 </HorizontalStackLayout>
+                                <Label IsVisible="{Binding TieneDistancia}"
+                                       Text="{Binding DistanciaKm, StringFormat='{0:0.###} km geográficos desde la parada anterior'}"
+                                       Style="{StaticResource Subtitle}" />
+                                <Button Text="Editar solicitud"
+                                        IsVisible="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.PuedePlanificar}"
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.EditarSolicitudCommand}"
+                                        CommandParameter="{Binding Solicitud}" Style="{StaticResource SecondaryButton}" />
                             </VerticalStackLayout>
                         </Border>
                     </DataTemplate>

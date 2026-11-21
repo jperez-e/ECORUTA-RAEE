@@ -5,7 +5,7 @@ namespace ECORUTA_RAEE.Services;
 
 internal sealed class EcoRutaDatabase
 {
-    private const int SchemaVersion = 2;
+    private const int SchemaVersion = 3;
     private const string FileName = "ecoruta-raee.db3";
     private static readonly Lazy<EcoRutaDatabase> DefaultInstance =
         new(() => new EcoRutaDatabase(Path.Combine(FileSystem.AppDataDirectory, FileName)));
@@ -64,6 +64,8 @@ internal sealed class EcoRutaDatabase
             CreateInitialSchema(connection);
         if (version < 2)
             CrearEsquemaJornadas(connection);
+        if (version < 3)
+            CrearEsquemaRutas(connection);
     }
 
     private static void CreateInitialSchema(SQLiteConnection connection)
@@ -200,5 +202,18 @@ internal sealed class EcoRutaDatabase
             END
             """);
         connection.Execute("PRAGMA user_version = 2");
+    }
+
+    private static void CrearEsquemaRutas(SQLiteConnection connection)
+    {
+        connection.Execute("ALTER TABLE Jornadas ADD COLUMN MetodoRuta INTEGER CHECK (MetodoRuta IN (1, 2))");
+        connection.Execute("ALTER TABLE Jornadas ADD COLUMN HuellaRuta TEXT");
+        connection.Execute("ALTER TABLE JornadaSolicitudes ADD COLUMN OrdenRuta INTEGER CHECK (OrdenRuta > 0)");
+        connection.Execute("ALTER TABLE JornadaSolicitudes ADD COLUMN DistanciaRutaKm REAL CHECK (DistanciaRutaKm >= 0)");
+        connection.Execute("""
+            CREATE UNIQUE INDEX UX_JornadaSolicitudes_OrdenRuta
+            ON JornadaSolicitudes(JornadaId, OrdenRuta) WHERE OrdenRuta IS NOT NULL
+            """);
+        connection.Execute("PRAGMA user_version = 3");
     }
 }

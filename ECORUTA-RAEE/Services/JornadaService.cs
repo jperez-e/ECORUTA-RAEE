@@ -100,14 +100,89 @@ internal sealed class JornadaService
         JornadaRecoleccion? jornada = null;
         await db.RunInTransactionAsync(connection =>
         {
-            jornada = connection.Find<JornadaRecoleccion>(id);
-            if (jornada is not null)
-                jornada.Solicitudes = connection.Query<SolicitudRecoleccion>("""
-                    SELECT s.* FROM Solicitudes s JOIN JornadaSolicitudes js ON js.SolicitudId = s.Id
-                    WHERE js.JornadaId = ? ORDER BY s.FechaRegistro, s.Id
-                    """, id);
+            jornada = LeerDetalle(connection, id);
+            if (jornada is { Estado: JornadaRecoleccion.Programada })
+                LeerRuta(connection, jornada);
         });
         return jornada;
+    }
+
+    public async Task<JornadaRecoleccion?> GenerarRutaAsync(int id)
+    {
+        var db = await EcoRutaDatabase.Instance.GetConnectionAsync();
+        JornadaRecoleccion? actualizada = null;
+        await db.RunInTransactionAsync(connection =>
+        {
+            var jornada = LeerDetalle(connection, id);
+            if (jornada is not { Estado: JornadaRecoleccion.Programada } || jornada.Solicitudes.Count == 0)
+                return;
+
+            var ruta = PlanificadorRutas.Calcular(jornada.Solicitudes);
+            connection.Execute("""
+                UPDATE JornadaSolicitudes SET OrdenRuta = NULL, DistanciaRutaKm = NULL WHERE JornadaId = ?
+                """, id);
+            foreach (var parada in ruta.Paradas)
+                connection.Execute("""
+                    UPDATE JornadaSolicitudes SET OrdenRuta = ?, DistanciaRutaKm = ?
+                    WHERE JornadaId = ? AND SolicitudId = ?
+                    """, parada.Orden, parada.DistanciaKm, id, parada.Solicitud.Id);
+
+            connection.Execute("UPDATE Jornadas SET MetodoRuta = ?, HuellaRuta = ? WHERE Id = ?",
+                (int)ruta.Metodo, PlanificadorRutas.CalcularHuella(jornada.Solicitudes), id);
+            jornada.Ruta = ruta;
+            actualizada = jornada;
+        });
+        return actualizada;
+    }
+
+    private static JornadaRecoleccion? LeerDetalle(SQLiteConnection connection, int id)
+    {
+        var jornada = connection.Find<JornadaRecoleccion>(id);
+        if (jornada is not null)
+            jornada.Solicitudes = connection.Query<SolicitudRecoleccion>("""
+                SELECT s.* FROM Solicitudes s JOIN JornadaSolicitudes js ON js.SolicitudId = s.Id
+                WHERE js.JornadaId = ? ORDER BY s.FechaRegistro, s.Id
+                """, id);
+        return jornada;
+    }
+
+    private static void LeerRuta(SQLiteConnection connection, JornadaRecoleccion jornada)
+    {
+        string? huella = connection.ExecuteScalar<string>("SELECT HuellaRuta FROM Jornadas WHERE Id = ?", jornada.Id);
+        if (huella is null)
+            return;
+
+        if (huella != PlanificadorRutas.CalcularHuella(jornada.Solicitudes))
+        {
+            jornada.RutaDesactualizada = true;
+            return;
+        }
+
+        var metodo = (MetodoRuta)connection.ExecuteScalar<int>("SELECT MetodoRuta FROM Jornadas WHERE Id = ?", jornada.Id);
+        var guardadas = connection.Query<OrdenRutaGuardado>("""
+            SELECT SolicitudId, OrdenRuta AS Orden, DistanciaRutaKm AS DistanciaKm
+            FROM JornadaSolicitudes WHERE JornadaId = ? AND OrdenRuta IS NOT NULL ORDER BY OrdenRuta
+            """, jornada.Id);
+
+        if (guardadas.Count != jornada.Solicitudes.Count ||
+            !guardadas.Select(p => p.Orden).SequenceEqual(Enumerable.Range(1, guardadas.Count)) ||
+            metodo is not (MetodoRuta.VecinoMasCercano or MetodoRuta.Antiguedad))
+        {
+            jornada.RutaDesactualizada = true;
+            return;
+        }
+
+        var solicitudes = jornada.Solicitudes.ToDictionary(s => s.Id);
+        jornada.Ruta = new PlanificacionRuta(metodo, guardadas
+            .Select(p => new ParadaRuta(solicitudes[p.SolicitudId], p.Orden, p.DistanciaKm))
+            .ToList());
+    }
+
+    private sealed class OrdenRutaGuardado
+    {
+        public int SolicitudId { get; set; }
+        public int Orden { get; set; }
+        public double? DistanciaKm { get; set; }
     }
 
     public async Task<bool> CancelarAsync(int id)

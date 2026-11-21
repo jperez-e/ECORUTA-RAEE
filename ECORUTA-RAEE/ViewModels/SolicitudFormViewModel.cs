@@ -15,6 +15,7 @@ public partial class SolicitudFormViewModel : ObservableObject
 {
     private int solicitudId;
     private string codigoSolicitud = string.Empty;
+    internal bool VolverAJornada { get; set; }
 
     public ObservableCollection<string> Zonas { get; } = new()
     {
@@ -34,6 +35,20 @@ public partial class SolicitudFormViewModel : ObservableObject
 
     [ObservableProperty]
     private string pesoTexto = string.Empty;
+
+    [ObservableProperty]
+    private string latitudTexto = string.Empty;
+
+    [ObservableProperty]
+    private string longitudTexto = string.Empty;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TieneErrorLatitud))]
+    private string errorLatitud = string.Empty;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TieneErrorLongitud))]
+    private string errorLongitud = string.Empty;
 
     [ObservableProperty]
     private bool personalizarCodigo;
@@ -81,6 +96,11 @@ public partial class SolicitudFormViewModel : ObservableObject
     public bool TieneErrorDireccion => !string.IsNullOrEmpty(ErrorDireccion);
     public bool TieneErrorPeso => !string.IsNullOrEmpty(ErrorPeso);
     public bool TieneErrorCodigo => !string.IsNullOrEmpty(ErrorCodigo);
+    public bool TieneErrorLatitud => ErrorLatitud.Length > 0;
+    public bool TieneErrorLongitud => ErrorLongitud.Length > 0;
+
+    partial void OnLatitudTextoChanged(string value) => LimpiarErroresCoordenadas();
+    partial void OnLongitudTextoChanged(string value) => LimpiarErroresCoordenadas();
 
     partial void OnEsEdicionChanged(bool value)
     {
@@ -143,6 +163,8 @@ public partial class SolicitudFormViewModel : ObservableObject
         ZonaSeleccionada = null;
         DireccionReferencia = string.Empty;
         PesoTexto = string.Empty;
+        LatitudTexto = string.Empty;
+        LongitudTexto = string.Empty;
 
         LimpiarErrores();
     }
@@ -168,6 +190,8 @@ public partial class SolicitudFormViewModel : ObservableObject
         DireccionReferencia = solicitud.DireccionReferencia;
 
         PesoTexto = solicitud.PesoTotalEstimado.ToString(CultureInfo.InvariantCulture);
+        LatitudTexto = solicitud.Latitud?.ToString("R", CultureInfo.InvariantCulture) ?? string.Empty;
+        LongitudTexto = solicitud.Longitud?.ToString("R", CultureInfo.InvariantCulture) ?? string.Empty;
 
         LimpiarErrores();
         EsEdicion = true;
@@ -184,7 +208,7 @@ public partial class SolicitudFormViewModel : ObservableObject
     {
         LimpiarErrores();
 
-        bool valido = true;
+        bool valido = ValidarCoordenadas(out double? latitud, out double? longitud);
 
         int? numeroPersonalizado = null;
         bool conservaCodigo = EsEdicion && string.Equals(
@@ -317,6 +341,8 @@ public partial class SolicitudFormViewModel : ObservableObject
             CodigoSolicitud = solicitudActual?.CodigoSolicitud ?? string.Empty,
             Zona = ZonaSeleccionada!,
             DireccionReferencia = direccion,
+            Latitud = latitud,
+            Longitud = longitud,
             PesoTotalEstimado = peso
         };
 
@@ -369,7 +395,7 @@ public partial class SolicitudFormViewModel : ObservableObject
             MensajeExito,
             "Aceptar");
 
-        await Shell.Current.GoToAsync("//solicitudes");
+        await VolverDespuesDeGuardarAsync();
     });
 
     // Eliminar desde el formulario.
@@ -415,7 +441,7 @@ public partial class SolicitudFormViewModel : ObservableObject
             "La solicitud y sus residuos asociados se eliminaron correctamente.",
             "Aceptar");
 
-        await Shell.Current.GoToAsync("//solicitudes");
+        await VolverDespuesDeGuardarAsync();
     });
 
     [RelayCommand]
@@ -424,12 +450,50 @@ public partial class SolicitudFormViewModel : ObservableObject
         await Shell.Current.GoToAsync("..");
     }
 
+    private Task VolverDespuesDeGuardarAsync() =>
+        Shell.Current.GoToAsync(VolverAJornada ? ".." : "//solicitudes");
+
+    private bool ValidarCoordenadas(out double? latitud, out double? longitud)
+    {
+        latitud = null;
+        longitud = null;
+        if (string.IsNullOrWhiteSpace(LatitudTexto) && string.IsNullOrWhiteSpace(LongitudTexto))
+            return true;
+
+        if (TryLeerCoordenada(LatitudTexto, Coordenadas.LimiteLatitud, out double valorLatitud))
+            latitud = valorLatitud;
+        else
+            ErrorLatitud = string.IsNullOrWhiteSpace(LatitudTexto)
+                ? "Introduce la latitud para completar las coordenadas."
+                : "Introduce una latitud entre -90 y 90.";
+
+        if (TryLeerCoordenada(LongitudTexto, Coordenadas.LimiteLongitud, out double valorLongitud))
+            longitud = valorLongitud;
+        else
+            ErrorLongitud = string.IsNullOrWhiteSpace(LongitudTexto)
+                ? "Introduce la longitud para completar las coordenadas."
+                : "Introduce una longitud entre -180 y 180.";
+
+        return latitud.HasValue && longitud.HasValue;
+    }
+
+    private static bool TryLeerCoordenada(string? texto, double limite, out double valor) =>
+        double.TryParse(texto?.Trim().Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out valor)
+        && Coordenadas.EnRango(valor, limite);
+
+    private void LimpiarErroresCoordenadas()
+    {
+        ErrorLatitud = string.Empty;
+        ErrorLongitud = string.Empty;
+    }
+
     private void LimpiarErrores()
     {
         ErrorZona = string.Empty;
         ErrorDireccion = string.Empty;
         ErrorPeso = string.Empty;
         ErrorCodigo = string.Empty;
+        LimpiarErroresCoordenadas();
 
         GuardadoExitoso = false;
         MensajeExito = string.Empty;

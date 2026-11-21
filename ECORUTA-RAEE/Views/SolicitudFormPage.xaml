@@ -319,6 +319,37 @@
 
             <!-- Acciones -->
             <Border
+                Style="{StaticResource CardBorder}"
+                Padding="16,12">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Coordenadas (opcional)" FontAttributes="Bold"
+                           TextColor="{StaticResource ForestGreen}"/>
+                    <Label Text="Introduce ambos valores en grados decimales."
+                           Style="{StaticResource Subtitle}"/>
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="Latitud" Style="{StaticResource Subtitle}"/>
+                            <Entry Text="{Binding LatitudTexto, Mode=TwoWay}" Placeholder="-90 a 90"
+                                   IsTextPredictionEnabled="False" IsSpellCheckEnabled="False"
+                                   Style="{StaticResource ModernEntry}"
+                                   SemanticProperties.Description="Latitud en grados decimales"/>
+                            <Label Text="{Binding ErrorLatitud}" IsVisible="{Binding TieneErrorLatitud}"
+                                   TextColor="{StaticResource ErrorColor}" FontSize="12"/>
+                        </VerticalStackLayout>
+                        <VerticalStackLayout Grid.Column="1" Spacing="4">
+                            <Label Text="Longitud" Style="{StaticResource Subtitle}"/>
+                            <Entry Text="{Binding LongitudTexto, Mode=TwoWay}" Placeholder="-180 a 180"
+                                   IsTextPredictionEnabled="False" IsSpellCheckEnabled="False"
+                                   Style="{StaticResource ModernEntry}"
+                                   SemanticProperties.Description="Longitud en grados decimales"/>
+                            <Label Text="{Binding ErrorLongitud}" IsVisible="{Binding TieneErrorLongitud}"
+                                   TextColor="{StaticResource ErrorColor}" FontSize="12"/>
+                        </VerticalStackLayout>
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+
+            <Border
                 Padding="16,10"
                 BackgroundColor="White"
                 Stroke="#E3ECE5"

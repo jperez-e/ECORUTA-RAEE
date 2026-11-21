@@ -27,4 +27,10 @@ public class JornadaRecoleccion
 
     [Ignore]
     public double PesoTotal => Solicitudes.Sum(solicitud => solicitud.PesoTotalEstimado);
+
+    [Ignore]
+    internal PlanificacionRuta? Ruta { get; set; }
+
+    [Ignore]
+    internal bool RutaDesactualizada { get; set; }
 }
