@@ -6,13 +6,13 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:views="clr-namespace:ECORUTA_RAEE.Views"
     FlyoutBehavior="Flyout"
-    FlyoutBackgroundColor="#FFFFFF"
+    FlyoutBackgroundColor="{StaticResource CardBackground}"
     FlyoutWidth="300"
-    Shell.BackgroundColor="#FFFFFF"
-    Shell.ForegroundColor="#218653"
-    Shell.TitleColor="#183D2B"
-    Shell.DisabledColor="#AAB5AD"
-    Shell.UnselectedColor="#718078"
+    Shell.BackgroundColor="{StaticResource CardBackground}"
+    Shell.ForegroundColor="{StaticResource PrimaryGreen}"
+    Shell.TitleColor="{StaticResource ForestGreen}"
+    Shell.DisabledColor="{StaticResource DisabledText}"
+    Shell.UnselectedColor="{StaticResource TextSecondary}"
     Shell.NavBarHasShadow="False">
 
     <!-- ENCABEZADO DEL MENÚ LATERAL -->
@@ -20,7 +20,7 @@
 
         <Grid
             Padding="20,35,20,25"
-            BackgroundColor="#123D2B"
+            BackgroundColor="{StaticResource ForestGreen}"
             RowDefinitions="Auto,Auto,Auto"
             RowSpacing="8">
 
@@ -28,17 +28,12 @@
                 Grid.Row="0"
                 WidthRequest="64"
                 HeightRequest="64"
-                BackgroundColor="#218653"
+                BackgroundColor="{StaticResource PrimaryGreen}"
                 StrokeThickness="0"
                 StrokeShape="RoundRectangle 20"
                 HorizontalOptions="Start">
 
-                <Label
-                    Text="♻"
-                    FontSize="38"
-                    TextColor="#FFFFFF"
-                    HorizontalTextAlignment="Center"
-                    VerticalTextAlignment="Center"/>
+                <Image Source="appiconfg.png" Aspect="AspectFit"/>
 
             </Border>
 
@@ -53,7 +48,7 @@
                 Grid.Row="2"
                 Text="Gestión inteligente de residuos electrónicos"
                 FontSize="12"
-                TextColor="#D5E8DB"
+                TextColor="{StaticResource FlyoutSubtitle}"
                 LineBreakMode="WordWrap"/>
 
         </Grid>

@@ -5,12 +5,28 @@
 
     <!-- Note: For Android please see also Platforms\Android\Resources\values\colors.xml -->
 
-    <Color x:Key="Primary">#512BD4</Color>
-    <Color x:Key="PrimaryDark">#ac99ea</Color>
+    <Color x:Key="ForestGreen">#123D2B</Color>
+    <Color x:Key="PrimaryGreen">#176B3A</Color>
+    <Color x:Key="LimeGreen">#B7F36B</Color>
+    <Color x:Key="PageBackground">#F4F7F4</Color>
+    <Color x:Key="CardBackground">#FFFFFF</Color>
+    <Color x:Key="SecondaryBackground">#E7F0E9</Color>
+    <Color x:Key="EntryBackground">#F7F9F7</Color>
+    <Color x:Key="TextPrimary">#1D2B22</Color>
+    <Color x:Key="TextSecondary">#53675B</Color>
+    <Color x:Key="TextMuted">#687B6F</Color>
+    <Color x:Key="BorderColor">#E1E9E2</Color>
+    <Color x:Key="DisabledBackground">#E3E9E4</Color>
+    <Color x:Key="DisabledText">#65766B</Color>
+    <Color x:Key="ErrorColor">#C62828</Color>
+    <Color x:Key="FlyoutSubtitle">#D5E8DB</Color>
+
+    <Color x:Key="Primary">#176B3A</Color>
+    <Color x:Key="PrimaryDark">#A5D8B3</Color>
     <Color x:Key="PrimaryDarkText">#242424</Color>
-    <Color x:Key="Secondary">#DFD8F7</Color>
-    <Color x:Key="SecondaryDarkText">#9880e5</Color>
-    <Color x:Key="Tertiary">#2B0B98</Color>
+    <Color x:Key="Secondary">#E7F0E9</Color>
+    <Color x:Key="SecondaryDarkText">#A5D8B3</Color>
+    <Color x:Key="Tertiary">#123D2B</Color>
 
     <Color x:Key="White">White</Color>
     <Color x:Key="Black">Black</Color>
