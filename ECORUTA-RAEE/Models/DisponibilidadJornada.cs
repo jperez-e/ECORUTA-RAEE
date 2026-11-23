@@ -2,6 +2,14 @@ namespace ECORUTA_RAEE.Models;
 
 internal sealed record UmbralesJornada(int Cantidad, double Peso);
 
+internal sealed class TotalesSolicitudesZona
+{
+    public string Zona { get; set; } = string.Empty;
+    public int Cantidad { get; set; }
+    public int Pendientes { get; set; }
+    public double Peso { get; set; }
+}
+
 internal sealed record ZonaDisponible(
     string Zona, int Cantidad, double Peso, UmbralesJornada Umbrales)
 {

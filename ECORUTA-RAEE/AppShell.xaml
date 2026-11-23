@@ -104,6 +104,11 @@
                       ContentTemplate="{DataTemplate views:JornadasPage}"/>
     </FlyoutItem>
 
+    <FlyoutItem Title="Estadísticas" Route="estadisticas" FlyoutDisplayOptions="AsSingleItem">
+        <ShellContent Title="Estadísticas" Route="EstadisticasPage"
+                      ContentTemplate="{DataTemplate views:EstadisticasPage}"/>
+    </FlyoutItem>
+
     <!-- PLANTILLA DE ELEMENTOS DEL MENÚ -->
     <Shell.MenuItemTemplate>
 

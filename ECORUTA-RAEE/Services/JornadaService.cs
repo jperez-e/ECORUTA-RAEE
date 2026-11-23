@@ -8,27 +8,24 @@ internal sealed class JornadaService
     public static JornadaService Instancia { get; } = new();
     private JornadaService() { }
 
+    private const string FiltroDisponible = """
+        s.Estado = 'Pendiente'
+        AND NOT EXISTS (SELECT 1 FROM JornadaSolicitudes js WHERE js.SolicitudId = s.Id AND js.Activa = 1)
+        """;
+    private const string OrdenDisponibilidad = " ORDER BY s.FechaRegistro, s.Id";
+
     public async Task<PanelJornadas> ObtenerPanelAsync()
     {
         var db = await EcoRutaDatabase.Instance.GetConnectionAsync();
         PanelJornadas panel = null!;
         await db.RunInTransactionAsync(connection =>
         {
-            var umbrales = LeerUmbrales(connection);
-            var disponibles = LeerDisponibles(connection);
-            var zonas = disponibles
-                .Where(s => EsZonaEspecifica(s.Zona))
-                .GroupBy(s => s.Zona.Trim(), StringComparer.OrdinalIgnoreCase)
-                .Select(grupo => ResumirZona(grupo.Key, grupo, umbrales))
-                .OrderByDescending(zona => zona.AlcanzaUmbral)
-                .ThenBy(zona => zona.Zona)
-                .ToList();
+            var (umbrales, zonas, sinZona) = LeerDisponibilidad(connection);
             var jornadas = connection.Table<JornadaRecoleccion>()
                 .OrderByDescending(j => j.FechaCreacion)
                 .ThenByDescending(j => j.Id)
                 .ToList();
-            panel = new PanelJornadas(umbrales, zonas, jornadas,
-                disponibles.Count(s => !EsZonaEspecifica(s.Zona)));
+            panel = new PanelJornadas(umbrales, zonas, jornadas, sinZona);
         });
         return panel;
     }
@@ -203,15 +200,39 @@ internal sealed class JornadaService
     {
         const string consulta = """
             SELECT s.* FROM Solicitudes s
-            WHERE s.Estado = 'Pendiente'
-              AND NOT EXISTS (SELECT 1 FROM JornadaSolicitudes js WHERE js.SolicitudId = s.Id AND js.Activa = 1)
-            """;
-        const string orden = " ORDER BY s.FechaRegistro, s.Id";
+            WHERE
+            """ + " " + FiltroDisponible;
         return zona is null
-            ? connection.Query<SolicitudRecoleccion>(consulta + orden)
+            ? connection.Query<SolicitudRecoleccion>(consulta + OrdenDisponibilidad)
             : connection.Query<SolicitudRecoleccion>(
-                consulta + " AND trim(s.Zona) = ? COLLATE NOCASE" + orden, zona.Trim());
+                consulta + " AND trim(s.Zona) = ? COLLATE NOCASE" + OrdenDisponibilidad, zona.Trim());
     }
+
+    internal static (UmbralesJornada Umbrales, IReadOnlyList<ZonaDisponible> Zonas, int SinZona)
+        LeerDisponibilidad(SQLiteConnection connection)
+    {
+        var umbrales = LeerUmbrales(connection);
+        var disponibles = connection.Query<TotalesSolicitudesZona>($"""
+            SELECT s.Zona, 1 AS Cantidad, s.PesoTotalEstimado AS Peso
+            FROM Solicitudes s WHERE {FiltroDisponible}{OrdenDisponibilidad}
+            """);
+        var zonas = AgruparZonas(disponibles.Where(z => EsZonaEspecifica(z.Zona)))
+            .Select(z => new ZonaDisponible(z.Zona, z.Cantidad, z.Peso, umbrales))
+            .OrderByDescending(z => z.AlcanzaUmbral)
+            .ThenBy(z => z.Zona)
+            .ToList();
+        return (umbrales, zonas, disponibles.Where(z => !EsZonaEspecifica(z.Zona)).Sum(z => z.Cantidad));
+    }
+
+    internal static IEnumerable<TotalesSolicitudesZona> AgruparZonas(IEnumerable<TotalesSolicitudesZona> zonas) =>
+        zonas.GroupBy(z => z.Zona.Trim(), StringComparer.OrdinalIgnoreCase)
+            .Select(grupo => new TotalesSolicitudesZona
+            {
+                Zona = grupo.Key,
+                Cantidad = grupo.Sum(z => z.Cantidad),
+                Pendientes = grupo.Sum(z => z.Pendientes),
+                Peso = grupo.Sum(z => z.Peso)
+            });
 
     private static UmbralesJornada LeerUmbrales(SQLiteConnection connection) => new(
         connection.ExecuteScalar<int>("SELECT Cantidad FROM ConfiguracionJornadas WHERE Id = 1"),
@@ -221,6 +242,6 @@ internal sealed class JornadaService
         string zona, IEnumerable<SolicitudRecoleccion> solicitudes, UmbralesJornada umbrales) =>
         new(zona, solicitudes.Count(), solicitudes.Sum(s => s.PesoTotalEstimado), umbrales);
 
-    private static bool EsZonaEspecifica(string zona) => !string.IsNullOrWhiteSpace(zona)
+    internal static bool EsZonaEspecifica(string zona) => !string.IsNullOrWhiteSpace(zona)
         && !zona.Trim().Equals("Otra zona", StringComparison.OrdinalIgnoreCase);
 }
