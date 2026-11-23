@@ -24,6 +24,7 @@ internal partial class JornadaRecoleccionViewModel : ObservableObject
     private IReadOnlyList<SolicitudRecoleccion> _solicitudes = Array.Empty<SolicitudRecoleccion>();
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ListaParadasTitulo))]
     private IReadOnlyList<ParadaRuta> paradas = Array.Empty<ParadaRuta>();
 
     [ObservableProperty]
@@ -40,12 +41,28 @@ internal partial class JornadaRecoleccionViewModel : ObservableObject
     private DateTime fechaProgramada = DateTime.Today;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HayMensaje))]
     private string mensaje = string.Empty;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PuedeInteractuar))]
+    private bool ocupado;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HayConfirmacion))]
+    private string confirmacion = string.Empty;
 
     public bool PuedeCancelar => Jornada?.Estado == JornadaRecoleccion.Programada;
     public bool TieneDetalle => Jornada is not null;
     public bool PuedePlanificar => PuedeCancelar && Jornada!.CantidadSolicitudes > 0;
     public bool HayCoordenadasIncompletas => CoordenadasIncompletas > 0;
+    public bool HayConfirmacion => Confirmacion.Length > 0;
+    public bool HayMensaje => Mensaje.Length > 0;
+    public bool PuedeInteractuar => !Ocupado;
+    public string ListaParadasTitulo => Paradas.Count > 0 && Paradas[0].Orden > 0
+        ? "Paradas en orden sugerido" : "Solicitudes de la jornada";
+
+    partial void OnFechaProgramadaChanged(DateTime value) => Mensaje = string.Empty;
 
     public void Preparar(string? zona, int? id)
     {
@@ -53,9 +70,12 @@ internal partial class JornadaRecoleccionViewModel : ObservableObject
         _jornadaId = id;
     }
 
-    public async Task CargarAsync()
+    public Task CargarPantallaAsync() => EjecutarAsync(CargarAsync);
+
+    private async Task CargarAsync()
     {
         Mensaje = string.Empty;
+        Confirmacion = string.Empty;
         if (_jornadaId is int id)
         {
             MostrarDetalle(await JornadaService.Instancia.ObtenerDetalleAsync(id));
@@ -73,7 +93,7 @@ internal partial class JornadaRecoleccionViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private Task CrearJornada() => OperacionBaseDatos.EjecutarAsync(async () =>
+    private Task CrearJornada() => EjecutarAsync(async () =>
     {
         if (_zona is null || Disponibilidad?.AlcanzaUmbral != true || !EsVistaPrevia)
             return;
@@ -85,7 +105,15 @@ internal partial class JornadaRecoleccionViewModel : ObservableObject
         }
 
         var ids = _solicitudes.Select(s => s.Id).ToArray();
-        var creada = await JornadaService.Instancia.CrearAsync(_zona, FechaProgramada, ids);
+        var fecha = FechaProgramada;
+        bool confirmada = await Shell.Current.DisplayAlertAsync(
+            "Confirmar jornada",
+            $"Se asignarán {ids.Length} solicitudes de {_zona} para el {fecha:dd/MM/yyyy}.",
+            "Programar jornada", "Revisar");
+        if (!confirmada)
+            return;
+
+        var creada = await JornadaService.Instancia.CrearAsync(_zona, fecha, ids);
         if (creada is null)
         {
             await CargarAsync();
@@ -95,10 +123,11 @@ internal partial class JornadaRecoleccionViewModel : ObservableObject
 
         _jornadaId = creada.Id;
         MostrarDetalle(creada);
+        Confirmacion = "Jornada programada.";
     });
 
     [RelayCommand]
-    private Task PlanificarRuta() => OperacionBaseDatos.EjecutarAsync(async () =>
+    private Task PlanificarRuta() => EjecutarAsync(async () =>
     {
         if (Jornada is not { Estado: JornadaRecoleccion.Programada } jornada)
             return;
@@ -113,12 +142,13 @@ internal partial class JornadaRecoleccionViewModel : ObservableObject
 
         Mensaje = string.Empty;
         MostrarDetalle(actualizada);
+        Confirmacion = "Orden sugerido guardado.";
     });
 
     [RelayCommand]
     private async Task EditarSolicitud(SolicitudRecoleccion? solicitud)
     {
-        if (solicitud is null || !PuedePlanificar)
+        if (solicitud is null || !PuedePlanificar || Ocupado)
             return;
 
         await Shell.Current.GoToAsync(nameof(SolicitudFormPage), new ShellNavigationQueryParameters
@@ -129,7 +159,7 @@ internal partial class JornadaRecoleccionViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private Task CancelarJornada() => OperacionBaseDatos.EjecutarAsync(async () =>
+    private Task CancelarJornada() => EjecutarAsync(async () =>
     {
         if (Jornada is not { Estado: JornadaRecoleccion.Programada } jornada)
             return;
@@ -144,7 +174,20 @@ internal partial class JornadaRecoleccionViewModel : ObservableObject
         await CargarAsync();
         if (!cancelada)
             Mensaje = "La jornada ya no está activa.";
+        else
+            Confirmacion = "Jornada cancelada. Sus solicitudes pendientes vuelven a estar disponibles.";
     });
+
+    private async Task EjecutarAsync(Func<Task> operacion)
+    {
+        if (Ocupado)
+            return;
+
+        Ocupado = true;
+        Confirmacion = string.Empty;
+        try { await OperacionBaseDatos.EjecutarAsync(operacion); }
+        finally { Ocupado = false; }
+    }
 
     private void MostrarDetalle(JornadaRecoleccion? detalle)
     {
@@ -155,8 +198,8 @@ internal partial class JornadaRecoleccionViewModel : ObservableObject
         CoordenadasIncompletas = _solicitudes.Count(s => !Coordenadas.SonValidas(s));
         EstadoRuta = ruta?.Metodo switch
         {
-            MetodoRuta.VecinoMasCercano => "Vecino más cercano · distancias geográficas en línea recta.",
-            MetodoRuta.Antiguedad => "Orden alternativo · por fecha de registro y código.",
+            MetodoRuta.VecinoMasCercano => "Ruta sugerida por proximidad geográfica. Los tramos indican distancias en línea recta.",
+            MetodoRuta.Antiguedad => "Orden alternativo por antigüedad, según fecha de registro y código.",
             _ => detalle?.RutaDesactualizada == true
                 ? "Los datos de las paradas cambiaron. Regenera el orden sugerido."
                 : string.Empty

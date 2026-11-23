@@ -6,67 +6,95 @@
     Title="Jornada">
     <ScrollView>
         <VerticalStackLayout Padding="20" Spacing="16">
-            <Label Text="{Binding Mensaje}" TextColor="{StaticResource ErrorColor}" />
+            <ActivityIndicator IsVisible="{Binding Ocupado}" IsRunning="{Binding Ocupado}"
+                               Color="{StaticResource PrimaryGreen}" SemanticProperties.Description="Procesando jornada" />
+            <Border IsVisible="{Binding HayMensaje}" Style="{StaticResource SoftPanel}" BackgroundColor="{StaticResource ErrorBackground}">
+                <Label Text="{Binding Mensaje}" TextColor="{StaticResource ErrorColor}" />
+            </Border>
+            <Border IsVisible="{Binding HayConfirmacion}" Style="{StaticResource SoftPanel}" BackgroundColor="{StaticResource SuccessBackground}">
+                <Label Text="{Binding Confirmacion}" TextColor="{StaticResource PrimaryGreen}" />
+            </Border>
 
             <Border IsVisible="{Binding EsVistaPrevia}" Style="{StaticResource CardBorder}" Padding="14">
                 <VerticalStackLayout Spacing="8">
+                    <Label Text="Vista previa" Style="{StaticResource Subtitle}" />
                     <Label Text="{Binding Disponibilidad.Zona}" Style="{StaticResource PageTitle}" />
-                    <HorizontalStackLayout Spacing="12">
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
                         <Label Text="{Binding Disponibilidad.Cantidad, StringFormat='{0} solicitudes disponibles'}"
                                Style="{StaticResource Subtitle}" />
-                        <Label Text="{Binding Disponibilidad.Peso, StringFormat='{0:0.##} kg'}"
+                        <Label Grid.Column="1" Text="{Binding Disponibilidad.Peso, StringFormat='{0:0.##} kg disponibles'}"
                                Style="{StaticResource Subtitle}" />
-                    </HorizontalStackLayout>
+                    </Grid>
                     <Label Text="{Binding Disponibilidad.EstadoUmbral}" TextColor="{StaticResource PrimaryGreen}" />
                 </VerticalStackLayout>
             </Border>
 
-            <Border IsVisible="{Binding TieneDetalle}" Style="{StaticResource CardBorder}" Padding="14">
+            <Border IsVisible="{Binding TieneDetalle}" Style="{StaticResource GreenHero}">
+                <Border.Triggers>
+                    <DataTrigger TargetType="Border" Binding="{Binding Jornada.Estado}" Value="Cancelada">
+                        <Setter Property="BackgroundColor" Value="{StaticResource ForestGreen}" />
+                    </DataTrigger>
+                </Border.Triggers>
                 <VerticalStackLayout Spacing="8">
-                    <Label Text="{Binding Jornada.Nombre}" Style="{StaticResource PageTitle}" />
-                    <Label Text="{Binding Jornada.Estado}" TextColor="{StaticResource PrimaryGreen}" FontAttributes="Bold" />
+                    <Label Text="{Binding Jornada.Estado}" Style="{StaticResource OnGreen}" />
+                    <Label Text="{Binding Jornada.Nombre}" Style="{StaticResource OnGreen}" FontSize="25" />
                     <Label Text="{Binding Jornada.FechaCreacion, StringFormat='Creada el {0:dd/MM/yyyy}'}"
-                           Style="{StaticResource Subtitle}" />
+                           Style="{StaticResource OnGreen}" />
                     <Label Text="{Binding Jornada.FechaProgramada, StringFormat='Programada para el {0:dd/MM/yyyy}'}"
-                           Style="{StaticResource Subtitle}" />
-                    <HorizontalStackLayout Spacing="12">
+                           Style="{StaticResource OnGreen}" />
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
                         <Label Text="{Binding Jornada.CantidadSolicitudes, StringFormat='{0} solicitudes'}"
-                               Style="{StaticResource Subtitle}" />
-                        <Label Text="{Binding Jornada.PesoTotal, StringFormat='{0:0.##} kg'}"
-                               Style="{StaticResource Subtitle}" />
-                    </HorizontalStackLayout>
+                               Style="{StaticResource OnGreen}" />
+                        <Label Grid.Column="1" Text="{Binding Jornada.PesoTotal, StringFormat='{0:0.##} kg vigentes'}"
+                               Style="{StaticResource OnGreen}" />
+                    </Grid>
                 </VerticalStackLayout>
             </Border>
 
             <Border IsVisible="{Binding PuedePlanificar}" Style="{StaticResource CardBorder}" Padding="14">
                 <VerticalStackLayout Spacing="8">
-                    <Label Text="Orden sugerido de recogida" FontAttributes="Bold"
-                           TextColor="{StaticResource ForestGreen}" />
-                    <Label IsVisible="{Binding HayCoordenadasIncompletas}"
-                           Text="{Binding CoordenadasIncompletas, StringFormat='Solicitudes sin coordenadas válidas: {0}. Puedes completarlas o generar un orden por antigüedad.'}"
-                           Style="{StaticResource Subtitle}" />
-                    <Label Text="{Binding EstadoRuta}" TextColor="{StaticResource TextSecondary}" />
+                    <Label Text="Orden sugerido de recogida" Style="{StaticResource SectionHeading}" />
+                    <Border IsVisible="{Binding HayCoordenadasIncompletas}" Style="{StaticResource SoftPanel}"
+                            BackgroundColor="{StaticResource WarningBackground}">
+                        <Label TextColor="{StaticResource WarningText}"
+                               Text="{Binding CoordenadasIncompletas, StringFormat='{0} solicitudes sin coordenadas completas. Puedes completarlas o usar el orden por antigüedad.'}" />
+                    </Border>
+                    <Label Text="{Binding EstadoRuta}" Style="{StaticResource Subtitle}" />
                     <Button Text="{Binding AccionRuta}" Command="{Binding PlanificarRutaCommand}"
-                            Style="{StaticResource PrimaryButton}" />
+                            IsEnabled="{Binding PuedeInteractuar}" Style="{StaticResource PrimaryButton}" />
                 </VerticalStackLayout>
             </Border>
 
-            <Label Text="Solicitudes" FontSize="19" FontAttributes="Bold" TextColor="{StaticResource ForestGreen}" />
+            <Label Text="{Binding ListaParadasTitulo}" Style="{StaticResource SectionHeading}" />
             <VerticalStackLayout Spacing="8" BindableLayout.ItemsSource="{Binding Paradas}">
                 <BindableLayout.EmptyView>
-                    <Label Text="No hay solicitudes para mostrar." Style="{StaticResource Subtitle}" />
+                    <Border Style="{StaticResource SoftPanel}">
+                        <Label Text="Esta jornada no tiene solicitudes para mostrar." Style="{StaticResource Subtitle}" />
+                    </Border>
                 </BindableLayout.EmptyView>
                 <BindableLayout.ItemTemplate>
                     <DataTemplate>
                         <Border Style="{StaticResource CardBorder}" Padding="12">
-                            <VerticalStackLayout Spacing="4">
-                                <Label Text="{Binding Titulo}" FontAttributes="Bold" TextColor="{StaticResource ForestGreen}" />
-                                <Label Text="{Binding Solicitud.DireccionReferencia}" Style="{StaticResource Subtitle}" />
-                                <HorizontalStackLayout Spacing="12">
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                <Border Style="{StaticResource SoftPanel}" Padding="8" MinimumWidthRequest="38"
+                                        VerticalOptions="Start" BackgroundColor="{StaticResource PrimaryGreen}">
+                                    <Border.Triggers>
+                                        <DataTrigger TargetType="Border" Binding="{Binding Orden}" Value="0">
+                                            <Setter Property="IsVisible" Value="False" />
+                                        </DataTrigger>
+                                    </Border.Triggers>
+                                    <Label Text="{Binding Orden}" Style="{StaticResource OnGreen}" HorizontalOptions="Center"
+                                           SemanticProperties.Description="{Binding Orden, StringFormat='Parada {0}'}" />
+                                </Border>
+                            <VerticalStackLayout Grid.Column="1" Spacing="6">
+                                <Label Text="{Binding Solicitud.CodigoSolicitud}" Style="{StaticResource Subtitle}" />
+                                <Label Text="{Binding Solicitud.DireccionReferencia}" TextColor="{StaticResource TextPrimary}"
+                                       FontAttributes="Bold" FontSize="16" />
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
                                     <Label Text="{Binding Solicitud.Zona}" Style="{StaticResource Subtitle}" />
-                                    <Label Text="{Binding Solicitud.PesoTotalEstimado, StringFormat='{0:0.##} kg'}"
+                                    <Label Grid.Column="1" Text="{Binding Solicitud.PesoTotalEstimado, StringFormat='{0:0.##} kg vigentes'}"
                                            Style="{StaticResource Subtitle}" />
-                                </HorizontalStackLayout>
+                                </Grid>
                                 <Label IsVisible="{Binding TieneDistancia}"
                                        Text="{Binding DistanciaKm, StringFormat='{0:0.###} km geográficos desde la parada anterior'}"
                                        Style="{StaticResource Subtitle}" />
@@ -75,22 +103,31 @@
                                         Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.EditarSolicitudCommand}"
                                         CommandParameter="{Binding Solicitud}" Style="{StaticResource SecondaryButton}" />
                             </VerticalStackLayout>
+                            </Grid>
                         </Border>
                     </DataTemplate>
                 </BindableLayout.ItemTemplate>
             </VerticalStackLayout>
 
-            <VerticalStackLayout IsVisible="{Binding EsVistaPrevia}" Spacing="8">
-                <Grid IsVisible="{Binding Disponibilidad.AlcanzaUmbral}" ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                    <Label Text="Fecha de recogida" VerticalOptions="Center" Style="{StaticResource Subtitle}" />
-                    <DatePicker Grid.Column="1" Date="{Binding FechaProgramada, Mode=TwoWay}"
+            <Border IsVisible="{Binding EsVistaPrevia}" Style="{StaticResource CardBorder}" Padding="14">
+                <Border.Triggers>
+                    <DataTrigger TargetType="Border" Binding="{Binding Disponibilidad.AlcanzaUmbral}" Value="False">
+                        <Setter Property="IsVisible" Value="False" />
+                    </DataTrigger>
+                </Border.Triggers>
+                <VerticalStackLayout IsVisible="{Binding Disponibilidad.AlcanzaUmbral}" Spacing="8">
+                    <Label Text="Fecha de recogida" Style="{StaticResource SectionHeading}" />
+                    <Label Text="Elige hoy o una fecha posterior." Style="{StaticResource Subtitle}" />
+                    <DatePicker Date="{Binding FechaProgramada, Mode=TwoWay}" Format="dd/MM/yyyy"
+                                MinimumHeightRequest="48" BackgroundColor="{StaticResource EntryBackground}"
                                 SemanticProperties.Description="Fecha de recogida" TextColor="{StaticResource ForestGreen}" />
-                </Grid>
-                <Button IsVisible="{Binding Disponibilidad.AlcanzaUmbral}" Text="Generar jornada"
-                        Command="{Binding CrearJornadaCommand}" Style="{StaticResource PrimaryButton}" />
-            </VerticalStackLayout>
+                    <Button Text="Generar jornada" Command="{Binding CrearJornadaCommand}"
+                            IsEnabled="{Binding PuedeInteractuar}" Style="{StaticResource PrimaryButton}" />
+                </VerticalStackLayout>
+            </Border>
             <Button IsVisible="{Binding PuedeCancelar}" Text="Cancelar jornada"
-                    Command="{Binding CancelarJornadaCommand}" Style="{StaticResource SecondaryButton}" />
+                    Command="{Binding CancelarJornadaCommand}"
+                    IsEnabled="{Binding PuedeInteractuar}" Style="{StaticResource DangerButton}" />
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

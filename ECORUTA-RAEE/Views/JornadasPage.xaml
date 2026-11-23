@@ -6,7 +6,15 @@
     Title="Jornadas">
     <ScrollView>
         <VerticalStackLayout Padding="20" Spacing="16">
-            <Label Text="Jornadas de recolección" Style="{StaticResource PageTitle}" />
+            <Border Style="{StaticResource GreenHero}">
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Jornadas de recolección" Style="{StaticResource OnGreen}" FontSize="25" />
+                    <Label Text="Revisa qué zonas tienen solicitudes para programar una recogida."
+                           Style="{StaticResource OnGreen}" FontSize="14" />
+                </VerticalStackLayout>
+            </Border>
+            <ActivityIndicator IsVisible="{Binding Ocupado}" IsRunning="{Binding Ocupado}"
+                               Color="{StaticResource PrimaryGreen}" SemanticProperties.Description="Procesando jornadas" />
             <Border Style="{StaticResource CardBorder}" Padding="14">
                 <VerticalStackLayout Spacing="8">
                     <Label Text="Umbrales por zona" FontAttributes="Bold" TextColor="{StaticResource ForestGreen}" />
@@ -17,63 +25,82 @@
                             <Label Text="Solicitudes" Style="{StaticResource Subtitle}" />
                             <Entry Text="{Binding CantidadTexto, Mode=TwoWay}"
                                    SemanticProperties.Description="Mínimo de solicitudes"
-                                   Keyboard="Numeric" Style="{StaticResource ModernEntry}" />
+                                   Keyboard="Numeric" ReturnType="Done" Style="{StaticResource ModernEntry}" />
                         </VerticalStackLayout>
                         <VerticalStackLayout Grid.Column="1" Spacing="4">
                             <Label Text="Peso (kg)" Style="{StaticResource Subtitle}" />
                             <Entry Text="{Binding PesoTexto, Mode=TwoWay}"
                                    SemanticProperties.Description="Peso mínimo en kilogramos"
-                                   Keyboard="Numeric" Style="{StaticResource ModernEntry}" />
+                                   Keyboard="Numeric" ReturnType="Done" Style="{StaticResource ModernEntry}" />
                         </VerticalStackLayout>
                     </Grid>
-                    <Label Text="{Binding ErrorUmbrales}" FontSize="12" TextColor="{StaticResource ErrorColor}" />
+                    <Border IsVisible="{Binding HayErrorUmbrales}" Style="{StaticResource SoftPanel}" BackgroundColor="{StaticResource ErrorBackground}">
+                        <Label Text="{Binding ErrorUmbrales}" TextColor="{StaticResource ErrorColor}" />
+                    </Border>
+                    <Border IsVisible="{Binding HayAvisoUmbrales}" Style="{StaticResource SoftPanel}" BackgroundColor="{StaticResource SuccessBackground}">
+                        <Label Text="{Binding AvisoUmbrales}" TextColor="{StaticResource PrimaryGreen}" />
+                    </Border>
                     <Button Text="Guardar umbrales" Command="{Binding GuardarUmbralesCommand}"
-                            Style="{StaticResource SecondaryButton}" />
+                            IsEnabled="{Binding PuedeInteractuar}" Style="{StaticResource SecondaryButton}" />
                 </VerticalStackLayout>
             </Border>
 
-            <Label Text="Disponibilidad por zona" FontSize="19" FontAttributes="Bold"
-                   TextColor="{StaticResource ForestGreen}" />
+            <Label Text="Disponibilidad por zona" Style="{StaticResource SectionHeading}" />
             <Label IsVisible="{Binding HaySolicitudesSinZona}"
                    Text="{Binding SinZonaEspecifica, StringFormat='{0} solicitudes sin zona específica. Elige una zona en su formulario para incluirlas.'}"
                    Style="{StaticResource Subtitle}" />
             <VerticalStackLayout Spacing="8" BindableLayout.ItemsSource="{Binding Zonas}">
                 <BindableLayout.EmptyView>
-                    <Label Text="No hay solicitudes disponibles en zonas específicas." Style="{StaticResource Subtitle}" />
+                    <Border Style="{StaticResource SoftPanel}"><Label Text="No hay solicitudes pendientes disponibles en zonas específicas." Style="{StaticResource Subtitle}" /></Border>
                 </BindableLayout.EmptyView>
                 <BindableLayout.ItemTemplate>
                     <DataTemplate>
                         <Border Style="{StaticResource CardBorder}" Padding="14">
-                            <VerticalStackLayout Spacing="5">
-                                <Label Text="{Binding Zona}" FontAttributes="Bold" TextColor="{StaticResource ForestGreen}" />
-                                <HorizontalStackLayout Spacing="12">
-                                    <Label Text="{Binding Cantidad, StringFormat='{0} solicitudes'}"
-                                           Style="{StaticResource Subtitle}" />
-                                    <Label Text="{Binding Peso, StringFormat='{0:0.##} kg'}"
-                                           Style="{StaticResource Subtitle}" />
-                                </HorizontalStackLayout>
-                                <Label Text="{Binding EstadoUmbral}" TextColor="{StaticResource TextSecondary}">
-                                    <Label.Triggers>
-                                        <DataTrigger TargetType="Label" Binding="{Binding AlcanzaUmbral}" Value="True">
-                                            <Setter Property="TextColor" Value="{StaticResource PrimaryGreen}" />
-                                            <Setter Property="FontAttributes" Value="Bold" />
+                            <VerticalStackLayout Spacing="10">
+                                <Label Text="{Binding Datos.Zona}" Style="{StaticResource SectionHeading}" />
+                                <Border Style="{StaticResource SoftPanel}" HorizontalOptions="Start">
+                                    <Border.Triggers>
+                                        <DataTrigger TargetType="Border" Binding="{Binding Lista}" Value="True">
+                                            <Setter Property="BackgroundColor" Value="{StaticResource SuccessBackground}" />
                                         </DataTrigger>
-                                    </Label.Triggers>
-                                </Label>
-                                <Button Text="Ver solicitudes" Style="{StaticResource SecondaryButton}"
-                                        CommandParameter="{Binding .}"
-                                        Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.PrevisualizarCommand}" />
+                                        <DataTrigger TargetType="Border" Binding="{Binding Proxima}" Value="True">
+                                            <Setter Property="BackgroundColor" Value="{StaticResource WarningBackground}" />
+                                        </DataTrigger>
+                                    </Border.Triggers>
+                                    <Label Text="{Binding Estado}" FontAttributes="Bold" TextColor="{StaticResource ForestGreen}">
+                                        <Label.Triggers>
+                                            <DataTrigger TargetType="Label" Binding="{Binding Proxima}" Value="True">
+                                                <Setter Property="TextColor" Value="{StaticResource WarningText}" />
+                                            </DataTrigger>
+                                        </Label.Triggers>
+                                    </Label>
+                                </Border>
+                                <Label Text="{Binding Cantidad}" Style="{StaticResource Subtitle}" />
+                                <ProgressBar Progress="{Binding AvanceCantidad}" Style="{StaticResource ProgressTrack}"
+                                             SemanticProperties.Description="Progreso por cantidad de solicitudes" />
+                                <Label Text="{Binding Peso}" Style="{StaticResource Subtitle}" />
+                                <ProgressBar Progress="{Binding AvancePeso}" Style="{StaticResource ProgressTrack}"
+                                             SemanticProperties.Description="Progreso por peso en kilogramos" />
+                                <Button Text="{Binding Accion}" Style="{StaticResource SecondaryButton}"
+                                        CommandParameter="{Binding Datos}"
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.PrevisualizarCommand}">
+                                    <Button.Triggers>
+                                        <DataTrigger TargetType="Button" Binding="{Binding Lista}" Value="True">
+                                            <Setter Property="BackgroundColor" Value="{StaticResource PrimaryGreen}" />
+                                            <Setter Property="TextColor" Value="{StaticResource CardBackground}" />
+                                        </DataTrigger>
+                                    </Button.Triggers>
+                                </Button>
                             </VerticalStackLayout>
                         </Border>
                     </DataTemplate>
                 </BindableLayout.ItemTemplate>
             </VerticalStackLayout>
 
-            <Label Text="Jornadas registradas" FontSize="19" FontAttributes="Bold"
-                   TextColor="{StaticResource ForestGreen}" />
+            <Label Text="Jornadas registradas" Style="{StaticResource SectionHeading}" />
             <VerticalStackLayout Spacing="8" BindableLayout.ItemsSource="{Binding Jornadas}">
                 <BindableLayout.EmptyView>
-                    <Label Text="Todavía no se han registrado jornadas." Style="{StaticResource Subtitle}" />
+                    <Border Style="{StaticResource SoftPanel}"><Label Text="Todavía no hay jornadas. Cuando una zona alcance un umbral, revisa su propuesta." Style="{StaticResource Subtitle}" /></Border>
                 </BindableLayout.EmptyView>
                 <BindableLayout.ItemTemplate>
                     <DataTemplate>
@@ -81,7 +108,13 @@
                             <VerticalStackLayout Spacing="5">
                                 <Label Text="{Binding Nombre}" FontAttributes="Bold" TextColor="{StaticResource ForestGreen}" />
                                 <HorizontalStackLayout Spacing="12">
-                                    <Label Text="{Binding Estado}" TextColor="{StaticResource PrimaryGreen}" />
+                                    <Label Text="{Binding Estado}" TextColor="{StaticResource PrimaryGreen}" FontAttributes="Bold">
+                                        <Label.Triggers>
+                                            <DataTrigger TargetType="Label" Binding="{Binding Estado}" Value="Cancelada">
+                                                <Setter Property="TextColor" Value="{StaticResource TextSecondary}" />
+                                            </DataTrigger>
+                                        </Label.Triggers>
+                                    </Label>
                                     <Label Text="{Binding FechaProgramada, StringFormat='{0:dd/MM/yyyy}'}"
                                            Style="{StaticResource Subtitle}" />
                                 </HorizontalStackLayout>

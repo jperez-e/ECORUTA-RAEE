@@ -73,6 +73,38 @@
                 <Setter Property="HeightRequest" Value="50" />
             </Style>
 
+            <Style x:Key="SectionHeading" TargetType="Label" BasedOn="{StaticResource PageTitle}">
+                <Setter Property="FontSize" Value="20" />
+            </Style>
+            <Style x:Key="MetricValue" TargetType="Label" BasedOn="{StaticResource PageTitle}">
+                <Setter Property="FontSize" Value="23" />
+            </Style>
+            <Style x:Key="OnGreen" TargetType="Label">
+                <Setter Property="TextColor" Value="{StaticResource CardBackground}" />
+                <Setter Property="FontFamily" Value="OpenSansSemibold" />
+            </Style>
+            <Style x:Key="GreenHero" TargetType="Border">
+                <Setter Property="BackgroundColor" Value="{StaticResource PrimaryGreen}" />
+                <Setter Property="StrokeThickness" Value="0" />
+                <Setter Property="StrokeShape" Value="RoundRectangle 20" />
+                <Setter Property="Padding" Value="18,16" />
+            </Style>
+            <Style x:Key="SoftPanel" TargetType="Border">
+                <Setter Property="BackgroundColor" Value="{StaticResource SecondaryBackground}" />
+                <Setter Property="StrokeThickness" Value="0" />
+                <Setter Property="StrokeShape" Value="RoundRectangle 14" />
+                <Setter Property="Padding" Value="12,10" />
+            </Style>
+            <Style x:Key="ProgressTrack" TargetType="ProgressBar">
+                <Setter Property="HeightRequest" Value="8" />
+                <Setter Property="ProgressColor" Value="{StaticResource AccentGreen}" />
+                <Setter Property="BackgroundColor" Value="{StaticResource SecondaryBackground}" />
+            </Style>
+            <Style x:Key="DangerButton" TargetType="Button" BasedOn="{StaticResource SecondaryButton}">
+                <Setter Property="BackgroundColor" Value="{StaticResource ErrorBackground}" />
+                <Setter Property="TextColor" Value="{StaticResource ErrorColor}" />
+            </Style>
+
             <!-- Campos de entrada -->
             <Style x:Key="ModernEntry" TargetType="Entry">
                 <Setter Property="FontFamily" Value="OpenSansRegular" />

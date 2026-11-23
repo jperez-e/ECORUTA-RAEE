@@ -5,28 +5,12 @@
     x:Class="ECORUTA_RAEE.Views.EstadisticasPage"
     Title="Estadísticas">
 
-    <ContentPage.Resources>
-        <Style x:Key="TituloAnalisis" TargetType="Label">
-            <Setter Property="FontSize" Value="19" />
-            <Setter Property="FontAttributes" Value="Bold" />
-            <Setter Property="TextColor" Value="{StaticResource ForestGreen}" />
-        </Style>
-        <Style x:Key="ValorAnalisis" TargetType="Label">
-            <Setter Property="FontSize" Value="22" />
-            <Setter Property="FontAttributes" Value="Bold" />
-            <Setter Property="TextColor" Value="{StaticResource ForestGreen}" />
-        </Style>
-        <Style x:Key="BarraAnalisis" TargetType="ProgressBar">
-            <Setter Property="HeightRequest" Value="6" />
-            <Setter Property="ProgressColor" Value="{StaticResource PrimaryGreen}" />
-        </Style>
-    </ContentPage.Resources>
-
     <Grid Padding="18,14,18,0" RowDefinitions="Auto,Auto,Auto,*" RowSpacing="8">
         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
             <Label Text="Panel ambiental" Style="{StaticResource PageTitle}" VerticalOptions="Center" />
             <Button Grid.Column="1" Text="Actualizar" Style="{StaticResource SecondaryButton}"
-                    HeightRequest="42" Command="{Binding ActualizarCommand}" />
+                    HeightRequest="48" Command="{Binding ActualizarCommand}"
+                    SemanticProperties.Description="Actualizar estadísticas" />
         </Grid>
 
         <HorizontalStackLayout Grid.Row="1" IsVisible="{Binding Cargando}" Spacing="8">
@@ -34,38 +18,45 @@
             <Label Text="Cargando estadísticas…" VerticalOptions="Center" Style="{StaticResource Subtitle}" />
         </HorizontalStackLayout>
 
-        <Label Grid.Row="2" IsVisible="{Binding TieneError}" Text="{Binding Error}"
-               TextColor="{StaticResource ErrorColor}" />
+        <Border Grid.Row="2" IsVisible="{Binding TieneError}" Style="{StaticResource SoftPanel}"
+                BackgroundColor="{StaticResource ErrorBackground}">
+            <Label Text="{Binding Error}" TextColor="{StaticResource ErrorColor}" />
+        </Border>
 
         <ScrollView Grid.Row="3" IsVisible="{Binding TienePanel}">
             <VerticalStackLayout Spacing="16" Padding="0,0,0,20">
-                <Label IsVisible="{Binding Panel.SinSolicitudes}" Text="Todavía no hay solicitudes registradas."
-                       Style="{StaticResource Subtitle}" />
+                <Border IsVisible="{Binding Panel.SinSolicitudes}" Style="{StaticResource SoftPanel}">
+                    <Label Text="Todavía no hay solicitudes registradas. Las cifras se actualizarán cuando registres una solicitud."
+                           Style="{StaticResource Subtitle}" />
+                </Border>
+
+                <Border Style="{StaticResource GreenHero}">
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="Peso vigente registrado" Style="{StaticResource OnGreen}" FontSize="15" />
+                        <Label Text="{Binding Panel.Indicadores.PesoVigente, StringFormat='{0:0.##} kg'}"
+                               Style="{StaticResource OnGreen}" FontSize="32" />
+                    </VerticalStackLayout>
+                </Border>
 
                 <Border Style="{StaticResource CardBorder}" Padding="14">
                     <VerticalStackLayout Spacing="10">
-                        <Label Text="Solicitudes y residuos" Style="{StaticResource TituloAnalisis}" />
-                        <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="10">
+                        <Label Text="Resumen general" Style="{StaticResource SectionHeading}" />
+                        <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="10">
                             <VerticalStackLayout>
-                                <Label Text="{Binding Panel.Indicadores.Solicitudes}" Style="{StaticResource ValorAnalisis}" />
+                                <Label Text="{Binding Panel.Indicadores.Solicitudes}" Style="{StaticResource MetricValue}" />
                                 <Label Text="Solicitudes registradas" Style="{StaticResource Subtitle}" />
                             </VerticalStackLayout>
                             <VerticalStackLayout Grid.Column="1">
-                                <Label Text="{Binding Panel.Indicadores.Pendientes}" Style="{StaticResource ValorAnalisis}" />
+                                <Label Text="{Binding Panel.Indicadores.Pendientes}" Style="{StaticResource MetricValue}" />
                                 <Label Text="Solicitudes pendientes" Style="{StaticResource Subtitle}" />
                             </VerticalStackLayout>
                             <VerticalStackLayout Grid.Row="1">
-                                <Label Text="{Binding Panel.Indicadores.RegistrosResiduos}" Style="{StaticResource ValorAnalisis}" />
+                                <Label Text="{Binding Panel.Indicadores.RegistrosResiduos}" Style="{StaticResource MetricValue}" />
                                 <Label Text="Registros de residuos" Style="{StaticResource Subtitle}" />
                             </VerticalStackLayout>
                             <VerticalStackLayout Grid.Row="1" Grid.Column="1">
-                                <Label Text="{Binding Panel.Indicadores.UnidadesEquipos}" Style="{StaticResource ValorAnalisis}" />
+                                <Label Text="{Binding Panel.Indicadores.UnidadesEquipos}" Style="{StaticResource MetricValue}" />
                                 <Label Text="Unidades de equipos" Style="{StaticResource Subtitle}" />
-                            </VerticalStackLayout>
-                            <VerticalStackLayout Grid.Row="2" Grid.ColumnSpan="2">
-                                <Label Text="{Binding Panel.Indicadores.PesoVigente, StringFormat='{0:0.##} kg'}"
-                                       Style="{StaticResource ValorAnalisis}" />
-                                <Label Text="Peso vigente registrado" Style="{StaticResource Subtitle}" />
                             </VerticalStackLayout>
                         </Grid>
                     </VerticalStackLayout>
@@ -73,18 +64,18 @@
 
                 <Border Style="{StaticResource CardBorder}" Padding="14">
                     <VerticalStackLayout Spacing="10">
-                        <Label Text="Jornadas" Style="{StaticResource TituloAnalisis}" />
+                        <Label Text="Jornadas" Style="{StaticResource SectionHeading}" />
                         <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="10">
                             <VerticalStackLayout>
-                                <Label Text="{Binding Panel.Jornadas.Programadas}" Style="{StaticResource ValorAnalisis}" />
+                                <Label Text="{Binding Panel.Jornadas.Programadas}" Style="{StaticResource MetricValue}" />
                                 <Label Text="Programadas" Style="{StaticResource Subtitle}" />
                             </VerticalStackLayout>
                             <VerticalStackLayout Grid.Column="1">
-                                <Label Text="{Binding Panel.Jornadas.Canceladas}" Style="{StaticResource ValorAnalisis}" />
+                                <Label Text="{Binding Panel.Jornadas.Canceladas}" Style="{StaticResource MetricValue}" />
                                 <Label Text="Canceladas" Style="{StaticResource Subtitle}" />
                             </VerticalStackLayout>
                             <VerticalStackLayout Grid.Row="1" Grid.ColumnSpan="2">
-                                <Label Text="{Binding Panel.Jornadas.SolicitudesAsignadas}" Style="{StaticResource ValorAnalisis}" />
+                                <Label Text="{Binding Panel.Jornadas.SolicitudesAsignadas}" Style="{StaticResource MetricValue}" />
                                 <Label Text="Solicitudes asignadas a jornadas activas" Style="{StaticResource Subtitle}" />
                             </VerticalStackLayout>
                         </Grid>
@@ -92,43 +83,7 @@
                 </Border>
 
                 <VerticalStackLayout Spacing="8">
-                    <Label Text="Alertas de recogida" Style="{StaticResource TituloAnalisis}" />
-                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-                        <Label Text="{Binding Panel.Umbrales.Cantidad, StringFormat='Mínimo de {0} solicitudes'}"
-                               Style="{StaticResource Subtitle}" />
-                        <Label Grid.Column="1" Text="{Binding Panel.Umbrales.Peso, StringFormat='o {0:0.##} kg'}"
-                               Style="{StaticResource Subtitle}" />
-                    </Grid>
-                    <Label Text="Una zona está próxima cuando alcanza al menos el 75 % de cualquiera de los umbrales."
-                           Style="{StaticResource Subtitle}" />
-                    <VerticalStackLayout Spacing="8" BindableLayout.ItemsSource="{Binding Panel.Alertas}">
-                        <BindableLayout.EmptyView>
-                            <Label Text="Ninguna zona está lista o próxima al umbral." Style="{StaticResource Subtitle}" />
-                        </BindableLayout.EmptyView>
-                        <BindableLayout.ItemTemplate>
-                            <DataTemplate>
-                                <Border Style="{StaticResource CardBorder}" Padding="12">
-                                    <VerticalStackLayout Spacing="5">
-                                        <Label Text="{Binding Zona}" FontAttributes="Bold" TextColor="{StaticResource ForestGreen}" />
-                                        <Label Text="{Binding EstadoAlerta}" TextColor="#80521C" FontAttributes="Bold">
-                                            <Label.Triggers>
-                                                <DataTrigger TargetType="Label" Binding="{Binding EsLista}" Value="True">
-                                                    <Setter Property="TextColor" Value="{StaticResource PrimaryGreen}" />
-                                                </DataTrigger>
-                                            </Label.Triggers>
-                                        </Label>
-                                        <Label Text="{Binding DetalleAlerta}" Style="{StaticResource Subtitle}" />
-                                        <ProgressBar Progress="{Binding Avance}" Style="{StaticResource BarraAnalisis}"
-                                                     SemanticProperties.Description="Avance hacia el umbral más cercano" />
-                                    </VerticalStackLayout>
-                                </Border>
-                            </DataTemplate>
-                        </BindableLayout.ItemTemplate>
-                    </VerticalStackLayout>
-                </VerticalStackLayout>
-
-                <VerticalStackLayout Spacing="8">
-                    <Label Text="Distribución por zona" Style="{StaticResource TituloAnalisis}" />
+                    <Label Text="Distribución por zona" Style="{StaticResource SectionHeading}" />
                     <Label Text="Las barras muestran la proporción del peso registrado en zonas identificadas."
                            Style="{StaticResource Subtitle}" />
                     <Border IsVisible="{Binding Panel.HaySolicitudesSinZona}" Style="{StaticResource CardBorder}" Padding="12">
@@ -145,7 +100,7 @@
                     </Border>
                     <VerticalStackLayout Spacing="8" BindableLayout.ItemsSource="{Binding Panel.Zonas}">
                         <BindableLayout.EmptyView>
-                            <Label Text="No hay solicitudes en zonas identificadas." Style="{StaticResource Subtitle}" />
+                            <Border Style="{StaticResource SoftPanel}"><Label Text="No hay solicitudes en zonas identificadas." Style="{StaticResource Subtitle}" /></Border>
                         </BindableLayout.EmptyView>
                         <BindableLayout.ItemTemplate>
                             <DataTemplate>
@@ -159,7 +114,7 @@
                                             <Label Grid.Row="1" Grid.Column="1" Text="{Binding PesoDisponible, StringFormat='{0:0.##} kg disponibles'}" Style="{StaticResource Subtitle}" />
                                         </Grid>
                                         <Label Text="{Binding EstadoAlerta}" Style="{StaticResource Subtitle}" />
-                                        <ProgressBar Progress="{Binding ProporcionPeso}" Style="{StaticResource BarraAnalisis}"
+                                        <ProgressBar Progress="{Binding ProporcionPeso}" Style="{StaticResource ProgressTrack}"
                                                      SemanticProperties.Description="Proporción del peso de zonas identificadas" />
                                     </VerticalStackLayout>
                                 </Border>
@@ -169,12 +124,12 @@
                 </VerticalStackLayout>
 
                 <VerticalStackLayout Spacing="8">
-                    <Label Text="Residuos por categoría" Style="{StaticResource TituloAnalisis}" />
+                    <Label Text="Residuos por categoría" Style="{StaticResource SectionHeading}" />
                     <Label Text="Las barras y porcentajes representan la proporción de unidades de equipos."
                            Style="{StaticResource Subtitle}" />
                     <VerticalStackLayout Spacing="8" BindableLayout.ItemsSource="{Binding Panel.Categorias}">
                         <BindableLayout.EmptyView>
-                            <Label Text="Todavía no hay residuos registrados." Style="{StaticResource Subtitle}" />
+                            <Border Style="{StaticResource SoftPanel}"><Label Text="Todavía no hay residuos registrados." Style="{StaticResource Subtitle}" /></Border>
                         </BindableLayout.EmptyView>
                         <BindableLayout.ItemTemplate>
                             <DataTemplate>
@@ -187,8 +142,43 @@
                                             <Label Grid.Row="1" Text="{Binding Peso, StringFormat='{0:0.##} kg registrados'}" Style="{StaticResource Subtitle}" />
                                             <Label Grid.Row="1" Grid.Column="1" Text="{Binding ProporcionEquipos, StringFormat='{0:P1} de equipos'}" Style="{StaticResource Subtitle}" />
                                         </Grid>
-                                        <ProgressBar Progress="{Binding ProporcionEquipos}" Style="{StaticResource BarraAnalisis}"
+                                        <ProgressBar Progress="{Binding ProporcionEquipos}" Style="{StaticResource ProgressTrack}"
                                                      SemanticProperties.Description="Proporción de unidades de equipos" />
+                                    </VerticalStackLayout>
+                                </Border>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Alertas de recogida" Style="{StaticResource SectionHeading}" />
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                        <Label Text="{Binding Panel.Umbrales.Cantidad, StringFormat='Mínimo de {0} solicitudes'}"
+                               Style="{StaticResource Subtitle}" />
+                        <Label Grid.Column="1" Text="{Binding Panel.Umbrales.Peso, StringFormat='o {0:0.##} kg'}"
+                               Style="{StaticResource Subtitle}" />
+                    </Grid>
+                    <Label Text="Una zona está próxima cuando alcanza al menos el 75 % de cualquiera de los umbrales."
+                           Style="{StaticResource Subtitle}" />
+                    <VerticalStackLayout Spacing="8" BindableLayout.ItemsSource="{Binding Panel.Alertas}">
+                        <BindableLayout.EmptyView>
+                            <Border Style="{StaticResource SoftPanel}"><Label Text="Ninguna zona está lista o próxima al umbral." Style="{StaticResource Subtitle}" /></Border>
+                        </BindableLayout.EmptyView>
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource CardBorder}" Padding="12">
+                                    <VerticalStackLayout Spacing="5">
+                                        <Label Text="{Binding Zona}" FontAttributes="Bold" TextColor="{StaticResource ForestGreen}" />
+                                        <Label Text="{Binding EstadoAlerta}" TextColor="{StaticResource WarningText}" FontAttributes="Bold">
+                                            <Label.Triggers>
+                                                <DataTrigger TargetType="Label" Binding="{Binding EsLista}" Value="True">
+                                                    <Setter Property="TextColor" Value="{StaticResource PrimaryGreen}" />
+                                                </DataTrigger>
+                                            </Label.Triggers>
+                                        </Label>
+                                        <Label Text="{Binding DetalleAlerta}" Style="{StaticResource Subtitle}" />
+                                        <ProgressBar Progress="{Binding Avance}" Style="{StaticResource ProgressTrack}"
+                                                     SemanticProperties.Description="Avance hacia el umbral más cercano" />
                                     </VerticalStackLayout>
                                 </Border>
                             </DataTemplate>

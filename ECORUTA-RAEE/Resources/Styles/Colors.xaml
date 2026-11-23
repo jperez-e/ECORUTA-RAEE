@@ -7,6 +7,11 @@
 
     <Color x:Key="ForestGreen">#123D2B</Color>
     <Color x:Key="PrimaryGreen">#176B3A</Color>
+    <Color x:Key="AccentGreen">#218653</Color>
+    <Color x:Key="SuccessBackground">#E6F2E8</Color>
+    <Color x:Key="WarningBackground">#FFF2D9</Color>
+    <Color x:Key="WarningText">#744710</Color>
+    <Color x:Key="ErrorBackground">#FCECEC</Color>
     <Color x:Key="LimeGreen">#B7F36B</Color>
     <Color x:Key="PageBackground">#F4F7F4</Color>
     <Color x:Key="CardBackground">#FFFFFF</Color>

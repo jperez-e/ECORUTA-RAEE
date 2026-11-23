@@ -23,6 +23,6 @@ public partial class JornadaDetallePage : ContentPage, IQueryAttributable
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        await OperacionBaseDatos.EjecutarAsync(_viewModel.CargarAsync);
+        await _viewModel.CargarPantallaAsync();
     }
 }
