@@ -143,10 +143,8 @@ public partial class SelectorUbicacionPage : ContentPage
                 return;
             }
 
-            string script = string.Create(CultureInfo.InvariantCulture,
-                $"window.ecoruta?.colocar({punto.Latitud:R}, {punto.Longitud:R}, true)");
-            var colocada = await Mapa.EvaluateJavaScriptAsync(script).WaitAsync(TimeSpan.FromSeconds(5), _vida.Token);
-            Estado.Text = colocada == "true"
+            OcultarResultados();
+            Estado.Text = await ColocarPuntoAsync(punto)
                 ? "Ubicación aproximada. Ajusta el marcador si hace falta y confirma el punto."
                 : "No se pudo colocar el marcador. Puedes elegir un punto en el mapa.";
         }
@@ -205,8 +203,13 @@ public partial class SelectorUbicacionPage : ContentPage
         }
     }
 
-    private async void Buscar_Clicked(object? sender, EventArgs e) =>
-        await AbrirEnNavegadorAsync("https://www.openstreetmap.org/");
+    private async Task<bool> ColocarPuntoAsync(PuntoRecogida punto)
+    {
+        string script = string.Create(CultureInfo.InvariantCulture,
+            $"window.ecoruta?.colocar({punto.Latitud:R}, {punto.Longitud:R}, true)");
+        var colocada = await Mapa.EvaluateJavaScriptAsync(script).WaitAsync(TimeSpan.FromSeconds(5), _vida.Token);
+        return colocada == "true";
+    }
 
     private async Task AbrirEnNavegadorAsync(string url)
     {

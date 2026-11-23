@@ -109,3 +109,6 @@ publish/
 *.db-journal
 *.db-shm
 *.db-wal
+
+# Clave Geoapify local para la compilación de prueba
+/ECORUTA-RAEE/Resources/Raw/Mapa/geoapify-key.txt
