@@ -23,6 +23,9 @@ public partial class SolicitudFormPage : ContentPage, IQueryAttributable
             _viewModel.VolverAJornada = true;
     }
 
+    protected override bool OnBackButtonPressed() =>
+        _viewModel.Guardando || base.OnBackButtonPressed();
+
     private async void AbrirMapa_Clicked(object? sender, EventArgs e)
     {
         if (_abriendoMapa || !_viewModel.FormularioDisponible ||

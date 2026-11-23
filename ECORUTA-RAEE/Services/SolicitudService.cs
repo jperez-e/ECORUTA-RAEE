@@ -28,6 +28,15 @@ public class SolicitudService
 
     public async Task CrearAsync(SolicitudRecoleccion solicitud, int? numeroPersonalizado = null)
     {
+        var db = await Database.GetConnectionAsync();
+        SolicitudRecoleccion nueva = null!;
+        await db.RunInTransactionAsync(connection => nueva = Insertar(connection, solicitud, numeroPersonalizado));
+        CopiarIdentidad(nueva, solicitud);
+    }
+
+    private static SolicitudRecoleccion Insertar(
+        SQLiteConnection connection, SolicitudRecoleccion solicitud, int? numeroPersonalizado)
+    {
         var nueva = new SolicitudRecoleccion
         {
             FechaRegistro = DateTime.Now,
@@ -40,19 +49,19 @@ public class SolicitudService
             PesoTotalEstimado = solicitud.PesoTotalEstimado
         };
 
-        var db = await Database.GetConnectionAsync();
-        await db.RunInTransactionAsync(connection =>
-        {
-            long numero = numeroPersonalizado is int personalizado
-                ? personalizado
-                : ReservarNumero(connection);
-            nueva.CodigoSolicitud = FormatearCodigo(numero);
-            EjecutarEscrituraCodigo(connection, () => connection.Insert(nueva));
+        long numero = numeroPersonalizado is int personalizado
+            ? personalizado
+            : ReservarNumero(connection);
+        nueva.CodigoSolicitud = FormatearCodigo(numero);
+        EjecutarEscrituraCodigo(connection, () => connection.Insert(nueva));
 
-            if (numeroPersonalizado is int numeroManual)
-                ActualizarSecuencia(connection, numeroManual);
-        });
+        if (numeroPersonalizado is int numeroManual)
+            ActualizarSecuencia(connection, numeroManual);
+        return nueva;
+    }
 
+    private static void CopiarIdentidad(SolicitudRecoleccion nueva, SolicitudRecoleccion solicitud)
+    {
         solicitud.Id = nueva.Id;
         solicitud.CodigoSolicitud = nueva.CodigoSolicitud;
         solicitud.FechaRegistro = nueva.FechaRegistro;
@@ -65,11 +74,18 @@ public class SolicitudService
         var db = await Database.GetConnectionAsync();
         string? codigo = numeroPersonalizado is int numero ? FormatearCodigo(numero) : null;
         bool actualizado = false;
+        await db.RunInTransactionAsync(connection => actualizado =
+            Actualizar(connection, solicitud, actualizarPesoManual, codigo, numeroPersonalizado));
+        if (actualizado && codigo is not null)
+            solicitud.CodigoSolicitud = codigo;
+        return actualizado;
+    }
 
-        await db.RunInTransactionAsync(connection =>
-        {
-            // El peso manual solo se escribe si la solicitud sigue sin residuos.
-            int actualizadas = EjecutarEscrituraCodigo(connection, () => connection.Execute("""
+    private static bool Actualizar(SQLiteConnection connection, SolicitudRecoleccion solicitud,
+        bool actualizarPesoManual, string? codigo, int? numeroPersonalizado)
+    {
+        // El peso manual solo se escribe si la solicitud sigue sin residuos.
+        int actualizadas = EjecutarEscrituraCodigo(connection, () => connection.Execute("""
                 UPDATE Solicitudes
                 SET CodigoSolicitud = COALESCE(?, CodigoSolicitud),
                     Zona = ?, SectorOtraZona = ?, DireccionReferencia = ?, Latitud = ?, Longitud = ?,
@@ -80,15 +96,107 @@ public class SolicitudService
                 """, codigo, solicitud.Zona, solicitud.SectorOtraZona, solicitud.DireccionReferencia, solicitud.Latitud,
                 solicitud.Longitud, actualizarPesoManual, solicitud.PesoTotalEstimado, solicitud.Id));
 
-            actualizado = actualizadas == 1;
-            if (actualizado && numeroPersonalizado is int numeroManual)
-                ActualizarSecuencia(connection, numeroManual);
+        if (actualizadas == 1 && numeroPersonalizado is int numeroManual)
+            ActualizarSecuencia(connection, numeroManual);
+        return actualizadas == 1;
+    }
+
+    internal async Task<(SolicitudRecoleccion? Solicitud, List<ResiduoElectronico> Equipos)> ObtenerCompletaAsync(int id)
+    {
+        var db = await Database.GetConnectionAsync();
+        SolicitudRecoleccion? solicitud = null;
+        List<ResiduoElectronico> equipos = new();
+        await db.RunInTransactionAsync(connection =>
+        {
+            solicitud = connection.Find<SolicitudRecoleccion>(id);
+            equipos = LeerEquipos(connection, id);
+        });
+        return (solicitud, equipos);
+    }
+
+    internal async Task<bool> GuardarSolicitudCompletaAsync(SolicitudRecoleccion solicitud,
+        IReadOnlyList<ResiduoElectronico> borrador, IReadOnlyList<ResiduoElectronico> originales,
+        int? numeroPersonalizado = null)
+    {
+        var ids = borrador.Where(e => e.Id != 0).Select(e => e.Id).ToHashSet();
+        bool nueva = solicitud.Id == 0;
+        if (borrador.Any(e => !DatosEquipo.EsValido(e)) ||
+            ids.Count != borrador.Count(e => e.Id != 0) ||
+            ids.Any(id => originales.All(e => e.Id != id)) ||
+            (nueva && (borrador.Count == 0 || originales.Count != 0)) ||
+            !double.IsFinite(borrador.Sum(e => e.PesoEstimado)))
+            throw new InvalidOperationException("El borrador contiene equipos inválidos.");
+
+        var db = await Database.GetConnectionAsync();
+        SolicitudRecoleccion? insertada = null;
+        bool encontrado = true;
+        string? codigo = numeroPersonalizado is int numero ? FormatearCodigo(numero) : null;
+        await db.RunInTransactionAsync(connection =>
+        {
+            var actual = nueva ? null : connection.Find<SolicitudRecoleccion>(solicitud.Id);
+            if (!nueva && actual is null)
+            {
+                encontrado = false;
+                return;
+            }
+
+            // Comparar la instantánea evita borrar o sobrescribir equipos modificados por otro flujo.
+            var actuales = nueva ? new List<ResiduoElectronico>() : LeerEquipos(connection, solicitud.Id);
+            if (!actuales.Select(ValoresEquipo).SequenceEqual(originales.Select(ValoresEquipo)))
+                throw new EquiposSolicitudModificadosException();
+
+            bool pesoManual = actuales.Count == 0 && borrador.Count == 0;
+            ValidarSolicitudCompleta(solicitud, pesoManual, actual?.PesoTotalEstimado);
+            if (nueva)
+                insertada = Insertar(connection, solicitud, numeroPersonalizado);
+            else
+                Actualizar(connection, solicitud, pesoManual, codigo, numeroPersonalizado);
+
+            int id = insertada?.Id ?? solicitud.Id;
+            foreach (var equipo in actuales.Where(e => !ids.Contains(e.Id)))
+                connection.Delete(equipo);
+
+            foreach (var equipo in borrador)
+            {
+                var fila = new ResiduoElectronico
+                {
+                    Id = equipo.Id, SolicitudId = id, Categoria = equipo.Categoria,
+                    Descripcion = equipo.Descripcion, Cantidad = equipo.Cantidad, PesoEstimado = equipo.PesoEstimado
+                };
+                if (fila.Id == 0)
+                    connection.Insert(fila);
+                else
+                    connection.Update(fila);
+            }
+
+            if (!pesoManual)
+                ResiduoElectronicoService.SincronizarPesoSolicitud(connection, id);
         });
 
-        if (actualizado && codigo is not null)
+        if (insertada is not null)
+            CopiarIdentidad(insertada, solicitud);
+        else if (encontrado && codigo is not null)
             solicitud.CodigoSolicitud = codigo;
+        return encontrado;
+    }
 
-        return actualizado;
+    private static List<ResiduoElectronico> LeerEquipos(SQLiteConnection connection, int id) =>
+        connection.Table<ResiduoElectronico>().Where(e => e.SolicitudId == id).OrderBy(e => e.Id).ToList();
+
+    private static (int, int, string, string, int, double) ValoresEquipo(ResiduoElectronico equipo) =>
+        (equipo.Id, equipo.SolicitudId, equipo.Categoria, equipo.Descripcion, equipo.Cantidad, equipo.PesoEstimado);
+
+    private static void ValidarSolicitudCompleta(SolicitudRecoleccion solicitud, bool pesoManual, double? pesoActual)
+    {
+        if (string.IsNullOrWhiteSpace(solicitud.Zona) || solicitud.DireccionReferencia.Trim().Length is < 5 or > 150 ||
+            solicitud.Latitud.HasValue != solicitud.Longitud.HasValue ||
+            (solicitud.Latitud.HasValue && !Coordenadas.SonValidas(solicitud)) ||
+            (solicitud.Zona.Equals("Otra zona", StringComparison.OrdinalIgnoreCase) &&
+                (string.IsNullOrWhiteSpace(solicitud.SectorOtraZona) || solicitud.SectorOtraZona.Trim().Length > 100)) ||
+            (pesoManual && (!double.IsFinite(solicitud.PesoTotalEstimado) ||
+                solicitud.PesoTotalEstimado is < 0 or > 10000 ||
+                (solicitud.PesoTotalEstimado == 0 && pesoActual != 0))))
+            throw new InvalidOperationException("El borrador contiene una solicitud inválida.");
     }
 
     internal static bool TryLeerNumeroCodigo(string? texto, out int numero)
@@ -161,3 +269,6 @@ public class SolicitudService
 
 internal sealed class CodigoSolicitudDuplicadoException(SQLiteException innerException)
     : Exception("El código de solicitud ya está registrado.", innerException);
+
+internal sealed class EquiposSolicitudModificadosException()
+    : Exception("Los equipos cambiaron desde que se abrió el formulario.");

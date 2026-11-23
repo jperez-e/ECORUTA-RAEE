@@ -4,11 +4,25 @@
     x:Class="ECORUTA_RAEE.Views.SolicitudFormPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:ECORUTA_RAEE.ViewModels"
     Title="{Binding TituloFormulario}"
     BackgroundColor="#F4F7F4">
 
+    <ContentPage.Resources>
+        <Style x:Key="ErrorEquipo" TargetType="Label">
+            <Setter Property="TextColor" Value="{StaticResource ErrorColor}"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Style.Triggers>
+                <Trigger TargetType="Label" Property="Text" Value="">
+                    <Setter Property="IsVisible" Value="False"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </ContentPage.Resources>
+
     <ScrollView>
         <VerticalStackLayout
+            IsEnabled="{Binding PuedeEditarFormulario}"
             Padding="22,20,22,30"
             Spacing="22">
 
@@ -259,104 +273,54 @@
                 </VerticalStackLayout>
             </Border>
 
-            <!-- Sección de peso -->
-            <Border
-                Padding="19"
-                BackgroundColor="White"
-                Stroke="#E1E9E2"
-                StrokeThickness="1"
-                StrokeShape="RoundRectangle 20">
-
-                <VerticalStackLayout Spacing="10">
-
-                    <Label
-                        Text="02  ·  ESTIMACIÓN"
-                        FontSize="12"
-                        FontAttributes="Bold"
-                        CharacterSpacing="1"
-                        TextColor="#218653"/>
-
-                    <Label
-                        Text="¿Cuánto material entregarás?"
-                        FontSize="18"
-                        FontAttributes="Bold"
-                        TextColor="#1D2B22"/>
-
-                    <Label
-                        Text="Indica el peso aproximado de todos los residuos electrónicos."
-                        FontSize="13"
-                        LineHeight="1.3"
-                        TextColor="#718078"/>
-
-                    <Label
-                        Margin="0,8,0,0"
-                        Text="Peso total estimado *"
-                        FontSize="13"
-                        FontAttributes="Bold"
-                        TextColor="#34423A"/>
-
-                    <Grid ColumnDefinitions="*,Auto"
-                          ColumnSpacing="10">
-
-                        <Border
-                            Padding="12,0"
-                            BackgroundColor="#F7F9F7"
-                            Stroke="#DCE6DD"
-                            StrokeThickness="1"
-                            StrokeShape="RoundRectangle 12">
-
-                            <Entry
-                                Placeholder="Ej. 12.5"
-                                Keyboard="Numeric"
-                                Text="{Binding PesoTexto, Mode=TwoWay}"
-                                IsReadOnly="{Binding PesoEsCalculado}"
-                                TextColor="#26352B"
-                                PlaceholderColor="#89958D"
-                                BackgroundColor="Transparent"
-                                HeightRequest="52"/>
-
-                        </Border>
-
-                        <Border
-                            Grid.Column="1"
-                            Padding="15,0"
-                            BackgroundColor="#E8F4EA"
-                            StrokeThickness="0"
-                            StrokeShape="RoundRectangle 12">
-
-                            <Label
-                                Text="kg"
-                                FontSize="15"
-                                FontAttributes="Bold"
-                                TextColor="#218653"
-                                VerticalTextAlignment="Center"/>
-                        </Border>
-                    </Grid>
-                    <Label
-    Text="Este peso se calcula automáticamente a partir de los equipos asociados."
-    IsVisible="{Binding PesoEsCalculado}"
-    FontSize="12"
-    TextColor="#218653"
-    LineBreakMode="WordWrap"/>
-
-                    <Label
-                        Text="{Binding ErrorPeso}"
-                        IsVisible="{Binding TieneErrorPeso}"
-                        TextColor="#C62828"
-                        FontSize="12"/>
-
-                    <Border
-                        Padding="12"
-                        BackgroundColor="#F0F7F0"
-                        StrokeThickness="0"
-                        StrokeShape="RoundRectangle 12">
-
-                        <Label
-                            Text="Consejo: si no conoces el peso exacto, utiliza una estimación razonable."
-                            FontSize="12"
-                            LineHeight="1.3"
-                            TextColor="#4D6755"/>
-                    </Border>
+            <Border Style="{StaticResource CardBorder}" Padding="16,12">
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="02 · Equipos electrónicos" Style="{StaticResource SectionHeading}"/>
+                    <Label Text="Agrega un registro por tipo de equipo."
+                           IsVisible="{Binding SinEquipos}" Style="{StaticResource Subtitle}"/>
+                    <VerticalStackLayout Spacing="8" BindableLayout.ItemsSource="{Binding Equipos}">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="vm:EquipoBorradorViewModel">
+                                <Border Style="{StaticResource CardBorder}" Padding="12">
+                                    <VerticalStackLayout Spacing="8">
+                                        <Label Text="{Binding Titulo}" Style="{StaticResource SectionHeading}"/>
+                                        <Label Text="{Binding Resumen}" Style="{StaticResource Subtitle}"/>
+                                        <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                                            <Button Text="{Binding TextoEditor}" Command="{Binding AlternarEditorCommand}"
+                                                    Style="{StaticResource SecondaryButton}"/>
+                                            <Button Grid.Column="1" Text="Quitar" Command="{Binding QuitarCommand}"
+                                                    Style="{StaticResource SecondaryButton}"/>
+                                        </Grid>
+                                        <VerticalStackLayout Spacing="5" IsVisible="{Binding MostrandoEditor}">
+                                            <Label Text="Categoría *" Style="{StaticResource Subtitle}"/>
+                                            <Picker Title="Selecciona una categoría" ItemsSource="{Binding Categorias}"
+                                                    SelectedItem="{Binding Categoria, Mode=TwoWay}"
+                                                    SemanticProperties.Description="Categoría del equipo"/>
+                                            <Label Text="{Binding ErrorCategoria}" Style="{StaticResource ErrorEquipo}"/>
+                                            <Label Text="Descripción *" Style="{StaticResource Subtitle}"/>
+                                            <Entry Text="{Binding Descripcion}" Placeholder="Ej. Televisor LCD"
+                                                   Style="{StaticResource ModernEntry}"/>
+                                            <Label Text="{Binding ErrorDescripcion}" Style="{StaticResource ErrorEquipo}"/>
+                                            <Label Text="Cantidad de equipos *" Style="{StaticResource Subtitle}"/>
+                                            <Entry Text="{Binding CantidadTexto}" Keyboard="Numeric"
+                                                   SemanticProperties.Description="Cantidad de equipos"
+                                                   Style="{StaticResource ModernEntry}"/>
+                                            <Label Text="{Binding ErrorCantidad}" Style="{StaticResource ErrorEquipo}"/>
+                                            <Label Text="Peso total estimado de estos equipos (kg) *"
+                                                   Style="{StaticResource Subtitle}"/>
+                                            <Entry Text="{Binding PesoTexto}" Keyboard="Numeric" Placeholder="Ej. 8,5"
+                                                   SemanticProperties.Description="Peso total del registro en kilogramos"
+                                                   Style="{StaticResource ModernEntry}"/>
+                                            <Label Text="{Binding ErrorPeso}" Style="{StaticResource ErrorEquipo}"/>
+                                        </VerticalStackLayout>
+                                    </VerticalStackLayout>
+                                </Border>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                    <Button Text="Agregar equipo" Command="{Binding AgregarEquipoCommand}"
+                            Style="{StaticResource SecondaryButton}"/>
+                    <Label Text="{Binding ErrorEquipos}" Style="{StaticResource ErrorEquipo}"/>
                 </VerticalStackLayout>
             </Border>
 
@@ -414,18 +378,34 @@
                 </VerticalStackLayout>
             </Border>
 
+            <Border Style="{StaticResource CardBorder}" Padding="16,12">
+                <VerticalStackLayout Spacing="7">
+                    <Label Text="03 · Resumen" Style="{StaticResource SectionHeading}"/>
+                    <Label Text="{Binding RegistrosEquipos, StringFormat='Registros de equipos: {0}'}"
+                           Style="{StaticResource Subtitle}"/>
+                    <Label Text="{Binding UnidadesEquipos, StringFormat='Unidades físicas: {0}'}"
+                           Style="{StaticResource Subtitle}"/>
+                    <Label Text="{Binding ZonaResumen, StringFormat='Zona: {0}'}"
+                           Style="{StaticResource Subtitle}"/>
+                    <Label Text="{Binding PesoResumen, StringFormat='Peso total estimado: {0:F2} kg'}"
+                           Style="{StaticResource SectionHeading}"/>
+                    <VerticalStackLayout IsVisible="{Binding PesoEditable}" Spacing="5">
+                        <Label Text="Peso manual de la solicitud sin equipos (kg)"
+                               Style="{StaticResource Subtitle}"/>
+                        <Entry Text="{Binding PesoTexto, Mode=TwoWay}" Keyboard="Numeric"
+                               Style="{StaticResource ModernEntry}"/>
+                        <Label Text="{Binding ErrorPeso}" Style="{StaticResource ErrorEquipo}"/>
+                    </VerticalStackLayout>
+                    <Button Text="{Binding TextoBotonGuardar}" Command="{Binding GuardarCommand}"
+                            Style="{StaticResource PrimaryButton}"/>
+                    <ActivityIndicator IsRunning="{Binding Guardando}" IsVisible="{Binding Guardando}"
+                                       Color="{StaticResource AccentGreen}"/>
+                </VerticalStackLayout>
+            </Border>
+
             <VerticalStackLayout Spacing="11">
 
-                <Button
-    Text="{Binding TextoBotonGuardar}"
-    Command="{Binding GuardarCommand}"
-    BackgroundColor="#218653"
-    TextColor="White"
-    FontSize="15"
-    FontAttributes="Bold"
-    CornerRadius="15"
-    HeightRequest="56"
-    Padding="16,0"/>
+
 
                 <Button
     Text="Eliminar solicitud"

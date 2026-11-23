@@ -118,7 +118,7 @@ public class ResiduoElectronicoService
         return eliminado;
     }
 
-    private static void SincronizarPesoSolicitud(SQLiteConnection connection, int solicitudId)
+    internal static void SincronizarPesoSolicitud(SQLiteConnection connection, int solicitudId)
     {
         // PesoEstimado representa el total de la fila; SUM da NULL si no quedan filas.
         connection.Execute("""

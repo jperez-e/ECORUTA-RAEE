@@ -64,16 +64,7 @@ public partial class ResiduoElectronicoViewModel : ObservableObject
         SolicitudesDisponibles
     { get; } = new();
 
-    public ObservableCollection<string> Categorias { get; } = new()
-    {
-        "Computadora",
-        "Monitor",
-        "Celular",
-        "Impresora",
-        "Tablet",
-        "Televisor",
-        "Otro"
-    };
+    public ReadOnlyCollection<string> Categorias => DatosEquipo.Categorias;
 
     // Propiedades dinámicas del formulario
     public string TituloFormulario =>
@@ -216,70 +207,15 @@ public partial class ResiduoElectronicoViewModel : ObservableObject
             valido = false;
         }
 
-        // Validar categoría
-        if (string.IsNullOrWhiteSpace(Categoria))
-        {
-            ErrorCategoria =
-                "Selecciona una categoría.";
+        string descripcionLimpia = (Descripcion ?? string.Empty).Trim();
+        int cantidadConvertida = DatosEquipo.LeerCantidad(CantidadTexto);
+        double pesoConvertido = DatosEquipo.LeerPeso(PesoTexto);
+        ErrorCategoria = DatosEquipo.ErrorCategoria(Categoria);
+        ErrorDescripcion = DatosEquipo.ErrorDescripcion(descripcionLimpia);
+        ErrorCantidad = DatosEquipo.ErrorCantidad(cantidadConvertida);
+        ErrorPeso = DatosEquipo.ErrorPeso(pesoConvertido);
 
-            valido = false;
-        }
-
-        // Validar descripción
-        string descripcionLimpia =
-            (Descripcion ?? string.Empty).Trim();
-
-        if (descripcionLimpia.Length < 5 ||
-            descripcionLimpia.Length > 150)
-        {
-            ErrorDescripcion =
-                "La descripción debe tener entre 5 y 150 caracteres.";
-
-            valido = false;
-        }
-
-        // Validar cantidad
-        bool cantidadValida = int.TryParse(
-            CantidadTexto?.Trim(),
-            NumberStyles.Integer,
-            CultureInfo.InvariantCulture,
-            out int cantidadConvertida);
-
-        if (!cantidadValida ||
-            cantidadConvertida < 1 ||
-            cantidadConvertida > 1000)
-        {
-            ErrorCantidad =
-                "Introduce una cantidad entre 1 y 1000.";
-
-            valido = false;
-        }
-
-        // Validar peso
-        string pesoNormalizado =
-            (PesoTexto ?? string.Empty)
-                .Trim()
-                .Replace(',', '.');
-
-        bool pesoValido = double.TryParse(
-            pesoNormalizado,
-            NumberStyles.Float,
-            CultureInfo.InvariantCulture,
-            out double pesoConvertido);
-
-        if (!pesoValido ||
-            double.IsNaN(pesoConvertido) ||
-            double.IsInfinity(pesoConvertido) ||
-            pesoConvertido <= 0 ||
-            pesoConvertido > 10000)
-        {
-            ErrorPeso =
-                "Introduce un peso mayor que 0 y hasta 10000 kg.";
-
-            valido = false;
-        }
-
-        if (!valido)
+        if (!valido || TieneErrorCategoria || TieneErrorDescripcion || TieneErrorCantidad || TieneErrorPeso)
             return false;
 
         // Actualizar las propiedades del modelo

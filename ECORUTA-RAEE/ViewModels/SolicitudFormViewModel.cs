@@ -15,6 +15,7 @@ public partial class SolicitudFormViewModel : ObservableObject
 {
     private int solicitudId;
     private string codigoSolicitud = string.Empty;
+    private bool altaConfirmada;
     internal bool VolverAJornada { get; set; }
 
     public ObservableCollection<string> Zonas { get; } = new()
@@ -91,10 +92,8 @@ public partial class SolicitudFormViewModel : ObservableObject
     private bool esEdicion;
 
     // Indica que el peso procede de los residuos asociados.
-    [ObservableProperty]
-    private bool pesoEsCalculado;
 
-    public bool PesoEditable => !PesoEsCalculado;
+    public bool PesoEditable => EsEdicion && SinEquipos && _equiposOriginales.Count == 0;
 
     // Propiedades dinámicas para la interfaz.
     public string TituloFormulario =>
@@ -161,6 +160,7 @@ public partial class SolicitudFormViewModel : ObservableObject
 
     partial void OnZonaConfirmadaChanged(bool value)
     {
+        OnPropertyChanged(nameof(ZonaResumen));
         if (value)
             ErrorZona = string.Empty;
     }
@@ -170,12 +170,10 @@ public partial class SolicitudFormViewModel : ObservableObject
         OnPropertyChanged(nameof(TituloFormulario));
         OnPropertyChanged(nameof(TextoBotonGuardar));
         OnPropertyChanged(nameof(MostrarBotonEliminar));
+        OnPropertyChanged(nameof(PesoEditable));
+        OnPropertyChanged(nameof(PesoResumen));
     }
 
-    partial void OnPesoEsCalculadoChanged(bool value)
-    {
-        OnPropertyChanged(nameof(PesoEditable));
-    }
 
     partial void OnErrorZonaChanged(string value) =>
         OnPropertyChanged(nameof(TieneErrorZona));
@@ -209,20 +207,21 @@ public partial class SolicitudFormViewModel : ObservableObject
     partial void OnPesoTextoChanged(string value)
     {
         ErrorPeso = string.Empty;
+        OnPropertyChanged(nameof(PesoResumen));
         GuardadoExitoso = false;
     }
 
     // Preparar el formulario para una nueva solicitud.
-    // El peso debe estar habilitado para entrada manual.
     public void PrepararNuevaSolicitud()
     {
         solicitudId = 0;
+        altaConfirmada = false;
         codigoSolicitud = string.Empty;
         PersonalizarCodigo = false;
         CodigoTexto = string.Empty;
 
         EsEdicion = false;
-        PesoEsCalculado = false;
+        CargarEquipos(Array.Empty<ResiduoElectronico>(), 0);
 
         ZonaSeleccionada = null;
         SectorOtraZona = string.Empty;
@@ -238,7 +237,7 @@ public partial class SolicitudFormViewModel : ObservableObject
     // Cargar los datos de una solicitud para editar.
     public async Task<bool> CargarParaEditarAsync(int id)
     {
-        var solicitud = await SolicitudService.Instancia.ObtenerPorIdAsync(id);
+        var (solicitud, equipos) = await SolicitudService.Instancia.ObtenerCompletaAsync(id);
         if (solicitud is null)
         {
             await Shell.Current.DisplayAlertAsync(
@@ -246,7 +245,7 @@ public partial class SolicitudFormViewModel : ObservableObject
             return false;
         }
 
-        PesoEsCalculado = await ResiduoElectronicoService.Instancia.ContarPorSolicitudIdAsync(id) > 0;
+        CargarEquipos(equipos, solicitud.PesoTotalEstimado);
         solicitudId = solicitud.Id;
         codigoSolicitud = solicitud.CodigoSolicitud;
         PersonalizarCodigo = false;
@@ -268,11 +267,22 @@ public partial class SolicitudFormViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(GuardarCommand), nameof(EliminarCommand))]
+    [NotifyPropertyChangedFor(nameof(PuedeEditarFormulario))]
     private bool formularioDisponible;
 
 
     [RelayCommand(CanExecute = nameof(FormularioDisponible))]
-    private Task Guardar() => OperacionBaseDatos.EjecutarAsync(async () =>
+    private async Task Guardar()
+    {
+        if (!PuedeEditarFormulario || altaConfirmada || EliminarCommand.IsRunning)
+            return;
+
+        Guardando = true;
+        try { await OperacionBaseDatos.EjecutarAsync(GuardarBorradorAsync); }
+        finally { Guardando = false; }
+    }
+
+    private async Task GuardarBorradorAsync()
     {
         LimpiarErrores();
 
@@ -335,37 +345,30 @@ public partial class SolicitudFormViewModel : ObservableObject
             valido = false;
         }
 
-        // Consultar el estado ACTUAL de los residuos al guardar.
-        var servicioResiduos = ResiduoElectronicoService.Instancia;
-
-        var solicitudActual = EsEdicion
-            ? await SolicitudService.Instancia.ObtenerPorIdAsync(solicitudId)
-            : null;
-
-        if (EsEdicion && solicitudActual is null)
+        ErrorEquipos = string.Empty;
+        var borrador = new List<ResiduoElectronico>(_equipos.Count);
+        foreach (var fila in _equipos)
         {
-            await Shell.Current.DisplayAlertAsync(
-                "Solicitud no disponible", "La solicitud ya no existe.", "Aceptar");
-            return;
+            if (fila.Validar() is { } equipo)
+                borrador.Add(equipo);
+            else
+                valido = false;
         }
 
-        bool tieneResiduos = EsEdicion &&
-            await servicioResiduos.ContarPorSolicitudIdAsync(solicitudId) > 0;
-
-        bool conservarPesoRegistrado = tieneResiduos || PesoEsCalculado;
-        PesoEsCalculado = tieneResiduos;
-
-        double peso = 0;
-
-        if (conservarPesoRegistrado)
+        if (!EsEdicion && SinEquipos)
         {
-            // El peso se calcula, no se acepta un valor manual.
-            peso = solicitudActual!.PesoTotalEstimado;
-
-            PesoTexto = peso.ToString(CultureInfo.InvariantCulture);
+            ErrorEquipos = "Agrega al menos un equipo antes de guardar.";
+            valido = false;
         }
-        else
+        else if (borrador.Count != _equipos.Count)
         {
+            ErrorEquipos = "Revisa los campos indicados en los equipos.";
+        }
+
+        double peso = borrador.Sum(e => e.PesoEstimado);
+        if (PesoEditable)
+        {
+
             // Si no hay residuos, conservar el peso manual.
             string pesoNormalizado = (PesoTexto ?? string.Empty)
                 .Trim().Replace(',', '.');
@@ -395,7 +398,7 @@ public partial class SolicitudFormViewModel : ObservableObject
                 bool conservaCeroCalculado =
                     EsEdicion &&
                     peso == 0 &&
-                    solicitudActual?.PesoTotalEstimado == 0;
+                    _pesoOriginal == 0;
 
                 if (peso <= 0 && !conservaCeroCalculado)
                 {
@@ -419,7 +422,7 @@ public partial class SolicitudFormViewModel : ObservableObject
         var solicitud = new SolicitudRecoleccion
         {
             Id = solicitudId,
-            CodigoSolicitud = solicitudActual?.CodigoSolicitud ?? string.Empty,
+            CodigoSolicitud = codigoSolicitud,
             Zona = ZonaSeleccionada!,
             SectorOtraZona = sector,
             DireccionReferencia = direccion,
@@ -430,26 +433,20 @@ public partial class SolicitudFormViewModel : ObservableObject
 
         try
         {
-            if (EsEdicion)
+            if (!await SolicitudService.Instancia.GuardarSolicitudCompletaAsync(
+                solicitud, borrador, _equiposOriginales, numeroPersonalizado))
             {
-                bool actualizado = await SolicitudService.Instancia.ActualizarAsync(
-                    solicitud, actualizarPesoManual: !conservarPesoRegistrado,
-                    numeroPersonalizado: numeroPersonalizado);
-
-                if (!actualizado)
-                {
-                    await Shell.Current.DisplayAlertAsync(
-                        "Solicitud no disponible",
-                        "No se encontró la solicitud que deseas actualizar.",
-                        "Aceptar");
-                    return;
-                }
-            }
-            else
-            {
-                await SolicitudService.Instancia.CrearAsync(solicitud, numeroPersonalizado);
+                await Shell.Current.DisplayAlertAsync(
+                    "Solicitud no disponible", "La solicitud ya no existe.", "Aceptar");
+                return;
             }
         }
+        catch (EquiposSolicitudModificadosException)
+        {
+            ErrorEquipos = "Los equipos cambiaron en otra pantalla. Vuelve a abrir la solicitud antes de guardar.";
+            return;
+        }
+
         catch (CodigoSolicitudDuplicadoException) when (numeroPersonalizado.HasValue)
         {
             ErrorCodigo = "Ya existe una solicitud con este código. Introduce uno diferente.";
@@ -468,6 +465,7 @@ public partial class SolicitudFormViewModel : ObservableObject
         }
 
         codigoSolicitud = solicitud.CodigoSolicitud;
+        altaConfirmada = !EsEdicion;
         string accion = EsEdicion ? "actualizó" : "guardó";
         MensajeExito = $"La solicitud {codigoSolicitud} se {accion} correctamente.";
         GuardadoExitoso = !EsEdicion;
@@ -478,13 +476,13 @@ public partial class SolicitudFormViewModel : ObservableObject
             "Aceptar");
 
         await VolverDespuesDeGuardarAsync();
-    });
+    }
 
     // Eliminar desde el formulario.
     [RelayCommand(CanExecute = nameof(FormularioDisponible))]
     private Task Eliminar() => OperacionBaseDatos.EjecutarAsync(async () =>
     {
-        if (!EsEdicion)
+        if (!EsEdicion || Guardando)
             return;
 
         int cantidadResiduos = await ResiduoElectronicoService.Instancia
@@ -529,7 +527,8 @@ public partial class SolicitudFormViewModel : ObservableObject
     [RelayCommand]
     private async Task Cancelar()
     {
-        await Shell.Current.GoToAsync("..");
+        if (!Guardando)
+            await Shell.Current.GoToAsync("..");
     }
 
     private Task VolverDespuesDeGuardarAsync() =>
