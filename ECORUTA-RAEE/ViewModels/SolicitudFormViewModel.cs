@@ -28,7 +28,15 @@ public partial class SolicitudFormViewModel : ObservableObject
     };
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(EsOtraZona), nameof(PuedeConfirmarZona))]
     private string? zonaSeleccionada;
+
+    [ObservableProperty]
+    private string sectorOtraZona = string.Empty;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(EstadoZona))]
+    private bool zonaConfirmada;
 
     [ObservableProperty]
     private string direccionReferencia = string.Empty;
@@ -37,10 +45,15 @@ public partial class SolicitudFormViewModel : ObservableObject
     private string pesoTexto = string.Empty;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TieneUbicacion), nameof(EstadoUbicacion))]
     private string latitudTexto = string.Empty;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TieneUbicacion), nameof(EstadoUbicacion))]
     private string longitudTexto = string.Empty;
+
+    [ObservableProperty]
+    private bool mostrarCoordenadasAvanzadas;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(TieneErrorLatitud))]
@@ -98,9 +111,59 @@ public partial class SolicitudFormViewModel : ObservableObject
     public bool TieneErrorCodigo => !string.IsNullOrEmpty(ErrorCodigo);
     public bool TieneErrorLatitud => ErrorLatitud.Length > 0;
     public bool TieneErrorLongitud => ErrorLongitud.Length > 0;
+    public bool TieneUbicacion => ObtenerPuntoRecogida() is not null;
+    public bool EsOtraZona => ZonaSeleccionada?.Trim().Equals("Otra zona", StringComparison.OrdinalIgnoreCase) == true;
+    public bool PuedeConfirmarZona => !string.IsNullOrWhiteSpace(ZonaSeleccionada);
+    public string EstadoZona => ZonaConfirmada
+        ? $"Confirmaste la zona {ZonaSeleccionada}. Sin verificación geográfica."
+        : "La zona no se pudo verificar automáticamente. Confirma que corresponde al punto o a la dirección.";
+    public string TextoBotonMapa => TieneUbicacion ? "Revisar o cambiar el punto" : "Elegir en el mapa";
+    public string EstadoUbicacion => TieneUbicacion
+        ? "Ubicación seleccionada. Se guardará con la solicitud."
+        : "Selecciona el punto en el mapa. Si no está disponible, puedes continuar con la zona y la dirección.";
 
-    partial void OnLatitudTextoChanged(string value) => LimpiarErroresCoordenadas();
-    partial void OnLongitudTextoChanged(string value) => LimpiarErroresCoordenadas();
+    internal PuntoRecogida? ObtenerPuntoRecogida() =>
+        TryLeerCoordenada(LatitudTexto, Coordenadas.LimiteLatitud, out double latitud) &&
+        TryLeerCoordenada(LongitudTexto, Coordenadas.LimiteLongitud, out double longitud)
+            ? PuntoRecogida.Crear(latitud, longitud) : null;
+
+    internal void AplicarPuntoRecogida(PuntoRecogida punto)
+    {
+        LatitudTexto = punto.Latitud.ToString("R", CultureInfo.InvariantCulture);
+        LongitudTexto = punto.Longitud.ToString("R", CultureInfo.InvariantCulture);
+    }
+
+    [RelayCommand]
+    private void QuitarUbicacion()
+    {
+        LatitudTexto = string.Empty;
+        LongitudTexto = string.Empty;
+    }
+
+    partial void OnLatitudTextoChanged(string value) => ActualizarConfirmacionUbicacion();
+    partial void OnLongitudTextoChanged(string value) => ActualizarConfirmacionUbicacion();
+
+    private void ActualizarConfirmacionUbicacion()
+    {
+        LimpiarErroresCoordenadas();
+        ZonaConfirmada = false;
+        OnPropertyChanged(nameof(TextoBotonMapa));
+    }
+
+    partial void OnSectorOtraZonaChanged(string value)
+    {
+        if (!EsOtraZona)
+            return;
+
+        ZonaConfirmada = false;
+        ErrorZona = string.Empty;
+    }
+
+    partial void OnZonaConfirmadaChanged(bool value)
+    {
+        if (value)
+            ErrorZona = string.Empty;
+    }
 
     partial void OnEsEdicionChanged(bool value)
     {
@@ -132,6 +195,7 @@ public partial class SolicitudFormViewModel : ObservableObject
 
     partial void OnZonaSeleccionadaChanged(string? value)
     {
+        ZonaConfirmada = false;
         ErrorZona = string.Empty;
         GuardadoExitoso = false;
     }
@@ -161,6 +225,8 @@ public partial class SolicitudFormViewModel : ObservableObject
         PesoEsCalculado = false;
 
         ZonaSeleccionada = null;
+        SectorOtraZona = string.Empty;
+        ZonaConfirmada = false;
         DireccionReferencia = string.Empty;
         PesoTexto = string.Empty;
         LatitudTexto = string.Empty;
@@ -187,6 +253,8 @@ public partial class SolicitudFormViewModel : ObservableObject
         CodigoTexto = codigoSolicitud;
 
         ZonaSeleccionada = solicitud.Zona;
+        SectorOtraZona = solicitud.SectorOtraZona ?? string.Empty;
+        ZonaConfirmada = false;
         DireccionReferencia = solicitud.DireccionReferencia;
 
         PesoTexto = solicitud.PesoTotalEstimado.ToString(CultureInfo.InvariantCulture);
@@ -209,6 +277,8 @@ public partial class SolicitudFormViewModel : ObservableObject
         LimpiarErrores();
 
         bool valido = ValidarCoordenadas(out double? latitud, out double? longitud);
+        if (!valido)
+            MostrarCoordenadasAvanzadas = true;
 
         int? numeroPersonalizado = null;
         bool conservaCodigo = EsEdicion && string.Equals(
@@ -229,9 +299,20 @@ public partial class SolicitudFormViewModel : ObservableObject
         }
 
         // Validar zona.
-        if (string.IsNullOrWhiteSpace(ZonaSeleccionada))
+        string? sector = EsOtraZona ? SectorOtraZona.Trim() : null;
+        if (!PuedeConfirmarZona)
         {
             ErrorZona = "Selecciona la zona de recogida.";
+            valido = false;
+        }
+        else if (EsOtraZona && (string.IsNullOrWhiteSpace(sector) || sector.Length > 100))
+        {
+            ErrorZona = "Escribe el sector o comunidad (hasta 100 caracteres).";
+            valido = false;
+        }
+        else if (!ZonaConfirmada)
+        {
+            ErrorZona = "Confirma la zona de recogida antes de guardar.";
             valido = false;
         }
 
@@ -340,6 +421,7 @@ public partial class SolicitudFormViewModel : ObservableObject
             Id = solicitudId,
             CodigoSolicitud = solicitudActual?.CodigoSolicitud ?? string.Empty,
             Zona = ZonaSeleccionada!,
+            SectorOtraZona = sector,
             DireccionReferencia = direccion,
             Latitud = latitud,
             Longitud = longitud,

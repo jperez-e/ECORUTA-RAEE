@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Class="ECORUTA_RAEE.Views.SelectorUbicacionPage"
+    Title="Ubicación de recogida">
+    <Grid Padding="14,10,14,12" RowDefinitions="Auto,*,Auto" RowSpacing="8">
+        <Label Text="Selecciona dónde debemos recoger tus equipos"
+               Style="{StaticResource SectionHeading}" />
+        <WebView x:Name="Mapa" Grid.Row="1" UserAgent="EcoRuta-RAEE/1.0 (INF-4316; MAUI Android)"
+                 Navigating="Mapa_Navigating" />
+        <VerticalStackLayout Grid.Row="2" Spacing="6">
+            <Label x:Name="Estado" Text="Abriendo el mapa…" Style="{StaticResource Subtitle}" />
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                <Button x:Name="Gps" Text="Usar mi ubicación" Clicked="Gps_Clicked"
+                        Style="{StaticResource SecondaryButton}" IsEnabled="False" />
+                <Button Grid.Column="1" Text="Buscar lugar en OSM" Clicked="Buscar_Clicked"
+                        Style="{StaticResource SecondaryButton}" />
+            </Grid>
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                <Button Text="Volver" Clicked="Volver_Clicked" Style="{StaticResource SecondaryButton}" />
+                <Button x:Name="Confirmar" Grid.Column="1" Text="Confirmar punto" Clicked="Confirmar_Clicked"
+                        Style="{StaticResource PrimaryButton}" IsEnabled="False" />
+            </Grid>
+        </VerticalStackLayout>
+    </Grid>
+</ContentPage>

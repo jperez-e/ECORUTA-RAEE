@@ -15,6 +15,7 @@ public class SolicitudRecoleccion
     public DateTime FechaRegistro { get; set; } = DateTime.Now;
 
     public string Zona { get; set; } = string.Empty;
+    public string? SectorOtraZona { get; set; }
 
     public string DireccionReferencia { get; set; } = string.Empty;
 

@@ -7,6 +7,7 @@ public partial class SolicitudFormPage : ContentPage, IQueryAttributable
     private readonly SolicitudFormViewModel _viewModel;
     private int? _solicitudId;
     private bool _cargando;
+    private bool _abriendoMapa;
 
     public SolicitudFormPage()
     {
@@ -20,6 +21,28 @@ public partial class SolicitudFormPage : ContentPage, IQueryAttributable
             _solicitudId = solicitudId;
         if (query.TryGetValue("VolverAJornada", out var volver) && volver is true)
             _viewModel.VolverAJornada = true;
+    }
+
+    private async void AbrirMapa_Clicked(object? sender, EventArgs e)
+    {
+        if (_abriendoMapa || !_viewModel.FormularioDisponible ||
+            _viewModel.GuardarCommand.IsRunning || _viewModel.EliminarCommand.IsRunning)
+            return;
+
+        _abriendoMapa = true;
+        try
+        {
+            await Navigation.PushModalAsync(new SelectorUbicacionPage(
+                _viewModel.ObtenerPuntoRecogida(), _viewModel.AplicarPuntoRecogida));
+        }
+        catch (InvalidOperationException)
+        {
+            await DisplayAlertAsync("Mapa no disponible", "Puedes continuar con la dirección de referencia.", "Aceptar");
+        }
+        finally
+        {
+            _abriendoMapa = false;
+        }
     }
 
     protected override async void OnAppearing()

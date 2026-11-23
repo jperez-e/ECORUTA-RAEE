@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src https://tile.openstreetmap.org data:; script-src 'unsafe-inline'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-src 'none'">
+  <title>Ubicación de recogida</title>
+  <style>
+  <!--LEAFLET_CSS-->
+    html,body,#mapa{height:100%;margin:0}
+    body{font-family:system-ui,sans-serif;color:#123d2b;background:#e7f0e9}
+    #estado{position:absolute;z-index:900;top:12px;right:12px;left:60px;background:#fff;color:#123d2b;
+      border:1px solid #e1e9e2;border-radius:12px;padding:8px 10px;pointer-events:none;font-size:13px}
+    .punto-recogida{background:#176b3a;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 5px #123d2b88}
+    .leaflet-control-attribution{background:#fff!important;color:#123d2b}
+  </style>
+</head>
+<body>
+  <div id="mapa" role="region" aria-label="Mapa de ubicación de recogida"></div>
+  <div id="estado" role="status">Toca el mapa para elegir un punto.</div>
+  <script>/*LEAFLET_JS*/</script>
+  <script id="config" type="application/json">/*CONFIG*/</script>
+  <script>/*SELECTOR_JS*/</script>
+</body>
+</html>

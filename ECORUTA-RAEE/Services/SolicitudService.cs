@@ -32,6 +32,7 @@ public class SolicitudService
         {
             FechaRegistro = DateTime.Now,
             Zona = solicitud.Zona,
+            SectorOtraZona = solicitud.SectorOtraZona,
             DireccionReferencia = solicitud.DireccionReferencia,
             Latitud = solicitud.Latitud,
             Longitud = solicitud.Longitud,
@@ -71,12 +72,12 @@ public class SolicitudService
             int actualizadas = EjecutarEscrituraCodigo(connection, () => connection.Execute("""
                 UPDATE Solicitudes
                 SET CodigoSolicitud = COALESCE(?, CodigoSolicitud),
-                    Zona = ?, DireccionReferencia = ?, Latitud = ?, Longitud = ?,
+                    Zona = ?, SectorOtraZona = ?, DireccionReferencia = ?, Latitud = ?, Longitud = ?,
                     PesoTotalEstimado = CASE
                         WHEN ? AND NOT EXISTS (SELECT 1 FROM Residuos WHERE SolicitudId = Solicitudes.Id)
                         THEN ? ELSE PesoTotalEstimado END
                 WHERE Id = ?
-                """, codigo, solicitud.Zona, solicitud.DireccionReferencia, solicitud.Latitud,
+                """, codigo, solicitud.Zona, solicitud.SectorOtraZona, solicitud.DireccionReferencia, solicitud.Latitud,
                 solicitud.Longitud, actualizarPesoManual, solicitud.PesoTotalEstimado, solicitud.Id));
 
             actualizado = actualizadas == 1;

@@ -102,7 +102,48 @@
                 </Grid>
             </Border>
 
-            <!-- Sección de ubicación -->
+            <!-- Ubicación de recogida -->
+            <Border
+                Style="{StaticResource CardBorder}"
+                Padding="16,12">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Ubicación de recogida" Style="{StaticResource SectionHeading}"/>
+                    <Label Text="{Binding EstadoUbicacion}" Style="{StaticResource Subtitle}"/>
+                    <Button Text="{Binding TextoBotonMapa}" Clicked="AbrirMapa_Clicked"
+                            IsEnabled="{Binding FormularioDisponible}" Style="{StaticResource SecondaryButton}"/>
+                    <Button Text="Quitar ubicación" Command="{Binding QuitarUbicacionCommand}"
+                            IsVisible="{Binding TieneUbicacion}" Style="{StaticResource SecondaryButton}"/>
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <Label Text="Coordenadas avanzadas (opcional)" VerticalOptions="Center"
+                               Style="{StaticResource Subtitle}"/>
+                        <Switch Grid.Column="1" IsToggled="{Binding MostrarCoordenadasAvanzadas, Mode=TwoWay}"
+                                OnColor="{StaticResource AccentGreen}"
+                                SemanticProperties.Description="Mostrar coordenadas avanzadas"/>
+                    </Grid>
+                    <Grid IsVisible="{Binding MostrarCoordenadasAvanzadas}" ColumnDefinitions="*,*" ColumnSpacing="12">
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="Latitud" Style="{StaticResource Subtitle}"/>
+                            <Entry Text="{Binding LatitudTexto, Mode=TwoWay}" Placeholder="-90 a 90"
+                                   IsTextPredictionEnabled="False" IsSpellCheckEnabled="False"
+                                   Style="{StaticResource ModernEntry}"
+                                   SemanticProperties.Description="Latitud en grados decimales"/>
+                            <Label Text="{Binding ErrorLatitud}" IsVisible="{Binding TieneErrorLatitud}"
+                                   TextColor="{StaticResource ErrorColor}" FontSize="12"/>
+                        </VerticalStackLayout>
+                        <VerticalStackLayout Grid.Column="1" Spacing="4">
+                            <Label Text="Longitud" Style="{StaticResource Subtitle}"/>
+                            <Entry Text="{Binding LongitudTexto, Mode=TwoWay}" Placeholder="-180 a 180"
+                                   IsTextPredictionEnabled="False" IsSpellCheckEnabled="False"
+                                   Style="{StaticResource ModernEntry}"
+                                   SemanticProperties.Description="Longitud en grados decimales"/>
+                            <Label Text="{Binding ErrorLongitud}" IsVisible="{Binding TieneErrorLongitud}"
+                                   TextColor="{StaticResource ErrorColor}" FontSize="12"/>
+                        </VerticalStackLayout>
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Confirmación y referencia -->
             <Border
                 Padding="19"
                 BackgroundColor="White"
@@ -120,13 +161,13 @@
                         TextColor="#218653"/>
 
                     <Label
-                        Text="¿Dónde recogeremos tus equipos?"
+                        Text="Confirma la zona de recogida"
                         FontSize="18"
                         FontAttributes="Bold"
                         TextColor="#1D2B22"/>
 
                     <Label
-                        Text="Selecciona la zona y escribe una referencia para localizar el punto de recogida."
+                        Text="Indica la zona del punto elegido y agrega una referencia para encontrarlo."
                         FontSize="13"
                         LineHeight="1.3"
                         TextColor="#718078"/>
@@ -156,6 +197,23 @@
                             HeightRequest="52"/>
                     </Border>
 
+                    <VerticalStackLayout Spacing="4" IsVisible="{Binding EsOtraZona}">
+                        <Label Text="Sector o comunidad *" Style="{StaticResource Subtitle}"/>
+                        <Entry Text="{Binding SectorOtraZona}" Placeholder="Nombre del sector o comunidad"
+                               MaxLength="100" Style="{StaticResource ModernEntry}"/>
+                    </VerticalStackLayout>
+
+                    <Label Text="{Binding EstadoZona}" Style="{StaticResource Subtitle}"/>
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                        <CheckBox IsChecked="{Binding ZonaConfirmada, Mode=TwoWay}"
+                                  IsEnabled="{Binding PuedeConfirmarZona}"
+                                  Color="{StaticResource AccentGreen}"
+                                  SemanticProperties.Description="Confirmo que la zona corresponde al lugar de recogida"/>
+                        <Label Grid.Column="1" VerticalOptions="Center"
+                               Text="Confirmo que la zona corresponde al lugar de recogida."
+                               Style="{StaticResource Subtitle}"/>
+                    </Grid>
+
                     <Label
                         Text="{Binding ErrorZona}"
                         IsVisible="{Binding TieneErrorZona}"
@@ -165,7 +223,7 @@
                     <!-- Dirección -->
                     <Label
                         Margin="0,8,0,0"
-                        Text="Dirección o referencia *"
+                        Text="Dirección de referencia *"
                         FontSize="13"
                         FontAttributes="Bold"
                         TextColor="#34423A"/>
@@ -315,38 +373,6 @@
                     Text="{Binding MensajeExito}"
                     FontSize="13"
                     TextColor="#176B3A"/>
-            </Border>
-
-            <!-- Acciones -->
-            <Border
-                Style="{StaticResource CardBorder}"
-                Padding="16,12">
-                <VerticalStackLayout Spacing="8">
-                    <Label Text="Coordenadas (opcional)" FontAttributes="Bold"
-                           TextColor="{StaticResource ForestGreen}"/>
-                    <Label Text="Introduce ambos valores en grados decimales."
-                           Style="{StaticResource Subtitle}"/>
-                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-                        <VerticalStackLayout Spacing="4">
-                            <Label Text="Latitud" Style="{StaticResource Subtitle}"/>
-                            <Entry Text="{Binding LatitudTexto, Mode=TwoWay}" Placeholder="-90 a 90"
-                                   IsTextPredictionEnabled="False" IsSpellCheckEnabled="False"
-                                   Style="{StaticResource ModernEntry}"
-                                   SemanticProperties.Description="Latitud en grados decimales"/>
-                            <Label Text="{Binding ErrorLatitud}" IsVisible="{Binding TieneErrorLatitud}"
-                                   TextColor="{StaticResource ErrorColor}" FontSize="12"/>
-                        </VerticalStackLayout>
-                        <VerticalStackLayout Grid.Column="1" Spacing="4">
-                            <Label Text="Longitud" Style="{StaticResource Subtitle}"/>
-                            <Entry Text="{Binding LongitudTexto, Mode=TwoWay}" Placeholder="-180 a 180"
-                                   IsTextPredictionEnabled="False" IsSpellCheckEnabled="False"
-                                   Style="{StaticResource ModernEntry}"
-                                   SemanticProperties.Description="Longitud en grados decimales"/>
-                            <Label Text="{Binding ErrorLongitud}" IsVisible="{Binding TieneErrorLongitud}"
-                                   TextColor="{StaticResource ErrorColor}" FontSize="12"/>
-                        </VerticalStackLayout>
-                    </Grid>
-                </VerticalStackLayout>
             </Border>
 
             <Border
