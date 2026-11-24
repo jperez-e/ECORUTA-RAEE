@@ -5,6 +5,7 @@ namespace ECORUTA_RAEE.Views;
 public partial class JornadaDetallePage : ContentPage, IQueryAttributable
 {
     private readonly JornadaRecoleccionViewModel _viewModel;
+    private bool _abriendoMapa;
 
     public JornadaDetallePage()
     {
@@ -24,5 +25,15 @@ public partial class JornadaDetallePage : ContentPage, IQueryAttributable
     {
         base.OnAppearing();
         await _viewModel.CargarPantallaAsync();
+    }
+
+    private async void AbrirMapa_Clicked(object? sender, EventArgs e)
+    {
+        if (_abriendoMapa || !_viewModel.PuedeInteractuar || _viewModel.Jornada is not { } jornada)
+            return;
+
+        _abriendoMapa = true;
+        try { await Navigation.PushModalAsync(new MapaJornadaPage(jornada.Id)); }
+        finally { _abriendoMapa = false; }
     }
 }

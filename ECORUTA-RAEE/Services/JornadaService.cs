@@ -91,14 +91,14 @@ internal sealed class JornadaService
     }
 
     // Incluye los modelos completos, con las coordenadas opcionales de las solicitudes.
-    public async Task<JornadaRecoleccion?> ObtenerDetalleAsync(int id)
+    public async Task<JornadaRecoleccion?> ObtenerDetalleAsync(int id, bool incluirRutaCancelada = false)
     {
         var db = await EcoRutaDatabase.Instance.GetConnectionAsync();
         JornadaRecoleccion? jornada = null;
         await db.RunInTransactionAsync(connection =>
         {
             jornada = LeerDetalle(connection, id);
-            if (jornada is { Estado: JornadaRecoleccion.Programada })
+            if (jornada is not null && (jornada.Estado == JornadaRecoleccion.Programada || incluirRutaCancelada))
                 LeerRuta(connection, jornada);
         });
         return jornada;

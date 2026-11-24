@@ -65,6 +65,10 @@
                 </VerticalStackLayout>
             </Border>
 
+            <Button Text="Ver ruta en el mapa" Clicked="AbrirMapa_Clicked"
+                    IsVisible="{Binding TieneDetalle}" IsEnabled="{Binding PuedeInteractuar}"
+                    Style="{StaticResource SecondaryButton}" />
+
             <Label Text="{Binding ListaParadasTitulo}" Style="{StaticResource SectionHeading}" />
             <VerticalStackLayout Spacing="8" BindableLayout.ItemsSource="{Binding Paradas}">
                 <BindableLayout.EmptyView>

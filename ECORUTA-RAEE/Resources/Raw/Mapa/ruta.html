@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src https://tile.openstreetmap.org data:; script-src 'unsafe-inline'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-src 'none'">
+  <title>Mapa de la jornada</title>
+  <style>
+    /*LEAFLET_CSS*/
+    html,body,#mapa{height:100%;margin:0}
+    body{font-family:system-ui,sans-serif;background:#e7f0e9;color:#123d2b}
+    .parada{display:grid;place-items:center;border:2px solid white;border-radius:50%;background:#176b3a;
+      color:white;font-weight:bold;box-shadow:0 1px 5px #123d2b88}
+    #estado{position:absolute;z-index:900;top:10px;left:57px;right:10px;background:white;
+      padding:6px 8px;border-radius:8px;font-size:12px;pointer-events:none}
+    #estado:empty{display:none}
+    .detalle{overflow-wrap:anywhere}
+    .leaflet-control-attribution{background:white!important}
+  </style>
+</head>
+<body>
+  <div id="mapa" role="region" aria-label="Mapa de paradas de la jornada"></div>
+  <div id="estado" role="status"></div>
+  <script>/*LEAFLET_JS*/</script>
+  <script id="config" type="application/json">/*CONFIG*/</script>
+  <script>/*RUTA_JS*/</script>
+</body>
+</html>
