@@ -116,11 +116,12 @@ public class SolicitudService
 
     internal async Task<bool> GuardarSolicitudCompletaAsync(SolicitudRecoleccion solicitud,
         IReadOnlyList<ResiduoElectronico> borrador, IReadOnlyList<ResiduoElectronico> originales,
-        int? numeroPersonalizado = null)
+        SolicitudRecoleccion? original, int? numeroPersonalizado = null)
     {
         var ids = borrador.Where(e => e.Id != 0).Select(e => e.Id).ToHashSet();
         bool nueva = solicitud.Id == 0;
-        if (borrador.Any(e => !DatosEquipo.EsValido(e)) ||
+        if ((original?.Id ?? 0) != solicitud.Id ||
+            borrador.Any(e => !DatosEquipo.EsValido(e)) ||
             ids.Count != borrador.Count(e => e.Id != 0) ||
             ids.Any(id => originales.All(e => e.Id != id)) ||
             (nueva && (borrador.Count == 0 || originales.Count != 0)) ||
@@ -144,6 +145,8 @@ public class SolicitudService
             var actuales = nueva ? new List<ResiduoElectronico>() : LeerEquipos(connection, solicitud.Id);
             if (!actuales.Select(ValoresEquipo).SequenceEqual(originales.Select(ValoresEquipo)))
                 throw new EquiposSolicitudModificadosException();
+            if (actual is not null && original is not null && ValoresSolicitud(actual) != ValoresSolicitud(original))
+                throw new SolicitudModificadaException();
 
             bool pesoManual = actuales.Count == 0 && borrador.Count == 0;
             ValidarSolicitudCompleta(solicitud, pesoManual, actual?.PesoTotalEstimado);
@@ -185,6 +188,11 @@ public class SolicitudService
 
     private static (int, int, string, string, int, double) ValoresEquipo(ResiduoElectronico equipo) =>
         (equipo.Id, equipo.SolicitudId, equipo.Categoria, equipo.Descripcion, equipo.Cantidad, equipo.PesoEstimado);
+
+    private static (string, string, string?, string, double?, double?, string, double) ValoresSolicitud(
+        SolicitudRecoleccion solicitud) =>
+        (solicitud.CodigoSolicitud, solicitud.Zona, solicitud.SectorOtraZona, solicitud.DireccionReferencia,
+            solicitud.Latitud, solicitud.Longitud, solicitud.Estado, solicitud.PesoTotalEstimado);
 
     private static void ValidarSolicitudCompleta(SolicitudRecoleccion solicitud, bool pesoManual, double? pesoActual)
     {
@@ -272,3 +280,6 @@ internal sealed class CodigoSolicitudDuplicadoException(SQLiteException innerExc
 
 internal sealed class EquiposSolicitudModificadosException()
     : Exception("Los equipos cambiaron desde que se abrió el formulario.");
+
+internal sealed class SolicitudModificadaException()
+    : Exception("La solicitud cambió desde que se abrió el formulario.");

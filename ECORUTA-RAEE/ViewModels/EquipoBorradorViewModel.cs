@@ -49,7 +49,14 @@ public partial class EquipoBorradorViewModel : ObservableObject
     [ObservableProperty] private string errorPeso = string.Empty;
 
     public string Titulo => string.IsNullOrWhiteSpace(Categoria) ? "Nuevo equipo" : Categoria;
-    public string Resumen => $"{Unidades} unidades · {Peso:F2} kg";
+    public string Resumen
+    {
+        get
+        {
+            int unidades = Unidades;
+            return $"{unidades} {(unidades == 1 ? "unidad" : "unidades")} · {Peso:F2} kg";
+        }
+    }
     public string TextoEditor => MostrandoEditor ? "Cerrar editor" : "Editar";
     internal int Unidades
     {

@@ -16,6 +16,7 @@ public partial class SolicitudFormViewModel : ObservableObject
     private int solicitudId;
     private string codigoSolicitud = string.Empty;
     private bool altaConfirmada;
+    private SolicitudRecoleccion? solicitudOriginal;
     internal bool VolverAJornada { get; set; }
 
     public ObservableCollection<string> Zonas { get; } = new()
@@ -216,6 +217,7 @@ public partial class SolicitudFormViewModel : ObservableObject
     {
         solicitudId = 0;
         altaConfirmada = false;
+        solicitudOriginal = null;
         codigoSolicitud = string.Empty;
         PersonalizarCodigo = false;
         CodigoTexto = string.Empty;
@@ -247,6 +249,7 @@ public partial class SolicitudFormViewModel : ObservableObject
 
         CargarEquipos(equipos, solicitud.PesoTotalEstimado);
         solicitudId = solicitud.Id;
+        solicitudOriginal = solicitud;
         codigoSolicitud = solicitud.CodigoSolicitud;
         PersonalizarCodigo = false;
         CodigoTexto = codigoSolicitud;
@@ -434,7 +437,7 @@ public partial class SolicitudFormViewModel : ObservableObject
         try
         {
             if (!await SolicitudService.Instancia.GuardarSolicitudCompletaAsync(
-                solicitud, borrador, _equiposOriginales, numeroPersonalizado))
+                solicitud, borrador, _equiposOriginales, solicitudOriginal, numeroPersonalizado))
             {
                 await Shell.Current.DisplayAlertAsync(
                     "Solicitud no disponible", "La solicitud ya no existe.", "Aceptar");
@@ -444,6 +447,11 @@ public partial class SolicitudFormViewModel : ObservableObject
         catch (EquiposSolicitudModificadosException)
         {
             ErrorEquipos = "Los equipos cambiaron en otra pantalla. Vuelve a abrir la solicitud antes de guardar.";
+            return;
+        }
+        catch (SolicitudModificadaException)
+        {
+            ErrorEquipos = "La solicitud cambió en otra pantalla. Vuelve a abrirla antes de guardar.";
             return;
         }
 
