@@ -10,6 +10,7 @@ namespace ECORUTA_RAEE.ViewModels;
 
 public partial class ResiduoElectronicoViewModel : ObservableObject
 {
+    internal bool SalidaConfirmada { get; private set; }
     private int residuoId;
 
     // Propiedades del modelo
@@ -140,6 +141,7 @@ public partial class ResiduoElectronicoViewModel : ObservableObject
 
     public async Task<bool> PrepararAsync(int? idResiduo, int? idSolicitud)
     {
+        SalidaConfirmada = false;
         await CargarSolicitudesDisponiblesAsync();
 
         if (idResiduo is null)
@@ -287,6 +289,7 @@ public partial class ResiduoElectronicoViewModel : ObservableObject
             mensaje,
             "Aceptar");
 
+        SalidaConfirmada = true;
         await Shell.Current.GoToAsync("..");
     });
 
@@ -324,6 +327,7 @@ public partial class ResiduoElectronicoViewModel : ObservableObject
             "El residuo se eliminó correctamente.",
             "Aceptar");
 
+        SalidaConfirmada = true;
         await Shell.Current.GoToAsync("..");
     });
 

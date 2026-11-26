@@ -1,6 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using ECORUTA_RAEE.Models;
+using ECORUTA_RAEE.Views;
 
 namespace ECORUTA_RAEE.ViewModels;
 
@@ -40,8 +40,7 @@ public partial class LoginViewModel : ObservableObject
             Contrasena == "1234")
         {
             // Navegar al área principal.
-            Application.Current!.Windows[0].Page =
-                new AppShell();
+            NavegacionDemostracion.ElegirPerfil();
 
             return;
         }

@@ -10,15 +10,25 @@ public partial class MapaJornadaPage : ContentPage
     private const string Atribucion = "https://www.openstreetmap.org/copyright";
     private const string Origen = "about:blank";
     private readonly int _jornadaId;
+    private readonly MapaJornada? _ubicacion;
+    private readonly bool _consultaDeCampo;
     private readonly string _sesion = Guid.NewGuid().ToString("N");
     private readonly CancellationTokenSource _vida = new();
     private bool _iniciada;
     private bool _lista;
 
-    internal MapaJornadaPage(int jornadaId)
+    internal MapaJornadaPage(int jornadaId, bool consultaDeCampo = false)
     {
         InitializeComponent();
         _jornadaId = jornadaId;
+        _consultaDeCampo = consultaDeCampo;
+    }
+
+    internal MapaJornadaPage(MapaJornada ubicacion)
+    {
+        InitializeComponent();
+        Title = "Ubicación de recogida";
+        _ubicacion = ubicacion;
     }
 
     protected override async void OnAppearing()
@@ -28,12 +38,18 @@ public partial class MapaJornadaPage : ContentPage
             return;
         _iniciada = true;
 
-        bool consultada = await OperacionBaseDatos.EjecutarAsync(async () =>
+        BindingContext = _ubicacion;
+        bool consultada = _ubicacion is not null || await OperacionBaseDatos.EjecutarAsync(async () =>
         {
             var jornada = await JornadaService.Instancia.ObtenerDetalleAsync(_jornadaId, incluirRutaCancelada: true);
             if (jornada is null || _vida.IsCancellationRequested)
                 return;
-            BindingContext = MapaJornada.Crear(jornada);
+            var resultado = MapaJornada.Crear(jornada);
+            if (_consultaDeCampo && jornada.Estado == JornadaRecoleccion.Programada && jornada.Ruta is null)
+                resultado = resultado with { Metodo = jornada.RutaDesactualizada
+                    ? "Orden desactualizado. Informa al gestor."
+                    : "El gestor aún no ha guardado un orden." };
+            BindingContext = resultado;
         });
         if (_vida.IsCancellationRequested)
             return;

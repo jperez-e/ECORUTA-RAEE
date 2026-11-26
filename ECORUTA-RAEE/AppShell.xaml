@@ -129,7 +129,11 @@
     <!-- PIE DEL MENÚ: CERRAR SESIÓN -->
     <Shell.FlyoutFooter>
 
-        <Grid Padding="20,15">
+        <VerticalStackLayout Padding="20,15" Spacing="8">
+            <Label Text="Modo demostración · Datos de este dispositivo"
+                   Style="{StaticResource Subtitle}" />
+            <Button Text="Cambiar perfil (demostración)" Clicked="CambiarPerfil_Clicked"
+                    Style="{StaticResource SecondaryButton}" />
 
             <Button
                 Text="Cerrar sesión"
@@ -141,7 +145,7 @@
                 HeightRequest="48"
                 Clicked="CerrarSesion_Clicked"/>
 
-        </Grid>
+        </VerticalStackLayout>
 
     </Shell.FlyoutFooter>
 

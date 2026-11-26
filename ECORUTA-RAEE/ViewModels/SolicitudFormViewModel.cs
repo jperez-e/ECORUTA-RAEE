@@ -18,6 +18,8 @@ public partial class SolicitudFormViewModel : ObservableObject
     private bool altaConfirmada;
     private SolicitudRecoleccion? solicitudOriginal;
     internal bool VolverAJornada { get; set; }
+    internal bool VolverAPortada { get; set; }
+    internal bool SalidaConfirmada { get; private set; }
 
     public ObservableCollection<string> Zonas { get; } = new()
     {
@@ -215,6 +217,7 @@ public partial class SolicitudFormViewModel : ObservableObject
     // Preparar el formulario para una nueva solicitud.
     public void PrepararNuevaSolicitud()
     {
+        SalidaConfirmada = false;
         solicitudId = 0;
         altaConfirmada = false;
         solicitudOriginal = null;
@@ -239,6 +242,7 @@ public partial class SolicitudFormViewModel : ObservableObject
     // Cargar los datos de una solicitud para editar.
     public async Task<bool> CargarParaEditarAsync(int id)
     {
+        SalidaConfirmada = false;
         var (solicitud, equipos) = await SolicitudService.Instancia.ObtenerCompletaAsync(id);
         if (solicitud is null)
         {
@@ -483,6 +487,7 @@ public partial class SolicitudFormViewModel : ObservableObject
             MensajeExito,
             "Aceptar");
 
+        SalidaConfirmada = true;
         await VolverDespuesDeGuardarAsync();
     }
 
@@ -529,6 +534,7 @@ public partial class SolicitudFormViewModel : ObservableObject
             "La solicitud y sus residuos asociados se eliminaron correctamente.",
             "Aceptar");
 
+        SalidaConfirmada = true;
         await VolverDespuesDeGuardarAsync();
     });
 
@@ -540,7 +546,7 @@ public partial class SolicitudFormViewModel : ObservableObject
     }
 
     private Task VolverDespuesDeGuardarAsync() =>
-        Shell.Current.GoToAsync(VolverAJornada ? ".." : "//solicitudes");
+        Shell.Current.GoToAsync(VolverAJornada || VolverAPortada ? ".." : "//solicitudes");
 
     private bool ValidarCoordenadas(out double? latitud, out double? longitud)
     {

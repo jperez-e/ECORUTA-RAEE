@@ -13,5 +13,6 @@
     <Compile Include="../../ECORUTA-RAEE/ViewModels/SolicitudFormViewModel*.cs" />
     <Compile Include="../../ECORUTA-RAEE/ViewModels/EquipoBorradorViewModel.cs" />
     <Compile Include="../../ECORUTA-RAEE/ViewModels/OperacionBaseDatos.cs" />
+    <Compile Include="../../ECORUTA-RAEE/ViewModels/PortadaDemoViewModel.cs" />
   </ItemGroup>
 </Project>

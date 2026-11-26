@@ -1,0 +1,38 @@
+using CommunityToolkit.Mvvm.ComponentModel;
+using ECORUTA_RAEE.Models;
+using ECORUTA_RAEE.Services;
+
+namespace ECORUTA_RAEE.ViewModels;
+
+internal sealed class PortadaDemoViewModel(PerfilDemostracion perfil) : ObservableObject
+{
+    internal IReadOnlyList<SolicitudRecoleccion> Solicitudes { get; private set; } = [];
+    internal IReadOnlyList<JornadaRecoleccion> Jornadas { get; private set; } = [];
+    internal PanelAmbiental? Panel { get; private set; }
+    private ILookup<int, ResiduoElectronico>? _equipos;
+
+    internal IEnumerable<ResiduoElectronico> Equipos(int id) => _equipos?[id] ?? [];
+
+    internal Task<bool> CargarAsync() => OperacionBaseDatos.EjecutarAsync(async () =>
+    {
+        switch (perfil)
+        {
+            case PerfilDemostracion.Ciudadano:
+                Solicitudes = await SolicitudService.Instancia.ObtenerTodasAsync();
+                await CargarEquiposAsync();
+                break;
+            case PerfilDemostracion.Gestor:
+                Panel = await EstadisticasAmbientalesService.Instancia.ObtenerAsync();
+                break;
+            case PerfilDemostracion.Recolector:
+                Jornadas = await JornadaService.Instancia.ObtenerProgramadasAsync();
+                break;
+        }
+    });
+
+    internal async Task CargarEquiposAsync()
+    {
+        var listado = await ResiduoElectronicoService.Instancia.ObtenerListadoAsync();
+        _equipos = listado.Residuos.ToLookup(e => e.SolicitudId);
+    }
+}

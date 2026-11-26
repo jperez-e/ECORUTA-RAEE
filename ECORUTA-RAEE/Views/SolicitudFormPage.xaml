@@ -26,6 +26,7 @@
             Padding="22,20,22,30"
             Spacing="22">
 
+            <Label Text="Modo demostración · Datos de este dispositivo" Style="{StaticResource Subtitle}" />
             <!-- Encabezado -->
             <Grid ColumnDefinitions="*,Auto"
                   ColumnSpacing="12">

@@ -9,6 +9,7 @@ namespace ECORUTA_RAEE.ViewModels;
 public partial class EquipoBorradorViewModel : ObservableObject
 {
     private readonly int _id;
+    internal int IdPersistido => _id;
     private readonly Action<EquipoBorradorViewModel> _quitar;
 
     internal EquipoBorradorViewModel(ResiduoElectronico? equipo, Action<EquipoBorradorViewModel> quitar)

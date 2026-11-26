@@ -104,6 +104,32 @@ internal sealed class JornadaService
         return jornada;
     }
 
+    internal async Task<IReadOnlyList<JornadaRecoleccion>> ObtenerProgramadasAsync()
+    {
+        var db = await EcoRutaDatabase.Instance.GetConnectionAsync();
+        var jornadas = new List<JornadaRecoleccion>();
+        await db.RunInTransactionAsync(connection =>
+        {
+            jornadas = connection.Table<JornadaRecoleccion>()
+                .Where(j => j.Estado == JornadaRecoleccion.Programada)
+                .OrderBy(j => j.FechaProgramada).ThenBy(j => j.Id).ToList();
+            var asignaciones = connection.Query<AsignacionProgramada>("""
+                SELECT js.JornadaId, s.* FROM JornadaSolicitudes js
+                JOIN Jornadas j ON j.Id = js.JornadaId
+                JOIN Solicitudes s ON s.Id = js.SolicitudId
+                WHERE j.Estado = ? AND js.Activa = 1
+                """, JornadaRecoleccion.Programada).ToLookup(s => s.JornadaId);
+            foreach (var jornada in jornadas)
+                jornada.Solicitudes = asignaciones[jornada.Id].ToArray();
+        });
+        return jornadas;
+    }
+
+    private sealed class AsignacionProgramada : SolicitudRecoleccion
+    {
+        public int JornadaId { get; set; }
+    }
+
     public async Task<JornadaRecoleccion?> GenerarRutaAsync(int id)
     {
         var db = await EcoRutaDatabase.Instance.GetConnectionAsync();
