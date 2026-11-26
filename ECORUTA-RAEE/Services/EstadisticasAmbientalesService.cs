@@ -48,7 +48,7 @@ internal sealed class EstadisticasAmbientalesService
             FROM Jornadas
             """, JornadaRecoleccion.Programada, JornadaRecoleccion.Cancelada).Single();
 
-        var (umbrales, disponibilidad, _) = JornadaService.LeerDisponibilidad(connection);
+        var (umbrales, disponibilidad, _, sinUbicacion) = JornadaService.LeerDisponibilidad(connection);
         var porZona = disponibilidad.ToDictionary(z => z.Zona, StringComparer.OrdinalIgnoreCase);
         var zonasIdentificadas = JornadaService.AgruparZonas(
             totalesSolicitudes.Where(z => JornadaService.EsZonaEspecifica(z.Zona))).ToList();
@@ -65,6 +65,7 @@ internal sealed class EstadisticasAmbientalesService
             totalesSolicitudes.Sum(z => z.Peso), categorias.Sum(c => c.Registros), unidades);
 
         return new PanelAmbiental(indicadores, jornadas, umbrales, zonas, alertas, categorias,
-            sinZona.Sum(z => z.Cantidad), sinZona.Sum(z => z.Peso));
+            sinZona.Sum(z => z.Cantidad), sinZona.Sum(z => z.Peso), sinUbicacion,
+            disponibilidad.Sum(z => z.Cantidad), disponibilidad.Sum(z => z.Peso));
     }
 }

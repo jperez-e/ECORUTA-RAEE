@@ -37,6 +37,7 @@ public class SolicitudService
     private static SolicitudRecoleccion Insertar(
         SQLiteConnection connection, SolicitudRecoleccion solicitud, int? numeroPersonalizado)
     {
+        ValidarUbicacion(solicitud);
         var nueva = new SolicitudRecoleccion
         {
             FechaRegistro = DateTime.Now,
@@ -84,6 +85,11 @@ public class SolicitudService
     private static bool Actualizar(SQLiteConnection connection, SolicitudRecoleccion solicitud,
         bool actualizarPesoManual, string? codigo, int? numeroPersonalizado)
     {
+        ValidarUbicacion(solicitud);
+        if (solicitud.UbicacionPendiente && connection.Find<SolicitudRecoleccion>(solicitud.Id) is { UbicacionPendiente: false } &&
+            connection.ExecuteScalar<int>("SELECT EXISTS(SELECT 1 FROM JornadaSolicitudes WHERE SolicitudId = ? AND Activa = 1)",
+                solicitud.Id) == 1)
+            throw new UbicacionAsignadaException();
         // El peso manual solo se escribe si la solicitud sigue sin residuos.
         int actualizadas = EjecutarEscrituraCodigo(connection, () => connection.Execute("""
                 UPDATE Solicitudes
@@ -99,6 +105,50 @@ public class SolicitudService
         if (actualizadas == 1 && numeroPersonalizado is int numeroManual)
             ActualizarSecuencia(connection, numeroManual);
         return actualizadas == 1;
+    }
+
+    private static void ValidarUbicacion(SolicitudRecoleccion solicitud)
+    {
+        if ((solicitud.Latitud.HasValue || solicitud.Longitud.HasValue) && solicitud.UbicacionPendiente)
+            throw new ArgumentException("La ubicación debe contener ambas coordenadas válidas.", nameof(solicitud));
+    }
+
+    internal async Task<bool> CompletarUbicacionAsync(SolicitudRecoleccion original, PuntoRecogida punto)
+    {
+        var db = await Database.GetConnectionAsync();
+        bool guardada = false;
+        await db.RunInTransactionAsync(connection =>
+        {
+            var vigente = connection.Find<SolicitudRecoleccion>(original.Id);
+            if (vigente is not { Estado: ElegibilidadRecogida.Pendiente, UbicacionPendiente: true } ||
+                vigente.Zona != original.Zona || vigente.SectorOtraZona != original.SectorOtraZona ||
+                vigente.Latitud != original.Latitud || vigente.Longitud != original.Longitud)
+                return;
+            guardada = connection.Execute("UPDATE Solicitudes SET Latitud = ?, Longitud = ? WHERE Id = ?",
+                punto.Latitud, punto.Longitud, vigente.Id) == 1;
+        });
+        return guardada;
+    }
+
+    internal async Task<List<SolicitudRecoleccion>> ObtenerListadoOperativoAsync()
+    {
+        var db = await Database.GetConnectionAsync();
+        List<SolicitudRecoleccion> solicitudes = [];
+        await db.RunInTransactionAsync(connection =>
+        {
+            solicitudes = connection.Table<SolicitudRecoleccion>().OrderByDescending(s => s.FechaRegistro)
+                .ThenByDescending(s => s.Id).ToList();
+            var asignadas = connection.Query<AsignacionActiva>(
+                "SELECT SolicitudId FROM JornadaSolicitudes WHERE Activa = 1").Select(a => a.SolicitudId).ToHashSet();
+            foreach (var solicitud in solicitudes)
+                solicitud.EnJornadaActiva = asignadas.Contains(solicitud.Id);
+        });
+        return solicitudes;
+    }
+
+    private sealed class AsignacionActiva
+    {
+        public int SolicitudId { get; set; }
     }
 
     internal async Task<(SolicitudRecoleccion? Solicitud, List<ResiduoElectronico> Equipos)> ObtenerCompletaAsync(int id)
@@ -197,9 +247,7 @@ public class SolicitudService
     private static void ValidarSolicitudCompleta(SolicitudRecoleccion solicitud, bool pesoManual, double? pesoActual)
     {
         if (string.IsNullOrWhiteSpace(solicitud.Zona) || solicitud.DireccionReferencia.Trim().Length is < 5 or > 150 ||
-            solicitud.Latitud.HasValue != solicitud.Longitud.HasValue ||
-            (solicitud.Latitud.HasValue && !Coordenadas.SonValidas(solicitud)) ||
-            (solicitud.Zona.Equals("Otra zona", StringComparison.OrdinalIgnoreCase) &&
+            (solicitud.Zona.Equals(ElegibilidadRecogida.OtraZona, StringComparison.OrdinalIgnoreCase) &&
                 (string.IsNullOrWhiteSpace(solicitud.SectorOtraZona) || solicitud.SectorOtraZona.Trim().Length > 100)) ||
             (pesoManual && (!double.IsFinite(solicitud.PesoTotalEstimado) ||
                 solicitud.PesoTotalEstimado is < 0 or > 10000 ||
@@ -283,3 +331,6 @@ internal sealed class EquiposSolicitudModificadosException()
 
 internal sealed class SolicitudModificadaException()
     : Exception("La solicitud cambió desde que se abrió el formulario.");
+
+internal sealed class UbicacionAsignadaException()
+    : Exception("Resuelve la jornada programada antes de quitar la ubicación.");

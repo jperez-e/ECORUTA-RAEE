@@ -46,7 +46,7 @@ public partial class SolicitudesViewModel : ObservableObject
         await _carga.WaitAsync();
         try
         {
-            _todas = await SolicitudService.Instancia.ObtenerTodasAsync();
+            _todas = await SolicitudService.Instancia.ObtenerListadoOperativoAsync();
             AplicarFiltro();
         }
         finally
@@ -75,7 +75,8 @@ public partial class SolicitudesViewModel : ObservableObject
             ? todas.Where(s =>
                 (s.CodigoSolicitud?.Contains(termino, StringComparison.OrdinalIgnoreCase) ?? false) ||
                 (s.Zona?.Contains(termino, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                (s.DireccionReferencia?.Contains(termino, StringComparison.OrdinalIgnoreCase) ?? false))
+                (s.DireccionReferencia?.Contains(termino, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                s.DisponibilidadOperativa.Contains(termino, StringComparison.OrdinalIgnoreCase))
             : todas.AsEnumerable();
 
         Solicitudes.Clear();

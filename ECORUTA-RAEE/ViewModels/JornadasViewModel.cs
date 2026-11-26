@@ -38,6 +38,7 @@ internal partial class JornadasViewModel : ObservableObject
     private int sinZonaEspecifica;
 
     public bool HaySolicitudesSinZona => SinZonaEspecifica > 0;
+    [ObservableProperty] private int ubicacionesPendientes;
     public bool HayAvisoUmbrales => AvisoUmbrales.Length > 0;
     public bool HayErrorUmbrales => ErrorUmbrales.Length > 0;
     public bool PuedeInteractuar => !Ocupado;
@@ -52,6 +53,7 @@ internal partial class JornadasViewModel : ObservableObject
         Zonas = panel.Zonas.Select(z => new AvanceZona(z)).ToList();
         Jornadas = panel.Jornadas;
         SinZonaEspecifica = panel.SinZonaEspecifica;
+        UbicacionesPendientes = panel.UbicacionesPendientes;
         ErrorUmbrales = string.Empty;
     }
 

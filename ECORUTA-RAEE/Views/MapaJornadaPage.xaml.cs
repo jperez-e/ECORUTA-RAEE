@@ -60,7 +60,7 @@ public partial class MapaJornadaPage : ContentPage
         }
 
         Aviso.IsVisible = datos.SinCoordenadas > 0;
-        Aviso.Text = $"Sin coordenadas completas: {datos.SinCoordenadas}. Sus solicitudes siguen en el listado.";
+        Aviso.Text = $"Ubicaciones incompletas · {datos.SinCoordenadas}. Consulta el listado y completa los puntos antes de la recogida en campo.";
         if (!datos.Paradas.Any(p => p.Ubicada))
         {
             EstadoMapa.Text = "No hay puntos para ubicar en el mapa.";

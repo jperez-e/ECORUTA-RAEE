@@ -51,7 +51,8 @@ internal sealed class CategoriaAmbiental
 internal sealed record PanelAmbiental(
     IndicadoresAmbientales Indicadores, ResumenJornadasAmbiental Jornadas, UmbralesJornada Umbrales,
     IReadOnlyList<ZonaAmbiental> Zonas, IReadOnlyList<ZonaAmbiental> Alertas,
-    IReadOnlyList<CategoriaAmbiental> Categorias, int SolicitudesSinZona, double PesoSinZona)
+    IReadOnlyList<CategoriaAmbiental> Categorias, int SolicitudesSinZona, double PesoSinZona,
+    int UbicacionesPendientes, int CantidadElegible, double PesoElegible)
 {
     public bool HaySolicitudesSinZona => SolicitudesSinZona > 0;
     public bool SinSolicitudes => Indicadores.Solicitudes == 0;

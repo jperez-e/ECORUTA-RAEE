@@ -128,6 +128,7 @@
                             IsEnabled="{Binding FormularioDisponible}" Style="{StaticResource SecondaryButton}"/>
                     <Button Text="Quitar ubicación" Command="{Binding QuitarUbicacionCommand}"
                             IsVisible="{Binding TieneUbicacion}" Style="{StaticResource SecondaryButton}"/>
+                    <VerticalStackLayout IsVisible="{Binding PermitirCoordenadasAvanzadas}" Spacing="8">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                         <Label Text="Coordenadas avanzadas (opcional)" VerticalOptions="Center"
                                Style="{StaticResource Subtitle}"/>
@@ -155,6 +156,7 @@
                                    TextColor="{StaticResource ErrorColor}" FontSize="12"/>
                         </VerticalStackLayout>
                     </Grid>
+                    </VerticalStackLayout>
                 </VerticalStackLayout>
             </Border>
 

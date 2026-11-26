@@ -347,6 +347,8 @@
                                             FontSize="12"
                                             TextColor="#718078"
                                             LineBreakMode="WordWrap"/>
+                                        <Label Text="{Binding DisponibilidadOperativa}" FontAttributes="Bold"
+                                               TextColor="{StaticResource PrimaryGreen}" />
 
                                     </VerticalStackLayout>
 

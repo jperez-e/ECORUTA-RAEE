@@ -21,15 +21,8 @@ public partial class SolicitudFormViewModel : ObservableObject
     internal bool VolverAPortada { get; set; }
     internal bool SalidaConfirmada { get; private set; }
 
-    public ObservableCollection<string> Zonas { get; } = new()
-    {
-        "Herrera",
-        "Los Alcarrizos",
-        "Manoguayabo",
-        "Pantoja",
-        "Pedro Brand",
-        "Otra zona"
-    };
+    public ObservableCollection<string> Zonas { get; } = new(ElegibilidadRecogida.Zonas);
+    public bool PermitirCoordenadasAvanzadas { get; init; } = true;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(EsOtraZona), nameof(PuedeConfirmarZona))]
@@ -122,7 +115,7 @@ public partial class SolicitudFormViewModel : ObservableObject
     public string TextoBotonMapa => TieneUbicacion ? "Revisar o cambiar el punto" : "Elegir en el mapa";
     public string EstadoUbicacion => TieneUbicacion
         ? "Ubicación seleccionada. Se guardará con la solicitud."
-        : "Selecciona el punto en el mapa. Si no está disponible, puedes continuar con la zona y la dirección.";
+        : "Ubicación por completar. Puedes registrar la solicitud con su referencia. No se incluirá en una jornada automática hasta completar la ubicación.";
 
     internal PuntoRecogida? ObtenerPuntoRecogida() =>
         TryLeerCoordenada(LatitudTexto, Coordenadas.LimiteLatitud, out double latitud) &&
@@ -451,6 +444,11 @@ public partial class SolicitudFormViewModel : ObservableObject
         catch (EquiposSolicitudModificadosException)
         {
             ErrorEquipos = "Los equipos cambiaron en otra pantalla. Vuelve a abrir la solicitud antes de guardar.";
+            return;
+        }
+        catch (UbicacionAsignadaException ex)
+        {
+            await Shell.Current.DisplayAlertAsync("Ubicación asignada", ex.Message, "Aceptar");
             return;
         }
         catch (SolicitudModificadaException)

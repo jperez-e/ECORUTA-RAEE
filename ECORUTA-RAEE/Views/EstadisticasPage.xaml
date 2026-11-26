@@ -65,6 +65,9 @@
                 <Border Style="{StaticResource CardBorder}" Padding="14">
                     <VerticalStackLayout Spacing="10">
                         <Label Text="Jornadas" Style="{StaticResource SectionHeading}" />
+                        <Label Text="{Binding Panel.UbicacionesPendientes, StringFormat='Ubicación por completar en solicitudes pendientes · {0}'}" Style="{StaticResource Subtitle}" />
+                        <Label Text="{Binding Panel.CantidadElegible, StringFormat='{0} solicitudes elegibles'}" Style="{StaticResource Subtitle}" />
+                        <Label Text="{Binding Panel.PesoElegible, StringFormat='{0:0.##} kg elegibles'}" Style="{StaticResource Subtitle}" />
                         <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="10">
                             <VerticalStackLayout>
                                 <Label Text="{Binding Panel.Jornadas.Programadas}" Style="{StaticResource MetricValue}" />

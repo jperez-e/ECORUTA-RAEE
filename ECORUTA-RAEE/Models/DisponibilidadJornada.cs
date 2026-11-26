@@ -25,7 +25,7 @@ internal sealed record PanelJornadas(
     UmbralesJornada Umbrales,
     IReadOnlyList<ZonaDisponible> Zonas,
     IReadOnlyList<JornadaRecoleccion> Jornadas,
-    int SinZonaEspecifica);
+    int SinZonaEspecifica, int UbicacionesPendientes);
 
 internal sealed record VistaPreviaJornada(
     ZonaDisponible Disponibilidad,

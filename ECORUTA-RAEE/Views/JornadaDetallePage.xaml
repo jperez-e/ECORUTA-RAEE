@@ -51,14 +51,14 @@
                 </VerticalStackLayout>
             </Border>
 
+            <Border IsVisible="{Binding HayCoordenadasIncompletas}" Style="{StaticResource SoftPanel}"
+                    BackgroundColor="{StaticResource WarningBackground}">
+                <Label TextColor="{StaticResource WarningText}"
+                       Text="{Binding CoordenadasIncompletas, StringFormat='Jornada con {0} ubicaciones incompletas. Consulta los puntos antes de la recogida en campo.'}" />
+            </Border>
             <Border IsVisible="{Binding PuedePlanificar}" Style="{StaticResource CardBorder}" Padding="14">
                 <VerticalStackLayout Spacing="8">
                     <Label Text="Orden sugerido de recogida" Style="{StaticResource SectionHeading}" />
-                    <Border IsVisible="{Binding HayCoordenadasIncompletas}" Style="{StaticResource SoftPanel}"
-                            BackgroundColor="{StaticResource WarningBackground}">
-                        <Label TextColor="{StaticResource WarningText}"
-                               Text="{Binding CoordenadasIncompletas, StringFormat='{0} solicitudes sin coordenadas completas. Puedes completarlas o usar el orden por antigüedad.'}" />
-                    </Border>
                     <Label Text="{Binding EstadoRuta}" Style="{StaticResource Subtitle}" />
                     <Button Text="{Binding AccionRuta}" Command="{Binding PlanificarRutaCommand}"
                             IsEnabled="{Binding PuedeInteractuar}" Style="{StaticResource PrimaryButton}" />

@@ -20,12 +20,12 @@ internal sealed class JornadaService
         PanelJornadas panel = null!;
         await db.RunInTransactionAsync(connection =>
         {
-            var (umbrales, zonas, sinZona) = LeerDisponibilidad(connection);
+            var (umbrales, zonas, sinZona, sinUbicacion) = LeerDisponibilidad(connection);
             var jornadas = connection.Table<JornadaRecoleccion>()
                 .OrderByDescending(j => j.FechaCreacion)
                 .ThenByDescending(j => j.Id)
                 .ToList();
-            panel = new PanelJornadas(umbrales, zonas, jornadas, sinZona);
+            panel = new PanelJornadas(umbrales, zonas, jornadas, sinZona, sinUbicacion);
         });
         return panel;
     }
@@ -222,32 +222,34 @@ internal sealed class JornadaService
             "SELECT EXISTS(SELECT 1 FROM JornadaSolicitudes WHERE SolicitudId = ?)", solicitudId) == 1;
     }
 
-    private static List<SolicitudRecoleccion> LeerDisponibles(SQLiteConnection connection, string? zona = null)
+    private static List<SolicitudRecoleccion> LeerDisponibles(SQLiteConnection connection, string zona) =>
+        LeerPendientesSinAsignar(connection).Where(s => ElegibilidadRecogida.EsElegible(s) &&
+            string.Equals(s.Zona.Trim(), zona.Trim(), StringComparison.OrdinalIgnoreCase)).ToList();
+
+    private static List<SolicitudRecoleccion> LeerPendientesSinAsignar(SQLiteConnection connection)
     {
         const string consulta = """
             SELECT s.* FROM Solicitudes s
             WHERE
             """ + " " + FiltroDisponible;
-        return zona is null
-            ? connection.Query<SolicitudRecoleccion>(consulta + OrdenDisponibilidad)
-            : connection.Query<SolicitudRecoleccion>(
-                consulta + " AND trim(s.Zona) = ? COLLATE NOCASE" + OrdenDisponibilidad, zona.Trim());
+        return connection.Query<SolicitudRecoleccion>(consulta + OrdenDisponibilidad);
     }
 
-    internal static (UmbralesJornada Umbrales, IReadOnlyList<ZonaDisponible> Zonas, int SinZona)
+    internal static (UmbralesJornada Umbrales, IReadOnlyList<ZonaDisponible> Zonas, int SinZona, int SinUbicacion)
         LeerDisponibilidad(SQLiteConnection connection)
     {
         var umbrales = LeerUmbrales(connection);
-        var disponibles = connection.Query<TotalesSolicitudesZona>($"""
-            SELECT s.Zona, 1 AS Cantidad, s.PesoTotalEstimado AS Peso
-            FROM Solicitudes s WHERE {FiltroDisponible}{OrdenDisponibilidad}
-            """);
-        var zonas = AgruparZonas(disponibles.Where(z => EsZonaEspecifica(z.Zona)))
+        var pendientes = LeerPendientesSinAsignar(connection);
+        var elegibles = pendientes.Where(ElegibilidadRecogida.EsElegible)
+            .Select(s => new TotalesSolicitudesZona { Zona = s.Zona, Cantidad = 1, Peso = s.PesoTotalEstimado });
+        var zonas = AgruparZonas(elegibles)
             .Select(z => new ZonaDisponible(z.Zona, z.Cantidad, z.Peso, umbrales))
             .OrderByDescending(z => z.AlcanzaUmbral)
             .ThenBy(z => z.Zona)
             .ToList();
-        return (umbrales, zonas, disponibles.Where(z => !EsZonaEspecifica(z.Zona)).Sum(z => z.Cantidad));
+        return (umbrales, zonas, pendientes.Count(s => !EsZonaEspecifica(s.Zona)),
+            connection.Table<SolicitudRecoleccion>().Where(s => s.Estado == ElegibilidadRecogida.Pendiente)
+                .ToList().Count(s => s.UbicacionPendiente));
     }
 
     internal static IEnumerable<TotalesSolicitudesZona> AgruparZonas(IEnumerable<TotalesSolicitudesZona> zonas) =>
@@ -268,6 +270,5 @@ internal sealed class JornadaService
         string zona, IEnumerable<SolicitudRecoleccion> solicitudes, UmbralesJornada umbrales) =>
         new(zona, solicitudes.Count(), solicitudes.Sum(s => s.PesoTotalEstimado), umbrales);
 
-    internal static bool EsZonaEspecifica(string zona) => !string.IsNullOrWhiteSpace(zona)
-        && !zona.Trim().Equals("Otra zona", StringComparison.OrdinalIgnoreCase);
+    internal static bool EsZonaEspecifica(string zona) => ElegibilidadRecogida.ZonaAdmitida(zona);
 }

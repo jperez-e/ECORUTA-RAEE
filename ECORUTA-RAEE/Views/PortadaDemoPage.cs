@@ -63,11 +63,18 @@ internal sealed class PortadaDemoPage : ContentPage
         foreach (var solicitud in _vm.Solicitudes)
         {
             var equipos = _vm.Equipos(solicitud.Id).ToArray();
-            _contenido.Add(Tarjeta(Texto($"{solicitud.CodigoSolicitud} · {solicitud.Estado}", "SectionHeading"),
+            var tarjeta = new List<View> { Texto($"{solicitud.CodigoSolicitud} · {solicitud.Estado}", "SectionHeading"),
                 Texto(solicitud.Zona), Texto(solicitud.DireccionReferencia),
                 Texto(Resumen(solicitud, equipos)),
                 Boton("Consultar equipos y ubicación", () => Navigation.PushModalAsync(
-                    DetalleCampoPage.ParaSolicitud(solicitud, equipos)))));
+                    DetalleCampoPage.ParaSolicitud(solicitud, equipos))) };
+            if (solicitud.UbicacionPendiente)
+            {
+                tarjeta.Add(Texto("Ubicación por completar. La solicitud está registrada y todavía no es elegible para una jornada automática."));
+                if (solicitud.Estado == ElegibilidadRecogida.Pendiente)
+                    tarjeta.Add(Boton("Completar ubicación", () => Navigation.PushModalAsync(new CompletarUbicacionPage(solicitud))));
+            }
+            _contenido.Add(Tarjeta(tarjeta.ToArray()));
         }
     }
 
@@ -88,7 +95,8 @@ internal sealed class PortadaDemoPage : ContentPage
             _contenido.Add(Texto("No hay zonas próximas al umbral."));
         foreach (var zona in proximas)
             _contenido.Add(Tarjeta(Texto(zona.Zona, "SectionHeading"), Texto(zona.DetalleAlerta)));
-        _contenido.Add(Texto("La elegibilidad geográfica se revisará en la etapa 6.5F.2."));
+        _contenido.Add(Texto($"Ubicación por completar · {panel.UbicacionesPendientes} solicitudes pendientes"));
+        _contenido.Add(Texto($"Disponibilidad operativa · {panel.CantidadElegible} solicitudes · {panel.PesoElegible:0.##} kg elegibles"));
         foreach (var (texto, ruta) in new[] { ("Solicitudes", "solicitudes"), ("Residuos", "residuos"),
             ("Jornadas", "jornadas"), ("Estadísticas", "estadisticas") })
             _contenido.Add(Boton(texto, () => Shell.Current.GoToAsync("//" + ruta)));

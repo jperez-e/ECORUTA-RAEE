@@ -57,6 +57,8 @@ internal sealed class DetalleCampoPage : ContentPage
             await vm.CargarEquiposAsync();
             estado.Text = $"{jornada.Zona} · {jornada.FechaProgramada:dd/MM/yyyy} · {jornada.PesoTotal:0.##} kg";
             var datos = MapaJornada.Crear(jornada);
+            if (datos.SinCoordenadas > 0)
+                _contenido.Add(Texto($"Ubicaciones incompletas · {datos.SinCoordenadas}. Coordina con el gestor antes de la recogida en campo."));
             _contenido.Add(Texto(jornada.RutaDesactualizada ? "Orden desactualizado. Informa al gestor."
                 : jornada.Ruta is null ? "El gestor aún no ha guardado un orden." : datos.Metodo));
             _contenido.Add(Boton("Ver ruta en el mapa", () => Navigation.PushModalAsync(

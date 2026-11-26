@@ -49,6 +49,8 @@
             <Label IsVisible="{Binding HaySolicitudesSinZona}"
                    Text="{Binding SinZonaEspecifica, StringFormat='{0} solicitudes sin zona específica. Elige una zona en su formulario para incluirlas.'}"
                    Style="{StaticResource Subtitle}" />
+            <Label Text="{Binding UbicacionesPendientes, StringFormat='Ubicación por completar en solicitudes pendientes · {0}'}"
+                   Style="{StaticResource Subtitle}" />
             <VerticalStackLayout Spacing="8" BindableLayout.ItemsSource="{Binding Zonas}">
                 <BindableLayout.EmptyView>
                     <Border Style="{StaticResource SoftPanel}"><Label Text="No hay solicitudes pendientes disponibles en zonas específicas." Style="{StaticResource Subtitle}" /></Border>

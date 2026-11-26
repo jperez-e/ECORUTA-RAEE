@@ -26,4 +26,12 @@ public class SolicitudRecoleccion
     public string Estado { get; set; } = "Pendiente";
 
     public double PesoTotalEstimado { get; set; }
+
+    [Ignore] public bool EnJornadaActiva { get; internal set; }
+    [Ignore] public bool UbicacionPendiente => !Coordenadas.SonValidas(this);
+    [Ignore] public string DisponibilidadOperativa => EnJornadaActiva
+        ? UbicacionPendiente ? "Incluida en jornada programada · Ubicación por completar" : "Incluida en jornada programada"
+        : UbicacionPendiente ? "Ubicación por completar"
+        : !ElegibilidadRecogida.ZonaAdmitida(Zona) ? "Zona pendiente de agrupación automática"
+        : ElegibilidadRecogida.EsElegible(this) ? "Lista para recogida" : "Sin disponibilidad operativa";
 }

@@ -20,7 +20,10 @@ public partial class SolicitudFormPage : ContentPage, IQueryAttributable, IFormu
     public SolicitudFormPage()
     {
         InitializeComponent();
-        BindingContext = _viewModel = new SolicitudFormViewModel();
+        BindingContext = _viewModel = new SolicitudFormViewModel
+        {
+            PermitirCoordenadasAvanzadas = SesionDemostracion.Perfil == PerfilDemostracion.Gestor
+        };
         _viewModel.VolverAPortada = SesionDemostracion.Perfil == PerfilDemostracion.Ciudadano;
     }
 
