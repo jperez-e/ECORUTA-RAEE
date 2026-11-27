@@ -177,6 +177,35 @@ public class SolicitudService
         public int SolicitudId { get; set; }
     }
 
+    internal async Task<IReadOnlyList<SolicitudCiudadana>> ObtenerVistaCiudadanaAsync(int? id = null)
+    {
+        var db = await Database.GetConnectionAsync();
+        IReadOnlyList<SolicitudCiudadana> resultado = [];
+        await db.RunInTransactionAsync(connection =>
+        {
+            var solicitudes = connection.Query<SolicitudRecoleccion>(
+                "SELECT * FROM Solicitudes WHERE (? IS NULL OR Id = ?) ORDER BY FechaRegistro DESC, Id DESC",
+                id, id);
+            var equipos = connection.Query<ResiduoElectronico>(
+                "SELECT * FROM Residuos WHERE (? IS NULL OR SolicitudId = ?) ORDER BY Id", id, id)
+                .ToLookup(e => e.SolicitudId);
+            var fechas = connection.Query<FechaAsignacionCiudadana>("""
+                SELECT js.SolicitudId, j.FechaProgramada
+                FROM JornadaSolicitudes js JOIN Jornadas j ON j.Id = js.JornadaId
+                WHERE js.Activa = 1 AND j.Estado = ? AND (? IS NULL OR js.SolicitudId = ?)
+                """, JornadaRecoleccion.Programada, id, id).ToDictionary(f => f.SolicitudId, f => f.FechaProgramada);
+            resultado = solicitudes.Select(s => new SolicitudCiudadana(s, equipos[s.Id].ToArray(),
+                fechas.GetValueOrDefault(s.Id))).ToArray();
+        });
+        return resultado;
+    }
+
+    private sealed class FechaAsignacionCiudadana
+    {
+        public int SolicitudId { get; set; }
+        public DateTime? FechaProgramada { get; set; }
+    }
+
     internal async Task<(SolicitudRecoleccion? Solicitud, List<ResiduoElectronico> Equipos)> ObtenerCompletaAsync(int id)
     {
         var db = await Database.GetConnectionAsync();

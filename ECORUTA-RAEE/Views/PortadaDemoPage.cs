@@ -29,10 +29,9 @@ internal sealed class PortadaDemoPage : ContentPage
         _cargando = true;
         try
         {
-            _contenido.Clear();
             var (titulo, detalle) = _perfil switch
             {
-                PerfilDemostracion.Ciudadano => ("Dale una segunda vida a tus equipos", "Solicita la recogida de tus residuos electrónicos."),
+                PerfilDemostracion.Ciudadano => ("Pequeñas acciones, grandes cambios.", "Dale una segunda vida a tus equipos electrónicos."),
                 PerfilDemostracion.Gestor => ("Centro de gestión", "Planifica y coordina las recogidas de residuos electrónicos."),
                 _ => ("Panel de recolección", "Consulta las jornadas y los puntos de recogida.")
             };
@@ -40,15 +39,22 @@ internal sealed class PortadaDemoPage : ContentPage
                 ? Boton("Nueva solicitud", () => Shell.Current.GoToAsync(nameof(SolicitudFormPage)), true)
                 : null;
             var cabecera = Cabecera(titulo, detalle, nuevaSolicitud);
-            _contenido.Add(cabecera);
+            bool primeraCarga = _contenido.Children.Count == 0;
             var estado = Texto("Cargando…");
-            _contenido.Add(estado);
+            if (primeraCarga)
+            {
+                _contenido.Add(cabecera);
+                _contenido.Add(estado);
+            }
             if (!await _vm.CargarAsync())
             {
-                estado.Text = "No se pudieron consultar los datos.";
+                estado.Text = "No se pudieron actualizar los datos.";
+                if (!_contenido.Children.Contains(estado))
+                    _contenido.Insert(0, estado);
                 return;
             }
-            _contenido.Remove(estado);
+            _contenido.Clear();
+            _contenido.Add(cabecera);
             switch (_perfil)
             {
                 case PerfilDemostracion.Ciudadano: MostrarSolicitudes(); break;
@@ -66,28 +72,19 @@ internal sealed class PortadaDemoPage : ContentPage
         resumen.Add(new MetricaVisual { Etiqueta = "Peso registrado", Icono = "peso", Tono = "verde",
             Valor = $"{_vm.Solicitudes.Sum(s => s.PesoTotalEstimado):0.##} kg" }, 1, 0);
         _contenido.Add(resumen);
-        _contenido.Add(Texto("Solicitudes de este dispositivo", "TituloVisual"));
-        if (_vm.Solicitudes.Count == 0)
+        var recientes = CrearCuadricula();
+        recientes.Add(Texto("Solicitudes recientes", "TituloVisual"));
+        recientes.Add(Boton("Ver todas", () => Navigation.PushModalAsync(new ConsultaCiudadanaPage())), 1, 0);
+        _contenido.Add(recientes);
+        if (_vm.VistaCiudadana.Count == 0)
             _contenido.Add(Tarjeta(ConIcono("equipo", Texto("Todavía no hay solicitudes registradas."))));
-        foreach (var solicitud in _vm.Solicitudes)
-        {
-            var equipos = _vm.Equipos(solicitud.Id).ToArray();
-            var cabecera = new Grid { ColumnDefinitions = { new(GridLength.Star), new(GridLength.Auto) }, ColumnSpacing = 6 };
-            cabecera.Add(Texto(solicitud.CodigoSolicitud, "TituloVisual"), 0, 0);
-            cabecera.Add(EstadoVisual(solicitud.Estado, solicitud.Estado == ElegibilidadRecogida.Pendiente ? "ambar" : "azul"), 1, 0);
-            var tarjeta = new List<View> { cabecera,
-                Texto(solicitud.Zona), Texto(solicitud.DireccionReferencia),
-                Texto(Resumen(solicitud, equipos)),
-                Boton("Consultar solicitud", () => Navigation.PushModalAsync(
-                    DetalleCampoPage.ParaSolicitud(solicitud, equipos))) };
-            if (solicitud.UbicacionPendiente)
-            {
-                tarjeta.Add(ConIcono("punto", EstadoVisual("Ubicación por completar. La solicitud todavía no es elegible para una jornada automática.", "ambar")));
-                if (solicitud.Estado == ElegibilidadRecogida.Pendiente)
-                    tarjeta.Add(Boton("Completar ubicación", () => Navigation.PushModalAsync(new CompletarUbicacionPage(solicitud))));
-            }
-            _contenido.Add(Tarjeta(tarjeta.ToArray()));
-        }
+        foreach (var fila in _vm.VistaCiudadana.Take(3))
+            _contenido.Add(ConsultaCiudadanaPage.TarjetaSolicitud(fila, Navigation));
+        _contenido.Add(Boton("¿Qué equipos puedo registrar?", () => DisplayAlertAsync(
+            "Categorías disponibles", string.Join(", ", DatosEquipo.Categorias) +
+            ". Elige la categoría y describe los equipos que quieres entregar.", "Entendido")));
+        _contenido.Add(Boton("¿Cómo funciona EcoRuta?", () => DisplayAlertAsync(
+            "Cómo funciona EcoRuta", "Registra tus equipos y añade un punto en el mapa. Sin internet puedes guardar la referencia y completar el punto después. Consulta aquí la fecha si se programa una jornada.", "Entendido")));
     }
 
     private void MostrarPanel()

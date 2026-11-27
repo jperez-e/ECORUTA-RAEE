@@ -33,11 +33,11 @@ public partial class EquipoBorradorViewModel : ObservableObject
     private string descripcion;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(Resumen))]
+    [NotifyPropertyChangedFor(nameof(Resumen), nameof(PesoPromedio))]
     private string cantidadTexto;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(Resumen))]
+    [NotifyPropertyChangedFor(nameof(Resumen), nameof(PesoPromedio))]
     private string pesoTexto;
 
     [ObservableProperty]
@@ -58,6 +58,8 @@ public partial class EquipoBorradorViewModel : ObservableObject
             return $"{unidades} {(unidades == 1 ? "unidad" : "unidades")} · {Peso:F2} kg";
         }
     }
+    public string PesoPromedio => Unidades > 1 && Peso > 0
+        ? $"Peso promedio por unidad: {Peso / Unidades:0.##} kg" : string.Empty;
     public string TextoEditor => MostrandoEditor ? "Cerrar editor" : "Editar";
     internal int Unidades
     {

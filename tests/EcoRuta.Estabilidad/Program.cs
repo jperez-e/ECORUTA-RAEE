@@ -277,6 +277,57 @@ Verificar(await reabierta.FindAsync<SolicitudRecoleccion>(primera.Id) is { Telef
     "El contacto se conserva al reabrir.");
 await reabierta.CloseAsync();
 await VerificarMigracionContactoAsync();
+var publicada = (await servicio.ObtenerVistaCiudadanaAsync(primera.Id)).Single();
+Verificar(publicada.FechaProgramada == DateTime.Today && publicada.EstadoVisual == "Programada",
+    "La vista ciudadana debe consultar la fecha de la jornada activa.");
+Verificar(await jornadas.CancelarAsync(programada.Id), "Se debe poder cancelar la jornada de prueba.");
+var liberada = (await servicio.ObtenerVistaCiudadanaAsync(primera.Id)).Single();
+Verificar(liberada.FechaProgramada is null && liberada.EstadoVisual == "En espera",
+    "Una jornada cancelada no debe mostrar fecha activa después de volver a consultar.");
+Verificar((await servicio.ObtenerVistaCiudadanaAsync(segunda.Id)).Single().EstadoVisual == "Ubicación pendiente",
+    "La solicitud histórica sin coordenadas conserva su siguiente paso.");
+var otra = await CrearPrueba("Pantoja", 1, puntoValido);
+otra.Zona = "Otra zona";
+otra.SectorOtraZona = "Sector de prueba";
+await servicio.ActualizarAsync(otra);
+Verificar((await servicio.ObtenerVistaCiudadanaAsync(otra.Id)).Single().EstadoVisual == "Fuera de agrupación",
+    "Otra zona se explica con sus datos existentes.");
+
+var confirmacion = new SolicitudFormViewModel { FormularioDisponible = true, VolverAPortada = true };
+confirmacion.AplicarUbicacion(SeleccionUbicacion.Crear(puntoValido, "Herrera", null)!);
+confirmacion.DireccionReferencia = "Referencia de la confirmación";
+confirmacion.NombreContacto = "Contacto de revisión";
+confirmacion.AgregarEquipoCommand.Execute(null);
+var filaConfirmacion = confirmacion.Equipos.Single();
+filaConfirmacion.Categoria = "Monitor";
+filaConfirmacion.Descripcion = "Equipo del borrador";
+filaConfirmacion.CantidadTexto = "2";
+filaConfirmacion.PesoTexto = "8";
+Verificar(confirmacion.UnidadesEquipos == 2 && confirmacion.PesoResumen == 8 &&
+    filaConfirmacion.PesoPromedio.Contains('4') && confirmacion.ResumenContacto.Contains("Contacto de revisión"),
+    "El resumen debe usar el mismo borrador y distinguir el peso conjunto del promedio.");
+int confirmaciones = 0;
+confirmacion.MostrarConfirmacionCiudadana = async ficha =>
+{
+    confirmaciones++;
+    Verificar(confirmacion.SalidaConfirmada &&
+        (await servicio.ObtenerVistaCiudadanaAsync(ficha.Solicitud.Id)).Single().Solicitud.NombreContacto == "Contacto de revisión",
+        "La confirmación solo debe emitirse después de confirmar SQLite.");
+};
+confirmacion.PersonalizarCodigo = true;
+confirmacion.CodigoTexto = creada.CodigoSolicitud;
+await confirmacion.GuardarCommand.ExecuteAsync(null);
+Verificar(confirmaciones == 0 && confirmacion.ErrorCodigo.Length > 0 &&
+    confirmacion.Equipos.Single() == filaConfirmacion && confirmacion.NombreContacto == "Contacto de revisión",
+    "El código duplicado debe dejar el borrador visible y no emitir confirmación.");
+confirmacion.PersonalizarCodigo = false;
+await Task.WhenAll(confirmacion.GuardarCommand.ExecuteAsync(null), confirmacion.GuardarCommand.ExecuteAsync(null));
+await confirmacion.GuardarCommand.ExecuteAsync(null);
+Verificar(confirmaciones == 1 &&
+    (await servicio.ObtenerVistaCiudadanaAsync()).Count(x => x.Solicitud.NombreContacto == "Contacto de revisión") == 1,
+    "Las pulsaciones repetidas solo deben producir una solicitud y una confirmación.");
+Console.WriteLine("APROBADO: próximo paso, fecha activa, cancelación, resumen, UNIQUE y confirmación única posterior al guardado.");
+
 
 static async Task VerificarMigracionContactoAsync()
 {

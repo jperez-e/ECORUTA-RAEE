@@ -19,6 +19,7 @@ public partial class SolicitudFormViewModel : ObservableObject
     private SolicitudRecoleccion? solicitudOriginal;
     internal bool VolverAJornada { get; set; }
     internal bool VolverAPortada { get; set; }
+    internal Func<SolicitudCiudadana, Task>? MostrarConfirmacionCiudadana { get; set; }
     internal bool SalidaConfirmada { get; private set; }
 
     public ObservableCollection<string> Zonas { get; } = new(ElegibilidadRecogida.Zonas);
@@ -96,7 +97,7 @@ public partial class SolicitudFormViewModel : ObservableObject
         EsEdicion ? "Editar solicitud" : "Nueva solicitud";
 
     public string TextoBotonGuardar =>
-        EsEdicion ? "Guardar cambios   →" : "Registrar solicitud   →";
+        EsEdicion ? "Guardar cambios" : "Guardar solicitud";
 
     public bool MostrarBotonEliminar => EsEdicion;
 
@@ -461,12 +462,6 @@ public partial class SolicitudFormViewModel : ObservableObject
             }
         }
 
-        if (!valido)
-        {
-            GuardadoExitoso = false;
-            return;
-        }
-
         var nombre = DatosContacto.NormalizarNombre(NombreContacto);
         if (!DatosContacto.NombreValido(nombre))
             ErrorNombreContacto = "Escribe un nombre de hasta 100 caracteres.";
@@ -474,7 +469,7 @@ public partial class SolicitudFormViewModel : ObservableObject
             ErrorTelefonoContacto = PrefijoContacto == DatosContacto.Dominicano
                 ? "Introduce los 10 dígitos, comenzando por 809, 829 o 849."
                 : "Introduce el número completo con + y su código de país.";
-        if (ErrorNombreContacto.Length > 0 || ErrorTelefonoContacto.Length > 0)
+        if (!valido || ErrorNombreContacto.Length > 0 || ErrorTelefonoContacto.Length > 0)
             return;
 
         var solicitud = new SolicitudRecoleccion
@@ -538,6 +533,14 @@ public partial class SolicitudFormViewModel : ObservableObject
         string accion = EsEdicion ? "actualizó" : "guardó";
         MensajeExito = $"La solicitud {codigoSolicitud} se {accion} correctamente.";
         GuardadoExitoso = !EsEdicion;
+
+        if (!EsEdicion && VolverAPortada && MostrarConfirmacionCiudadana is { } confirmar)
+        {
+            SalidaConfirmada = true;
+            await VolverDespuesDeGuardarAsync();
+            await confirmar(new SolicitudCiudadana(solicitud, borrador));
+            return;
+        }
 
         await Shell.Current.DisplayAlertAsync(
             EsEdicion ? "Actualización exitosa" : "Registro exitoso",

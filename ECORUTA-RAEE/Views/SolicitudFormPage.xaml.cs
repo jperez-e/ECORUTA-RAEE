@@ -27,6 +27,9 @@ public partial class SolicitudFormPage : ContentPage, IQueryAttributable, IFormu
             PermitirCoordenadasAvanzadas = SesionDemostracion.Perfil == PerfilDemostracion.Gestor
         };
         _viewModel.VolverAPortada = SesionDemostracion.Perfil == PerfilDemostracion.Ciudadano;
+        if (_viewModel.VolverAPortada)
+            _viewModel.MostrarConfirmacionCiudadana = fila =>
+                Shell.Current.Navigation.PushModalAsync(new ConsultaCiudadanaPage(fila, confirmacion: true));
     }
 
     public void ApplyQueryAttributes(IDictionary<string, object> query)
@@ -71,6 +74,56 @@ public partial class SolicitudFormPage : ContentPage, IQueryAttributable, IFormu
         {
             _abriendoMapa = false;
         }
+    }
+
+    private async Task IrAAsync(VisualElement campo, bool enfocar = false)
+    {
+        await FormularioScroll.ScrollToAsync(campo, ScrollToPosition.Start, true);
+        if (enfocar && campo is Entry or Editor)
+            campo.Focus();
+    }
+
+    private async void CambiarContacto_Clicked(object? sender, EventArgs e) => await IrAAsync(CampoNombre, true);
+    private async void CambiarUbicacion_Clicked(object? sender, EventArgs e) => await IrAAsync(CampoMapa);
+    private async void CambiarEquipos_Clicked(object? sender, EventArgs e) => await IrAAsync(SeccionEquipos);
+
+    private async void Guardar_Clicked(object? sender, EventArgs e)
+    {
+        var guardar = _viewModel.GuardarCommand;
+        if (guardar.IsRunning || !guardar.CanExecute(null))
+            return;
+
+        await guardar.ExecuteAsync(null);
+        if (_viewModel.SalidaConfirmada)
+            return;
+
+        VisualElement? campo =
+            _viewModel.ErrorNombreContacto.Length > 0 ? CampoNombre :
+            _viewModel.ErrorTelefonoContacto.Length > 0 ? CampoTelefono :
+            _viewModel.TieneErrorLatitud ? CampoLatitud :
+            _viewModel.TieneErrorLongitud ? CampoLongitud :
+            _viewModel.TieneErrorZona ? _viewModel.EsOtraZona && string.IsNullOrWhiteSpace(_viewModel.SectorOtraZona)
+                ? CampoSector : CampoZona :
+            _viewModel.TieneErrorDireccion ? CampoReferencia :
+            _viewModel.ErrorEquipos.Length > 0 ? BuscarErrorEquipo() :
+            _viewModel.TieneErrorCodigo ? CampoCodigo :
+            _viewModel.TieneErrorPeso ? CampoPesoManual : null;
+        if (campo is not null)
+            await IrAAsync(campo, true);
+    }
+
+    private VisualElement BuscarErrorEquipo()
+    {
+        var fila = _viewModel.Equipos.FirstOrDefault(e => e.ErrorCategoria.Length + e.ErrorDescripcion.Length +
+            e.ErrorCantidad.Length + e.ErrorPeso.Length > 0);
+        if (fila is null)
+            return AgregarEquipo;
+        string campo = fila.ErrorCategoria.Length > 0 ? "Categoría del equipo"
+            : fila.ErrorDescripcion.Length > 0 ? "Descripción del equipo"
+            : fila.ErrorCantidad.Length > 0 ? "Cantidad de equipos" : "Peso total del registro en kilogramos";
+        return SeccionEquipos.GetVisualTreeDescendants().OfType<VisualElement>().FirstOrDefault(
+            vista => ReferenceEquals(vista.BindingContext, fila) && SemanticProperties.GetDescription(vista) == campo)
+            ?? SeccionEquipos;
     }
 
     protected override async void OnAppearing()
