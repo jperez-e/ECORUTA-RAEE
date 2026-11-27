@@ -177,6 +177,26 @@ public class SolicitudService
         public int SolicitudId { get; set; }
     }
 
+    internal async Task<IReadOnlyList<SolicitudGestion>> ObtenerGestionAsync()
+    {
+        var db = await Database.GetConnectionAsync();
+        var filas = await db.QueryAsync<SolicitudGestion>("""
+            SELECT s.Id, s.CodigoSolicitud, s.FechaRegistro, s.Zona, s.SectorOtraZona, s.DireccionReferencia,
+                   s.Latitud, s.Longitud, s.Estado, s.PesoTotalEstimado, j.FechaProgramada,
+                   (length(trim(COALESCE(s.TelefonoContacto, ''))) > 0) AS TieneTelefono,
+                   COALESCE(r.Unidades, 0) AS Unidades
+            FROM Solicitudes s
+            LEFT JOIN JornadaSolicitudes js ON js.SolicitudId = s.Id AND js.Activa = 1
+            LEFT JOIN Jornadas j ON j.Id = js.JornadaId AND j.Estado = ?
+            LEFT JOIN (SELECT SolicitudId, SUM(Cantidad) AS Unidades FROM Residuos GROUP BY SolicitudId) r
+                ON r.SolicitudId = s.Id
+            ORDER BY s.FechaRegistro DESC, s.Id DESC
+            """, JornadaRecoleccion.Programada);
+        foreach (var fila in filas)
+            fila.EnJornadaActiva = fila.TieneFecha;
+        return filas;
+    }
+
     internal async Task<IReadOnlyList<SolicitudCiudadana>> ObtenerVistaCiudadanaAsync(int? id = null)
     {
         var db = await Database.GetConnectionAsync();

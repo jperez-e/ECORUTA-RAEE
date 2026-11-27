@@ -1,7 +1,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -12,7 +11,21 @@ namespace ECORUTA_RAEE.ViewModels;
 
 public partial class SolicitudesViewModel : ObservableObject
 {
-    public ObservableCollection<SolicitudRecoleccion> Solicitudes { get; } = new();
+    [ObservableProperty] private IReadOnlyList<SolicitudGestion> solicitudes = [];
+    [ObservableProperty] private int filtroSeleccionado;
+    public IReadOnlyList<string> Filtros { get; } =
+    [
+        "Todas las solicitudes", "Disponibles para jornada", "Incluidas en jornada activa",
+        "Ubicación por completar", "Otra zona", "Programadas sin teléfono"
+    ];
+
+    internal void AbrirFiltro(FiltroGestion filtro)
+    {
+        TextoBusqueda = string.Empty;
+        FiltroSeleccionado = (int)filtro;
+    }
+
+    partial void OnFiltroSeleccionadoChanged(int value) => AplicarFiltro();
 
     [ObservableProperty]
     private bool haySolicitudes;
@@ -38,7 +51,7 @@ public partial class SolicitudesViewModel : ObservableObject
     [ObservableProperty]
     private string resumenBusqueda = string.Empty;
 
-    private List<SolicitudRecoleccion> _todas = new();
+    private IReadOnlyList<SolicitudGestion> _todas = [];
     private readonly SemaphoreSlim _carga = new(1, 1);
 
     public async Task CargarSolicitudesAsync()
@@ -46,7 +59,7 @@ public partial class SolicitudesViewModel : ObservableObject
         await _carga.WaitAsync();
         try
         {
-            _todas = await SolicitudService.Instancia.ObtenerListadoOperativoAsync();
+            _todas = await SolicitudService.Instancia.ObtenerGestionAsync();
             AplicarFiltro();
         }
         finally
@@ -69,42 +82,39 @@ public partial class SolicitudesViewModel : ObservableObject
 
         TotalSolicitudes = todas.Count;
         HaySolicitudes = TotalSolicitudes > 0;
-        HayBusqueda = termino.Length > 0;
+        HayBusqueda = termino.Length > 0 || FiltroSeleccionado > 0;
+        var filtro = (FiltroGestion)Math.Max(0, FiltroSeleccionado);
+        var filtradas = todas.Where(s => s.Coincide(filtro) && (termino.Length == 0 ||
+            s.CodigoSolicitud.Contains(termino, StringComparison.OrdinalIgnoreCase) ||
+            s.ZonaVisible.Contains(termino, StringComparison.OrdinalIgnoreCase) ||
+            s.DireccionReferencia.Contains(termino, StringComparison.OrdinalIgnoreCase) ||
+            s.DisponibilidadOperativa.Contains(termino, StringComparison.OrdinalIgnoreCase))).ToArray();
 
-        var filtradas = HayBusqueda
-            ? todas.Where(s =>
-                (s.CodigoSolicitud?.Contains(termino, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                (s.Zona?.Contains(termino, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                (s.DireccionReferencia?.Contains(termino, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                s.DisponibilidadOperativa.Contains(termino, StringComparison.OrdinalIgnoreCase))
-            : todas.AsEnumerable();
+        if (!Solicitudes.Select(ValoresVisibles).SequenceEqual(filtradas.Select(ValoresVisibles)))
+            Solicitudes = filtradas;
 
-        Solicitudes.Clear();
-
-        foreach (var solicitud in filtradas)
-        {
-            Solicitudes.Add(solicitud);
-        }
-
-        ResumenBusqueda = HayBusqueda
-            ? $"{Solicitudes.Count} de {TotalSolicitudes} solicitudes encontradas"
-            : string.Empty;
+        ResumenBusqueda = $"{Solicitudes.Count} de {TotalSolicitudes} solicitudes";
 
         TituloListaVacia = HayBusqueda
             ? "No se encontraron solicitudes"
             : "Todavía no hay solicitudes";
 
         DescripcionListaVacia = HayBusqueda
-            ? "Prueba con otro código, zona o dirección, o borra el texto de búsqueda."
+            ? "Cambia el filtro o prueba otro código, zona o dirección."
             : "Cuando registres una recogida, aparecerá aquí para que puedas consultar sus datos.";
     }
+
+    private static (int, string, string, string, string, long, double, bool, DateTime?) ValoresVisibles(SolicitudGestion s) =>
+        (s.Id, s.CodigoSolicitud, s.ZonaVisible, s.DireccionReferencia, s.EstadoGestion, s.Unidades,
+            s.PesoTotalEstimado, s.TieneTelefono, s.FechaProgramada);
 
     // CREATE: navegar al formulario vacío.
     [RelayCommand]
     private async Task NuevaSolicitud()
     {
         await Shell.Current.GoToAsync(
-            nameof(ECORUTA_RAEE.Views.SolicitudFormPage));
+            nameof(ECORUTA_RAEE.Views.SolicitudFormPage),
+            new ShellNavigationQueryParameters { ["VolverAListadoGestion"] = true });
     }
 
     // UPDATE: abrir el formulario con los datos seleccionados.
@@ -116,7 +126,8 @@ public partial class SolicitudesViewModel : ObservableObject
 
         var parametros = new Dictionary<string, object>
         {
-            ["SolicitudId"] = solicitud.Id
+            ["SolicitudId"] = solicitud.Id,
+            ["VolverAListadoGestion"] = true
         };
 
         await Shell.Current.GoToAsync(

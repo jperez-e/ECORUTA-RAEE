@@ -27,6 +27,17 @@ public partial class JornadaDetallePage : ContentPage, IQueryAttributable
         await _viewModel.CargarPantallaAsync();
     }
 
+    private async void DetalleSolicitud_Clicked(object? sender, EventArgs e)
+    {
+        if (_abriendoMapa || !_viewModel.PuedeInteractuar ||
+            sender is not Button { CommandParameter: ECORUTA_RAEE.Models.SolicitudRecoleccion solicitud })
+            return;
+
+        _abriendoMapa = true;
+        try { await Navigation.PushModalAsync(new ConsultaCiudadanaPage(solicitud.Id)); }
+        finally { _abriendoMapa = false; }
+    }
+
     private async void AbrirMapa_Clicked(object? sender, EventArgs e)
     {
         if (_abriendoMapa || !_viewModel.PuedeInteractuar || _viewModel.Jornada is not { } jornada)

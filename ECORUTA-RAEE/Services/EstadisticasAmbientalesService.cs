@@ -16,6 +16,19 @@ internal sealed class EstadisticasAmbientalesService
         return panel;
     }
 
+    internal async Task<(PanelAmbiental Panel, IReadOnlyList<AlertaGestion> Alertas)> ObtenerGestionAsync()
+    {
+        var db = await EcoRutaDatabase.Instance.GetConnectionAsync();
+        PanelAmbiental panel = null!;
+        IReadOnlyList<AlertaGestion> alertas = [];
+        await db.RunInTransactionAsync(connection =>
+        {
+            panel = LeerPanel(connection);
+            alertas = AlertaGestion.Crear(panel, JornadaService.LeerPortadaCampo(connection));
+        });
+        return (panel, alertas);
+    }
+
     private static PanelAmbiental LeerPanel(SQLiteConnection connection)
     {
         var totalesSolicitudes = connection.Query<TotalesSolicitudesZona>("""

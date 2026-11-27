@@ -25,6 +25,8 @@ public class JornadaRecoleccion
     [Ignore]
     public int CantidadSolicitudes => Solicitudes.Count;
 
+    [Ignore] public long UnidadesEquipos { get; internal set; }
+
     [Ignore]
     public double PesoTotal => Solicitudes.Sum(solicitud => solicitud.PesoTotalEstimado);
 

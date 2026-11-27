@@ -42,6 +42,9 @@ public partial class SolicitudFormPage : ContentPage, IQueryAttributable, IFormu
         }
         if (query.TryGetValue("SolicitudId", out var valor) && valor is int solicitudId)
             _solicitudId = solicitudId;
+        if (SesionDemostracion.Perfil == PerfilDemostracion.Gestor &&
+            query.TryGetValue("VolverAListadoGestion", out var volverListado) && volverListado is true)
+            _viewModel.VolverAListadoGestion = true;
         if (query.TryGetValue("VolverAJornada", out var volver) && volver is true)
             _viewModel.VolverAJornada = true;
     }

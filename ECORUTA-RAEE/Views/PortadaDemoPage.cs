@@ -32,7 +32,7 @@ internal sealed class PortadaDemoPage : ContentPage
             var (titulo, detalle) = _perfil switch
             {
                 PerfilDemostracion.Ciudadano => ("Pequeñas acciones, grandes cambios.", "Dale una segunda vida a tus equipos electrónicos."),
-                PerfilDemostracion.Gestor => ("Centro de gestión", "Planifica y coordina las recogidas de residuos electrónicos."),
+                PerfilDemostracion.Gestor => ("Centro de operaciones", "Organiza las recogidas y supervisa la demanda de tu comunidad."),
                 _ => ("Cada recogida cuenta.", "Consulta las jornadas disponibles y organiza tus paradas.")
             };
             var nuevaSolicitud = _perfil == PerfilDemostracion.Ciudadano
@@ -61,6 +61,14 @@ internal sealed class PortadaDemoPage : ContentPage
                 resumenCampo.Add(new MetricaVisual { Etiqueta = "Paradas programadas", Icono = "punto",
                     Valor = _vm.PortadaCampo.Sum(j => j.Paradas) }, 1, 0);
                 cabecera = Cabecera(titulo, detalle, resumenCampo);
+            }
+            if (_perfil == PerfilDemostracion.Gestor && _vm.Panel is { } panel)
+            {
+                var resumenGestor = CrearCuadricula();
+                resumenGestor.Add(new MetricaVisual { Etiqueta = "Solicitudes registradas", Icono = "panel", Valor = panel.Indicadores.Solicitudes });
+                resumenGestor.Add(new MetricaVisual { Etiqueta = "Peso registrado", Icono = "peso",
+                    Valor = $"{panel.Indicadores.PesoVigente:0.##} kg" }, 1, 0);
+                cabecera = Cabecera(titulo, detalle, resumenGestor);
             }
             _contenido.Clear();
             _contenido.Add(cabecera);
@@ -100,12 +108,22 @@ internal sealed class PortadaDemoPage : ContentPage
     {
         if (_vm.Panel is not { } panel)
             return;
+        _contenido.Add(Texto("Resumen operativo", "TituloVisual"));
         var metricas = CrearCuadricula();
-        metricas.Add(new MetricaVisual { Etiqueta = "Solicitudes pendientes", Icono = "reloj", Tono = "ambar", Valor = panel.Indicadores.Pendientes }, 0, 0);
-        metricas.Add(new MetricaVisual { Etiqueta = "Zonas listas", Icono = "listo", Valor = panel.Alertas.Count(a => a.EsLista) }, 1, 0);
+        metricas.Add(new MetricaVisual { Etiqueta = "Zonas listas", Icono = "listo", Valor = panel.Alertas.Count(a => a.EsLista) });
+        metricas.Add(new MetricaVisual { Etiqueta = "Zonas próximas", Icono = "reloj", Tono = "ambar",
+            Valor = panel.Alertas.Count(a => a.Nivel == NivelAlertaZona.Proxima) }, 1, 0);
         metricas.Add(new MetricaVisual { Etiqueta = "Jornadas programadas", Icono = "calendario", Tono = "azul", Valor = panel.Jornadas.Programadas }, 0, 1);
-        metricas.Add(new MetricaVisual { Etiqueta = "Peso vigente registrado", Icono = "peso", Tono = "violeta", Valor = $"{panel.Indicadores.PesoVigente:0.##} kg" }, 1, 1);
+        metricas.Add(new MetricaVisual { Etiqueta = "Ubicaciones pendientes", Icono = "punto", Tono = "ambar", Valor = panel.UbicacionesPendientes }, 1, 1);
         _contenido.Add(metricas);
+        _contenido.Add(Texto($"{panel.CantidadElegible} solicitudes · {panel.PesoElegible:0.##} kg elegibles para jornadas"));
+        _contenido.Add(Texto("Requieren atención", "TituloVisual"));
+        if (_vm.AlertasGestion.Count == 0)
+            _contenido.Add(Tarjeta(Texto("No hay alertas operativas.")));
+        foreach (var alerta in _vm.AlertasGestion)
+            _contenido.Add(Tarjeta(ConIcono(alerta.Icono, Texto(alerta.Titulo, "TituloVisual")),
+                Texto(alerta.Detalle), Boton(alerta.Accion, () => Shell.Current.GoToAsync(alerta.Ruta,
+                    new ShellNavigationQueryParameters { [alerta.Clave] = alerta.Valor! }))));
         _contenido.Add(Texto("Accesos rápidos", "TituloVisual"));
         var acciones = CrearCuadricula();
         var enlaces = new[] { ("Solicitudes", "solicitudes", "panel"), ("Residuos", "residuos", "equipo"),
@@ -119,18 +137,6 @@ internal sealed class PortadaDemoPage : ContentPage
             acciones.Add(boton, i % 2, i / 2);
         }
         _contenido.Add(acciones);
-        var proximas = panel.Alertas.Where(a => a.Nivel == NivelAlertaZona.Proxima).ToArray();
-        _contenido.Add(Tarjeta(
-            ConIcono("punto", EstadoVisual($"Ubicación por completar · {panel.UbicacionesPendientes} solicitudes pendientes", "ambar")),
-            Texto($"Disponibilidad operativa · {panel.CantidadElegible} solicitudes · {panel.PesoElegible:0.##} kg elegibles")));
-        var alertas = new VerticalStackLayout { Spacing = 6 };
-        alertas.Add(EstadoVisual($"Alertas operativas · {proximas.Length} próximas", "ambar"));
-        if (panel.Alertas.Count == 0)
-            alertas.Add(Texto("No hay zonas listas ni próximas al umbral."));
-        foreach (var zona in panel.Alertas)
-            alertas.Add(Texto($"{zona.Zona} · {zona.EstadoAlerta}"));
-        _contenido.Add(new Border { Style = Estilo("PanelVisual"), Content = alertas });
-
     }
 
     private static Grid CrearCuadricula() => new()

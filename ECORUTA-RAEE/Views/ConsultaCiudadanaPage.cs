@@ -12,6 +12,15 @@ internal sealed class ConsultaCiudadanaPage : ContentPage
     private readonly VerticalStackLayout _contenido = new() { Padding = 16, Spacing = 10 };
     private readonly Label _aviso = Texto("Cargando solicitudes…");
     private bool _cargando;
+    private readonly bool _esGestion;
+
+    internal ConsultaCiudadanaPage(int solicitudId) : this()
+    {
+        _id = solicitudId;
+        _esGestion = true;
+        Title = "Detalle de solicitud";
+        _contenido.Insert(0, Boton("Volver", () => Navigation.PopModalAsync()));
+    }
 
     internal ConsultaCiudadanaPage(SolicitudCiudadana? fila = null, bool confirmacion = false)
     {
@@ -68,7 +77,7 @@ internal sealed class ConsultaCiudadanaPage : ContentPage
                 ConIcono("calendario", Texto(fila.FechaProgramada is { } fecha
                     ? $"Jornada programada · {fecha:d 'de' MMMM 'de' yyyy}"
                     : "Sin jornada programada"))));
-            if (fila.PuedeCompletarPunto)
+            if (!_esGestion && fila.PuedeCompletarPunto)
                 _contenido.Add(Boton("Completar ubicación", () => Navigation.PushModalAsync(new CompletarUbicacionPage(solicitud)), true));
             if (_confirmacion)
             {

@@ -37,15 +37,16 @@
                 </Border.Triggers>
                 <VerticalStackLayout Spacing="8">
                     <Label Text="{Binding Jornada.Estado}" Style="{StaticResource OnGreen}" />
-                    <Label Text="{Binding Jornada.Nombre}" Style="{StaticResource OnGreen}" FontSize="25" />
+                    <Label Text="{Binding Jornada.Zona}" Style="{StaticResource OnGreen}" FontSize="25" />
                     <Label Text="{Binding Jornada.FechaCreacion, StringFormat='Creada el {0:dd/MM/yyyy}'}"
                            Style="{StaticResource OnGreen}" />
                     <Label Text="{Binding Jornada.FechaProgramada, StringFormat='Programada para el {0:dd/MM/yyyy}'}"
                            Style="{StaticResource OnGreen}" />
-                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-                        <Label Text="{Binding Jornada.CantidadSolicitudes, StringFormat='{0} solicitudes'}"
+                    <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                        <Label Text="{Binding Jornada.CantidadSolicitudes, StringFormat='{0} paradas'}"
                                Style="{StaticResource OnGreen}" />
-                        <Label Grid.Column="1" Text="{Binding Jornada.PesoTotal, StringFormat='{0:0.##} kg vigentes'}"
+                        <Label Grid.Column="1" Text="{Binding UnidadesJornada, StringFormat='{0} unidades'}" Style="{StaticResource OnGreen}" />
+                        <Label Grid.Column="2" Text="{Binding Jornada.PesoTotal, StringFormat='{0:0.##} kg estimados'}"
                                Style="{StaticResource OnGreen}" />
                     </Grid>
                 </VerticalStackLayout>
@@ -58,8 +59,10 @@
             </Border>
             <Border IsVisible="{Binding PuedePlanificar}" Style="{StaticResource TarjetaVisual}" Padding="14">
                 <VerticalStackLayout Spacing="8">
-                    <Label Text="Orden sugerido de recogida" Style="{StaticResource TituloVisual}" />
+                    <Label Text="Planificación del recorrido" Style="{StaticResource TituloVisual}" />
                     <Label Text="{Binding EstadoRuta}" Style="{StaticResource TextoVisual}" />
+                    <Label IsVisible="{Binding TieneDistancia}" Text="{Binding DistanciaRecta, StringFormat='{0:0.##} km en línea recta en total'}"
+                           Style="{StaticResource TituloVisual}" />
                     <Button Text="{Binding AccionRuta}" Command="{Binding PlanificarRutaCommand}"
                             IsEnabled="{Binding PuedeInteractuar}" Style="{StaticResource PrincipalVisual}" />
                 </VerticalStackLayout>
@@ -102,6 +105,14 @@
                                 <Label IsVisible="{Binding TieneDistancia}"
                                        Text="{Binding DistanciaKm, StringFormat='{0:0.###} km geográficos desde la parada anterior'}"
                                        Style="{StaticResource TextoVisual}" />
+                                <Label Text="Teléfono disponible" Style="{StaticResource TextoVisual}">
+                                    <Label.Triggers>
+                                        <DataTrigger TargetType="Label" Binding="{Binding Solicitud.TelefonoContacto}" Value="{x:Null}">
+                                            <Setter Property="Text" Value="Sin teléfono registrado" />
+                                        </DataTrigger>
+                                    </Label.Triggers>
+                                </Label>
+                                <Button Text="Ver detalles" Clicked="DetalleSolicitud_Clicked" CommandParameter="{Binding Solicitud}" Style="{StaticResource AccionVisual}" />
                                 <Button Text="Editar solicitud"
                                         IsVisible="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.PuedePlanificar}"
                                         Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.EditarSolicitudCommand}"
@@ -129,6 +140,8 @@
                             IsEnabled="{Binding PuedeInteractuar}" Style="{StaticResource PrincipalVisual}" />
                 </VerticalStackLayout>
             </Border>
+            <Label IsVisible="{Binding PuedeCancelar}" Style="{StaticResource TextoVisual}"
+                   Text="Cancelar libera las solicitudes. Podrán incluirse en otra jornada si cumplen los criterios." />
             <Button IsVisible="{Binding PuedeCancelar}" Text="Cancelar jornada"
                     Command="{Binding CancelarJornadaCommand}"
                     IsEnabled="{Binding PuedeInteractuar}" Style="{StaticResource DangerButton}" />

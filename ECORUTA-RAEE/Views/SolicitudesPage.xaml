@@ -1,436 +1,78 @@
 <?xml version="1.0" encoding="utf-8" ?>
-
-<ContentPage Style="{StaticResource CanvasVisual}"
-    x:Class="ECORUTA_RAEE.Views.SolicitudesPage"
-    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    Title="Solicitudes"
-    BackgroundColor="{AppThemeBinding Light={StaticResource PageBackground}, Dark={StaticResource NightCanvas}}">
-
-    <Grid RowDefinitions="Auto,*">
-
-        <!-- ENCABEZADO COMPACTO -->
-        <VerticalStackLayout
-            Grid.Row="0"
-            Padding="18,16,18,12"
-            Spacing="11">
-
-            <Label
-                Text="GESTIÓN DE RECOLECCIÓN"
-                FontSize="10"
-                FontAttributes="Bold"
-                CharacterSpacing="1.2"
-                TextColor="{AppThemeBinding Light={StaticResource PrimaryGreen}, Dark={StaticResource NightGreen}}"/>
-
-            <Grid ColumnDefinitions="*,Auto">
-
-                <VerticalStackLayout Spacing="3">
-
-                    <Label
-                        Text="Mis solicitudes"
-                        FontSize="25"
-                        FontAttributes="Bold"
-                        TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource NightInk}}"/>
-
-                    <Label
-                        Text="Consulta y administra tus recogidas"
-                        FontSize="12"
-                        TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource NightMuted}}"/>
-
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:ECORUTA_RAEE.Models"
+             xmlns:vm="clr-namespace:ECORUTA_RAEE.ViewModels"
+             x:Class="ECORUTA_RAEE.Views.SolicitudesPage" x:DataType="vm:SolicitudesViewModel"
+             Title="Solicitudes" Style="{StaticResource CanvasVisual}">
+    <Grid RowDefinitions="Auto,*" Padding="16,8,16,0" RowSpacing="8">
+        <VerticalStackLayout Spacing="8">
+            <Border Style="{StaticResource CabeceraVisual}">
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="Gestión de solicitudes" Style="{StaticResource OnGreen}" FontSize="23" />
+                    <Label Text="Consulta, organiza y administra los registros." Style="{StaticResource OnGreen}" FontSize="13" />
                 </VerticalStackLayout>
-
-                <Border
-                    Grid.Column="1"
-                    WidthRequest="44"
-                    HeightRequest="44"
-                    BackgroundColor="#DFF2E3"
-                    StrokeThickness="0"
-                    StrokeShape="RoundRectangle 13">
-
-                    <Image Source="ui_equipo.png" WidthRequest="28" HeightRequest="28" />
-
-                </Border>
-
-            </Grid>
-
-            <!-- CONTADOR -->
-            <Border
-                Padding="14,11"
-                BackgroundColor="#17452F"
-                StrokeThickness="0"
-                StrokeShape="RoundRectangle 15">
-
-                <Grid ColumnDefinitions="*,Auto">
-
-                    <VerticalStackLayout
-                        VerticalOptions="Center"
-                        Spacing="3">
-
-                        <Label
-                            Text="SOLICITUDES REGISTRADAS"
-                            FontSize="10"
-                            FontAttributes="Bold"
-                            TextColor="#D4E9D9"/>
-
-                        <Label
-                            Text="Historial de recolecciones"
-                            FontSize="12"
-                            TextColor="White"/>
-
-                    </VerticalStackLayout>
-
-                    <Border
-                        Grid.Column="1"
-                        Padding="13,6"
-                        BackgroundColor="#B7F36B"
-                        StrokeThickness="0"
-                        StrokeShape="RoundRectangle 11"
-                        VerticalOptions="Center">
-
-                        <Label
-                            Text="{Binding TotalSolicitudes}"
-                            FontSize="23"
-                            FontAttributes="Bold"
-                            TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource NightInk}}"/>
-
-                    </Border>
-
-                </Grid>
-
             </Border>
-
-            <!-- CREAR -->
-            <Button
-                Text="+  Nueva solicitud"
-                Command="{Binding NuevaSolicitudCommand}"
-                BackgroundColor="#218653"
-                TextColor="White"
-                FontSize="14"
-                FontAttributes="Bold"
-                CornerRadius="12"
-                HeightRequest="46"/>
-
-            <!-- BUSCADOR -->
-            <SearchBar
-                Placeholder="Buscar código, zona o dirección"
-                Text="{Binding TextoBusqueda, Mode=TwoWay}"
-                BackgroundColor="{AppThemeBinding Light={StaticResource CardBackground}, Dark={StaticResource NightSurface}}"
-                TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource NightInk}}"
-                PlaceholderColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource NightMuted}}"
-                FontSize="13"
-                HeightRequest="46"/>
-
-            <Grid ColumnDefinitions="*,Auto">
-
-                <Label
-                    Text="HISTORIAL DE SOLICITUDES"
-                    FontSize="10"
-                    FontAttributes="Bold"
-                    CharacterSpacing="1"
-                    TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource NightMuted}}"
-                    VerticalTextAlignment="Center"/>
-
-                <Label
-                    Grid.Column="1"
-                    Text="{Binding ResumenBusqueda}"
-                    IsVisible="{Binding HayBusqueda}"
-                    FontSize="11"
-                    TextColor="{AppThemeBinding Light={StaticResource PrimaryGreen}, Dark={StaticResource NightGreen}}"
-                    VerticalTextAlignment="Center"/>
-
+            <SearchBar Placeholder="Buscar código, zona o dirección" Text="{Binding TextoBusqueda, Mode=TwoWay}"
+                       MinimumHeightRequest="48" SemanticProperties.Description="Buscar solicitudes"
+                       BackgroundColor="{AppThemeBinding Light={StaticResource CardBackground}, Dark={StaticResource NightSurface}}"
+                       TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource NightInk}}"
+                       PlaceholderColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource NightMuted}}" />
+            <Picker Title="Filtrar solicitudes" ItemsSource="{Binding Filtros}" SelectedIndex="{Binding FiltroSeleccionado, Mode=TwoWay}"
+                    TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource NightInk}}"
+                    MinimumHeightRequest="48" SemanticProperties.Description="Filtro de disponibilidad" />
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                <Label Text="{Binding ResumenBusqueda}" Style="{StaticResource TextoVisual}" VerticalOptions="Center" />
+                <Button Grid.Column="1" Text="Nueva solicitud" Command="{Binding NuevaSolicitudCommand}" Style="{StaticResource PrincipalVisual}" />
             </Grid>
-
         </VerticalStackLayout>
-
-        <!-- LISTADO -->
-        <CollectionView
-            Grid.Row="1"
-            Margin="18,0,18,10"
-            ItemsSource="{Binding Solicitudes}"
-            SelectionMode="None">
-
+        <CollectionView Grid.Row="1" x:Name="Listado" ItemsSource="{Binding Solicitudes}"
+                        SelectionMode="None" ItemsUpdatingScrollMode="KeepScrollOffset" Scrolled="Listado_Scrolled">
             <CollectionView.EmptyView>
-
-                <VerticalStackLayout
-                    Padding="24"
-                    Spacing="10"
-                    VerticalOptions="Center"
-                    HorizontalOptions="Center">
-
-                    <Image Source="ui_equipo.png" WidthRequest="28" HeightRequest="28" />
-
-                    <Label
-                        Text="{Binding TituloListaVacia}"
-                        FontSize="17"
-                        FontAttributes="Bold"
-                        TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource NightInk}}"
-                        HorizontalTextAlignment="Center"/>
-
-                    <Label
-                        Text="{Binding DescripcionListaVacia}"
-                        FontSize="12"
-                        TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource NightMuted}}"
-                        HorizontalTextAlignment="Center"
-                        MaximumWidthRequest="290"/>
-
+                <VerticalStackLayout Padding="20" Spacing="8">
+                    <Label Text="{Binding TituloListaVacia}" Style="{StaticResource TituloVisual}" />
+                    <Label Text="{Binding DescripcionListaVacia}" Style="{StaticResource TextoVisual}" />
                 </VerticalStackLayout>
-
             </CollectionView.EmptyView>
-
             <CollectionView.ItemTemplate>
-
-                <DataTemplate>
-
-                    <!-- TARJETA COMPACTA -->
-                    <Border
-                        Margin="0,0,0,11"
-                        Padding="14"
-                        BackgroundColor="{AppThemeBinding Light={StaticResource CardBackground}, Dark={StaticResource NightSurface}}"
-                        Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource NightBorder}}"
-                        StrokeThickness="1"
-                        StrokeShape="RoundRectangle 16">
-
-                        <VerticalStackLayout Spacing="11">
-
-                            <!-- ÁREA QUE ABRE EDICIÓN -->
-                            <VerticalStackLayout Spacing="10">
-
-                                <VerticalStackLayout.GestureRecognizers>
-
-                                    <TapGestureRecognizer
-                                        Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.EditarCommand}"
-                                        CommandParameter="{Binding .}"/>
-
-                                </VerticalStackLayout.GestureRecognizers>
-
-                                <!-- CÓDIGO Y ESTADO -->
-                                <Grid
-                                    ColumnDefinitions="*,Auto"
-                                    ColumnSpacing="8">
-
-                                    <VerticalStackLayout Spacing="3">
-
-                                        <Label
-                                            Text="SOLICITUD DE RECOLECCIÓN"
-                                            FontSize="9"
-                                            FontAttributes="Bold"
-                                            CharacterSpacing="0.6"
-                                            TextColor="#89958D"/>
-
-                                        <Label
-                                            Text="{Binding CodigoSolicitud}"
-                                            FontSize="19"
-                                            FontAttributes="Bold"
-                                            TextColor="{AppThemeBinding Light={StaticResource PrimaryGreen}, Dark={StaticResource NightGreen}}"/>
-
-                                    </VerticalStackLayout>
-
-                                    <!-- INDICADOR DE ESTADO -->
-                                    <Border
-                                        Grid.Column="1"
-                                        Padding="9,5"
-                                        BackgroundColor="#FFF1D2"
-                                        StrokeThickness="0"
-                                        StrokeShape="RoundRectangle 9"
-                                        VerticalOptions="Center">
-
-                                        <Border.Triggers>
-
-                                            <DataTrigger
-                                                TargetType="Border"
-                                                Binding="{Binding Estado}"
-                                                Value="En proceso">
-                                                <Setter
-                                                    Property="BackgroundColor"
-                                                    Value="#DDEBFF"/>
-                                            </DataTrigger>
-
-                                            <DataTrigger
-                                                TargetType="Border"
-                                                Binding="{Binding Estado}"
-                                                Value="Completada">
-                                                <Setter
-                                                    Property="BackgroundColor"
-                                                    Value="#DDF4E2"/>
-                                            </DataTrigger>
-
-                                            <DataTrigger
-                                                TargetType="Border"
-                                                Binding="{Binding Estado}"
-                                                Value="Cancelada">
-                                                <Setter
-                                                    Property="BackgroundColor"
-                                                    Value="#FCE4E4"/>
-                                            </DataTrigger>
-
-                                        </Border.Triggers>
-
-                                        <Label
-                                            Text="{Binding Estado}"
-                                            FontSize="10"
-                                            FontAttributes="Bold"
-                                            TextColor="#8A6415">
-
-                                            <Label.Triggers>
-
-                                                <DataTrigger
-                                                    TargetType="Label"
-                                                    Binding="{Binding Estado}"
-                                                    Value="En proceso">
-                                                    <Setter
-                                                        Property="TextColor"
-                                                        Value="#245DA8"/>
-                                                </DataTrigger>
-
-                                                <DataTrigger
-                                                    TargetType="Label"
-                                                    Binding="{Binding Estado}"
-                                                    Value="Completada">
-                                                    <Setter
-                                                        Property="TextColor"
-                                                        Value="#176B3A"/>
-                                                </DataTrigger>
-
-                                                <DataTrigger
-                                                    TargetType="Label"
-                                                    Binding="{Binding Estado}"
-                                                    Value="Cancelada">
-                                                    <Setter
-                                                        Property="TextColor"
-                                                        Value="#B42323"/>
-                                                </DataTrigger>
-
-                                            </Label.Triggers>
-
-                                        </Label>
-
-                                    </Border>
-
-                                </Grid>
-
-                                <BoxView
-                                    HeightRequest="1"
-                                    Color="#EDF1ED"/>
-
-                                <!-- ZONA Y DIRECCIÓN AGRUPADAS -->
-                                <Grid
-                                    ColumnDefinitions="22,*"
-                                    ColumnSpacing="8">
-
-                                    <Image Source="ui_punto.png" WidthRequest="28" HeightRequest="28" />
-
-                                    <VerticalStackLayout
-                                        Grid.Column="1"
-                                        Spacing="3">
-
-                                        <Label
-                                            Text="{Binding Zona}"
-                                            FontSize="14"
-                                            FontAttributes="Bold"
-                                            TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource NightInk}}"/>
-
-                                        <Label
-                                            Text="{Binding DireccionReferencia}"
-                                            FontSize="12"
-                                            TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource NightMuted}}"
-                                            LineBreakMode="WordWrap"/>
-                                        <Label Text="{Binding DisponibilidadOperativa}" FontAttributes="Bold"
-                                               TextColor="{AppThemeBinding Light={StaticResource PrimaryGreen}, Dark={StaticResource NightGreen}}" />
-
-                                    </VerticalStackLayout>
-
-                                </Grid>
-
-                                <!-- PESO Y FECHA EN UNA SOLA FILA -->
-                                <Grid
-                                    ColumnDefinitions="Auto,*"
-                                    ColumnSpacing="8">
-
-                                    <HorizontalStackLayout
-                                        Spacing="6"
-                                        VerticalOptions="Center">
-
-                                        <Label
-                                            Text="⚖"
-                                            FontSize="15"
-                                            TextColor="{AppThemeBinding Light={StaticResource PrimaryGreen}, Dark={StaticResource NightGreen}}"/>
-
-                                        <Label
-                                            Text="{Binding PesoTotalEstimado, StringFormat='{0:F2} kg'}"
-                                            FontSize="13"
-                                            FontAttributes="Bold"
-                                            TextColor="{AppThemeBinding Light={StaticResource PrimaryGreen}, Dark={StaticResource NightGreen}}"/>
-
-                                    </HorizontalStackLayout>
-
-                                    <Label
-                                        Grid.Column="1"
-                                        Text="{Binding FechaRegistro, StringFormat='{0:dd/MM/yyyy · hh:mm tt}'}"
-                                        FontSize="11"
-                                        TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource NightMuted}}"
-                                        HorizontalTextAlignment="End"
-                                        VerticalTextAlignment="Center"/>
-
-                                </Grid>
-
-                            </VerticalStackLayout>
-
-                            <!-- ACCIONES -->
-                            <Grid
-                                ColumnDefinitions="*,1.3*,*"
-                                ColumnSpacing="6">
-
-                                <Button
-                                    Grid.Column="0"
-                                    Text="Editar"
-                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.EditarCommand}"
-                                    CommandParameter="{Binding .}"
-                                    BackgroundColor="#E4F2E6"
-                                    TextColor="{AppThemeBinding Light={StaticResource PrimaryGreen}, Dark={StaticResource NightGreen}}"
-                                    FontSize="12"
-                                    FontAttributes="Bold"
-                                    CornerRadius="10"
-                                    HeightRequest="44"
-                                    Padding="5,0"/>
-
-                                <Button
-                                    Grid.Column="1"
-                                    Text="Ver equipos"
-                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.VerResiduosCommand}"
-                                    CommandParameter="{Binding .}"
-                                    BackgroundColor="#E4F2E6"
-                                    TextColor="{AppThemeBinding Light={StaticResource PrimaryGreen}, Dark={StaticResource NightGreen}}"
-                                    FontSize="11"
-                                    FontAttributes="Bold"
-                                    CornerRadius="10"
-                                    HeightRequest="44"
-                                    Padding="4,0"/>
-
-                                <Button
-                                    Grid.Column="2"
-                                    Text="Eliminar"
-                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.EliminarCommand}"
-                                    CommandParameter="{Binding .}"
-                                    BackgroundColor="#FCE4E4"
-                                    TextColor="#B42323"
-                                    FontSize="11"
-                                    FontAttributes="Bold"
-                                    CornerRadius="10"
-                                    HeightRequest="44"
-                                    Padding="4,0"/>
-
+                <DataTemplate x:DataType="models:SolicitudGestion">
+                    <Border Style="{StaticResource TarjetaVisual}" Margin="0,0,0,10">
+                        <VerticalStackLayout Spacing="6">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                                <Label Text="{Binding CodigoSolicitud}" Style="{StaticResource TituloVisual}" VerticalOptions="Center" />
+                                <Button Grid.Column="1" Text="Más" Clicked="Opciones_Clicked" Style="{StaticResource AccionVisual}"
+                                        SemanticProperties.Description="{Binding CodigoSolicitud, StringFormat='Más acciones para {0}'}" />
                             </Grid>
-
+                            <Label Text="{Binding EstadoGestion}" FontAttributes="Bold" Style="{StaticResource TextoVisual}">
+                                <Label.Triggers>
+                                    <DataTrigger TargetType="Label" Binding="{Binding EnJornadaActiva}" Value="True">
+                                        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource InkBlue}, Dark={StaticResource NightBlue}}" />
+                                    </DataTrigger>
+                                    <DataTrigger TargetType="Label" Binding="{Binding EstadoGestion}" Value="Ubicación pendiente">
+                                        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource WarningText}, Dark={StaticResource NightAmber}}" />
+                                    </DataTrigger>
+                                    <DataTrigger TargetType="Label" Binding="{Binding EstadoGestion}" Value="Disponible para jornada">
+                                        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource PrimaryGreen}, Dark={StaticResource NightGreen}}" />
+                                    </DataTrigger>
+                                </Label.Triggers>
+                            </Label>
+                            <Label Text="{Binding ZonaVisible}" Style="{StaticResource TextoVisual}" />
+                            <Label Text="{Binding DireccionReferencia}" Style="{StaticResource TextoVisual}" />
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                                <Label Text="{Binding Unidades, StringFormat='{0} unidades físicas'}" Style="{StaticResource TextoVisual}" />
+                                <Label Grid.Column="1" Text="{Binding PesoTotalEstimado, StringFormat='{0:0.##} kg estimados'}" Style="{StaticResource TextoVisual}" />
+                            </Grid>
+                            <Label IsVisible="{Binding TieneFecha}" Text="{Binding FechaProgramada, StringFormat='Fecha programada · {0:dd/MM/yyyy}'}"
+                                   TextColor="{AppThemeBinding Light={StaticResource InkBlue}, Dark={StaticResource NightBlue}}" />
+                            <Label Text="{Binding ContactoVisible}" Style="{StaticResource TextoVisual}" />
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                                <Button Text="Ver detalles" Clicked="Detalle_Clicked" Style="{StaticResource AccionVisual}" />
+                                <Button Grid.Column="1" Text="Editar" Clicked="Editar_Clicked" Style="{StaticResource AccionVisual}" />
+                            </Grid>
                         </VerticalStackLayout>
-
                     </Border>
-
                 </DataTemplate>
-
             </CollectionView.ItemTemplate>
-
         </CollectionView>
-
     </Grid>
-
 </ContentPage>

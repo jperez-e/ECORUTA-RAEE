@@ -40,7 +40,7 @@
                             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
                                 <Image Source="ui_peso.png" WidthRequest="40" HeightRequest="40" VerticalOptions="Start" />
                                 <VerticalStackLayout Grid.Column="1" Spacing="5">
-                                    <Label Text="Peso vigente registrado" Style="{StaticResource OnGreen}" FontSize="15" />
+                                    <Label Text="Peso estimado registrado" Style="{StaticResource OnGreen}" FontSize="15" />
                                     <Label Text="{Binding Panel.Indicadores.PesoVigente, StringFormat='{0:0.##} kg'}"
                                            Style="{StaticResource OnGreen}" FontSize="32" />
                                 </VerticalStackLayout>
@@ -54,18 +54,12 @@
                 </Border>
 
                 <Label Text="Indicadores del dispositivo" Style="{StaticResource TituloVisual}" />
-                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="9" RowSpacing="9">
+                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="9" RowSpacing="9">
                     <views:MetricaVisual Etiqueta="Solicitudes registradas" Icono="panel" Tono="verde" Valor="{Binding Panel.Indicadores.Solicitudes}" />
-                    <views:MetricaVisual Grid.Column="1" Etiqueta="Pendientes" Icono="reloj" Tono="ambar" Valor="{Binding Panel.Indicadores.Pendientes}" />
-                    <views:MetricaVisual Grid.Row="1" Etiqueta="Registros de residuos" Icono="equipo" Tono="azul" Valor="{Binding Panel.Indicadores.RegistrosResiduos}" />
-                    <views:MetricaVisual Grid.Row="1" Grid.Column="1" Etiqueta="Unidades físicas" Icono="equipo" Tono="violeta" Valor="{Binding Panel.Indicadores.UnidadesEquipos}" />
-                    <views:MetricaVisual Grid.Row="2" Etiqueta="Peso elegible" Icono="peso" Tono="verde" Valor="{Binding Panel.PesoElegible, StringFormat='{0:0.##} kg'}" />
-                    <views:MetricaVisual Grid.Row="2" Grid.Column="1" Etiqueta="Ubicación por completar" Icono="punto" Tono="ambar" Valor="{Binding Panel.UbicacionesPendientes}" />
-                    <views:MetricaVisual Grid.Row="3" Etiqueta="Jornadas programadas" Icono="calendario" Tono="azul" Valor="{Binding Panel.Jornadas.Programadas}" />
-                    <views:MetricaVisual Grid.Row="3" Grid.Column="1" Etiqueta="Jornadas canceladas" Icono="cancelada" Tono="gris" Valor="{Binding Panel.Jornadas.Canceladas}" />
+                    <views:MetricaVisual Grid.Column="1" Etiqueta="Unidades físicas" Icono="equipo" Tono="violeta" Valor="{Binding Panel.Indicadores.UnidadesEquipos}" />
+                    <views:MetricaVisual Grid.Row="1" Etiqueta="Registros de equipos" Icono="equipo" Tono="azul" Valor="{Binding Panel.Indicadores.RegistrosResiduos}" />
+                    <views:MetricaVisual Grid.Row="1" Grid.Column="1" Etiqueta="Jornadas programadas" Icono="calendario" Tono="azul" Valor="{Binding Panel.Jornadas.Programadas}" />
                 </Grid>
-                <Label Text="{Binding Panel.CantidadElegible, StringFormat='{0} solicitudes elegibles'}" Style="{StaticResource TextoVisual}" />
-                <Label Text="{Binding Panel.Jornadas.SolicitudesAsignadas, StringFormat='{0} solicitudes asignadas a jornadas activas'}" Style="{StaticResource TextoVisual}" />
 
                 <VerticalStackLayout Spacing="8">
                     <Label Text="Distribución por categoría" Style="{StaticResource TituloVisual}" />
@@ -113,6 +107,20 @@
                         </BindableLayout.ItemTemplate>
                     </VerticalStackLayout>
                 </VerticalStackLayout>
+
+                <Border Style="{StaticResource PanelVisual}">
+                    <Label Text="El peso corresponde a equipos registrados. Las jornadas representan recogidas planificadas."
+                           Style="{StaticResource TextoVisual}" />
+                </Border>
+                <Label Text="Disponibilidad y jornadas" Style="{StaticResource TituloVisual}" />
+                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="9" RowSpacing="9">
+                    <views:MetricaVisual Etiqueta="Peso elegible" Icono="peso" Tono="verde" Valor="{Binding Panel.PesoElegible, StringFormat='{0:0.##} kg'}" />
+                    <views:MetricaVisual Grid.Column="1" Etiqueta="Ubicaciones pendientes" Icono="punto" Tono="ambar" Valor="{Binding Panel.UbicacionesPendientes}" />
+                    <views:MetricaVisual Grid.Row="1" Etiqueta="Solicitudes pendientes" Icono="reloj" Tono="ambar" Valor="{Binding Panel.Indicadores.Pendientes}" />
+                    <views:MetricaVisual Grid.Row="1" Grid.Column="1" Etiqueta="Jornadas canceladas" Icono="cancelada" Tono="gris" Valor="{Binding Panel.Jornadas.Canceladas}" />
+                </Grid>
+                <Label Text="{Binding Panel.CantidadElegible, StringFormat='{0} solicitudes elegibles'}" Style="{StaticResource TextoVisual}" />
+                <Label Text="{Binding Panel.Jornadas.SolicitudesAsignadas, StringFormat='{0} solicitudes asignadas a jornadas activas'}" Style="{StaticResource TextoVisual}" />
 
                 <VerticalStackLayout Spacing="8">
                     <Label Text="Alertas de recogida" Style="{StaticResource TituloVisual}" />

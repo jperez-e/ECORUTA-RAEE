@@ -37,6 +37,14 @@ internal partial class JornadaRecoleccionViewModel : ObservableObject
     [ObservableProperty]
     private string accionRuta = "Generar orden sugerido";
 
+    [ObservableProperty] private long unidadesJornada;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TieneDistancia))]
+    private double? distanciaRecta;
+
+    public bool TieneDistancia => DistanciaRecta.HasValue;
+
     [ObservableProperty]
     private DateTime fechaProgramada = DateTime.Today;
 
@@ -78,7 +86,7 @@ internal partial class JornadaRecoleccionViewModel : ObservableObject
         Confirmacion = string.Empty;
         if (_jornadaId is int id)
         {
-            MostrarDetalle(await JornadaService.Instancia.ObtenerDetalleAsync(id));
+            MostrarDetalle(await JornadaService.Instancia.ObtenerDetalleAsync(id, incluirUnidades: true));
             if (Jornada is null)
                 Mensaje = "La jornada ya no está disponible.";
         }
@@ -122,7 +130,7 @@ internal partial class JornadaRecoleccionViewModel : ObservableObject
         }
 
         _jornadaId = creada.Id;
-        MostrarDetalle(creada);
+        await CargarAsync();
         Confirmacion = "Jornada programada.";
     });
 
@@ -141,7 +149,7 @@ internal partial class JornadaRecoleccionViewModel : ObservableObject
         }
 
         Mensaje = string.Empty;
-        MostrarDetalle(actualizada);
+        await CargarAsync();
         Confirmacion = "Orden sugerido guardado.";
     });
 
@@ -165,7 +173,7 @@ internal partial class JornadaRecoleccionViewModel : ObservableObject
             return;
 
         bool confirmar = await Shell.Current.DisplayAlertAsync(
-            "Cancelar jornada", "Sus solicitudes pendientes volverán a estar disponibles para otra jornada.",
+            "Cancelar jornada", "Se conservará la jornada en el historial. Sus solicitudes se liberarán y podrán participar en otra jornada cuando cumplan los criterios.",
             "Cancelar jornada", "Volver");
         if (!confirmar)
             return;
@@ -191,18 +199,21 @@ internal partial class JornadaRecoleccionViewModel : ObservableObject
 
     private void MostrarDetalle(JornadaRecoleccion? detalle)
     {
+        UnidadesJornada = detalle?.UnidadesEquipos ?? 0;
         Jornada = detalle;
         _solicitudes = detalle?.Solicitudes ?? Array.Empty<SolicitudRecoleccion>();
         var ruta = detalle?.Ruta;
         Paradas = ruta?.Paradas ?? FilasSinPlan();
+        DistanciaRecta = ruta is { Metodo: MetodoRuta.VecinoMasCercano } && ruta.Paradas.Any(p => p.TieneDistancia)
+            ? ruta.Paradas.Sum(p => p.DistanciaKm ?? 0) : null;
         CoordenadasIncompletas = _solicitudes.Count(s => !Coordenadas.SonValidas(s));
         EstadoRuta = ruta?.Metodo switch
         {
-            MetodoRuta.VecinoMasCercano => "Ruta sugerida por proximidad geográfica. Los tramos indican distancias en línea recta.",
-            MetodoRuta.Antiguedad => "Orden alternativo por antigüedad, según fecha de registro y código.",
+            MetodoRuta.VecinoMasCercano => "Orden vigente por proximidad geográfica. Las distancias son en línea recta.",
+            MetodoRuta.Antiguedad => "Orden vigente por antigüedad. No hay distancias estimadas.",
             _ => detalle?.RutaDesactualizada == true
                 ? "Los datos de las paradas cambiaron. Regenera el orden sugerido."
-                : string.Empty
+                : "Todavía no hay un orden de paradas."
         };
         AccionRuta = ruta is not null || detalle?.RutaDesactualizada == true
             ? "Regenerar orden sugerido"

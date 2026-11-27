@@ -10,7 +10,7 @@
             <Border Style="{StaticResource CabeceraVisual}">
                 <VerticalStackLayout Spacing="6">
                     <Label Text="Modo demostración · Datos de este dispositivo" Style="{StaticResource OnGreen}" FontSize="12" />
-                    <Label Text="Jornadas inteligentes" Style="{StaticResource OnGreen}" FontSize="25" />
+                    <Label Text="Planifica las recogidas" Style="{StaticResource OnGreen}" FontSize="25" />
                     <Label Text="Organiza recogidas según la demanda de cada zona."
                            Style="{StaticResource OnGreen}" FontSize="14" />
                     <Grid ColumnDefinitions="*,*" RowDefinitions="Auto" ColumnSpacing="8" RowSpacing="8">
@@ -21,7 +21,10 @@
             </Border>
             <ActivityIndicator IsVisible="{Binding Ocupado}" IsRunning="{Binding Ocupado}"
                                Color="{StaticResource PrimaryGreen}" SemanticProperties.Description="Procesando jornadas" />
-            <Button x:Name="Configurar" Text="Configurar umbrales" Clicked="Configurar_Clicked" Style="{StaticResource AccionVisual}" />
+            <Button x:Name="Configurar" Text="Criterios de programación" Clicked="Configurar_Clicked" Style="{StaticResource AccionVisual}" />
+            <Label Text="{Binding CriteriosVigentes}" Style="{StaticResource TextoVisual}" />
+            <Label Text="Basta alcanzar el mínimo de solicitudes elegibles o el mínimo de peso."
+                   Style="{StaticResource TextoVisual}" />
             <Border x:Name="Umbrales" IsVisible="False" Style="{StaticResource TarjetaVisual}" Padding="14">
                 <VerticalStackLayout Spacing="8">
                     <Label Text="Umbrales por zona" FontAttributes="Bold" TextColor="{AppThemeBinding Light={StaticResource ForestGreen}, Dark={StaticResource NightInk}}" />
@@ -94,6 +97,7 @@
                                 <Label Text="{Binding Peso}" Style="{StaticResource TextoVisual}" />
                                 <ProgressBar Progress="{Binding AvancePeso}" ProgressColor="{StaticResource StatusBlue}" Style="{StaticResource ProgressTrack}"
                                              SemanticProperties.Description="Progreso por peso en kilogramos" />
+                                <Label IsVisible="{Binding MostrarFaltantes}" Text="{Binding Faltantes}" Style="{StaticResource TextoVisual}" />
                                 <Button Text="{Binding Accion}" Style="{StaticResource AccionVisual}"
                                         CommandParameter="{Binding Datos}"
                                         Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.PrevisualizarCommand}">

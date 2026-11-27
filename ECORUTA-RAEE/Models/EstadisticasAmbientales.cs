@@ -22,9 +22,12 @@ internal sealed record ZonaAmbiental(
     public double Avance => Math.Clamp(Math.Max(
         Disponibilidad.Umbrales.Cantidad > 0 ? (double)PendientesDisponibles / Disponibilidad.Umbrales.Cantidad : 0,
         Disponibilidad.Umbrales.Peso > 0 ? PesoDisponible / Disponibilidad.Umbrales.Peso : 0), 0, 1);
-    public NivelAlertaZona Nivel => PendientesDisponibles == 0 ? NivelAlertaZona.SinAlerta
-        : Disponibilidad.AlcanzaUmbral ? NivelAlertaZona.Lista
-        : Avance >= MinimoProximidad ? NivelAlertaZona.Proxima : NivelAlertaZona.SinAlerta;
+    public NivelAlertaZona Nivel => Clasificar(Disponibilidad, Avance);
+
+    internal static NivelAlertaZona Clasificar(ZonaDisponible zona, double avance) =>
+        zona.Cantidad == 0 ? NivelAlertaZona.SinAlerta
+        : zona.AlcanzaUmbral ? NivelAlertaZona.Lista
+        : avance >= MinimoProximidad ? NivelAlertaZona.Proxima : NivelAlertaZona.SinAlerta;
 
     public bool EsLista => Nivel == NivelAlertaZona.Lista;
     public string EstadoAlerta => Nivel switch

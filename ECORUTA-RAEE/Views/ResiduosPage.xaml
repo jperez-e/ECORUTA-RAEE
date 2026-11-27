@@ -113,6 +113,7 @@
             <!-- BUSCADOR -->
             <SearchBar
                 Placeholder="Buscar equipo, categoría o solicitud"
+                SemanticProperties.Description="Buscar registros de equipos"
                 Text="{Binding TextoBusqueda, Mode=TwoWay}"
                 BackgroundColor="{AppThemeBinding Light={StaticResource CardBackground}, Dark={StaticResource NightSurface}}"
                 TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource NightInk}}"

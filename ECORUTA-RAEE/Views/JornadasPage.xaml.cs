@@ -21,6 +21,6 @@ public partial class JornadasPage : ContentPage
     private void Configurar_Clicked(object? sender, EventArgs e)
     {
         Umbrales.IsVisible = !Umbrales.IsVisible;
-        Configurar.Text = Umbrales.IsVisible ? "Ocultar configuración de umbrales" : "Configurar umbrales";
+        Configurar.Text = Umbrales.IsVisible ? "Ocultar criterios de programación" : "Criterios de programación";
     }
 }

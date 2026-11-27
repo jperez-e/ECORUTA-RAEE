@@ -9,6 +9,7 @@ internal sealed class PortadaDemoViewModel(PerfilDemostracion perfil) : Observab
     internal IReadOnlyList<SolicitudRecoleccion> Solicitudes { get; private set; } = [];
     internal IReadOnlyList<SolicitudCiudadana> VistaCiudadana { get; private set; } = [];
     internal IReadOnlyList<ResumenJornadaCampo> PortadaCampo { get; private set; } = [];
+    internal IReadOnlyList<AlertaGestion> AlertasGestion { get; private set; } = [];
     internal PanelAmbiental? Panel { get; private set; }
     private ILookup<int, ResiduoElectronico>? _equipos;
 
@@ -24,7 +25,7 @@ internal sealed class PortadaDemoViewModel(PerfilDemostracion perfil) : Observab
                 _equipos = VistaCiudadana.SelectMany(f => f.Equipos).ToLookup(e => e.SolicitudId);
                 break;
             case PerfilDemostracion.Gestor:
-                Panel = await EstadisticasAmbientalesService.Instancia.ObtenerAsync();
+                (Panel, AlertasGestion) = await EstadisticasAmbientalesService.Instancia.ObtenerGestionAsync();
                 break;
             case PerfilDemostracion.Recolector:
                 PortadaCampo = await JornadaService.Instancia.ObtenerPortadaCampoAsync();

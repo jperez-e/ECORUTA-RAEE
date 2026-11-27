@@ -91,7 +91,7 @@ internal sealed class JornadaService
     }
 
     // Incluye los modelos completos, con las coordenadas opcionales de las solicitudes.
-    public async Task<JornadaRecoleccion?> ObtenerDetalleAsync(int id, bool incluirRutaCancelada = false)
+    public async Task<JornadaRecoleccion?> ObtenerDetalleAsync(int id, bool incluirRutaCancelada = false, bool incluirUnidades = false)
     {
         var db = await EcoRutaDatabase.Instance.GetConnectionAsync();
         JornadaRecoleccion? jornada = null;
@@ -100,29 +100,37 @@ internal sealed class JornadaService
             jornada = LeerDetalle(connection, id);
             if (jornada is not null && (jornada.Estado == JornadaRecoleccion.Programada || incluirRutaCancelada))
                 LeerRuta(connection, jornada);
+            if (incluirUnidades && jornada is not null)
+                jornada.UnidadesEquipos = connection.ExecuteScalar<long>("""
+                    SELECT COALESCE(SUM(r.Cantidad),0) FROM Residuos r
+                    JOIN JornadaSolicitudes js ON js.SolicitudId = r.SolicitudId WHERE js.JornadaId = ?
+                    """, id);
         });
         return jornada;
     }
 
     private const string ColumnasParadaCampo = """
         s.Id, s.CodigoSolicitud, s.FechaRegistro, s.Zona, s.SectorOtraZona,
-        s.DireccionReferencia, s.Latitud, s.Longitud, s.Estado, s.PesoTotalEstimado
+        s.DireccionReferencia, s.Latitud, s.Longitud, s.Estado, s.PesoTotalEstimado,
+        (length(trim(COALESCE(s.TelefonoContacto, ''))) > 0) AS TieneTelefono
         """;
 
     internal async Task<IReadOnlyList<ResumenJornadaCampo>> ObtenerPortadaCampoAsync()
     {
         var db = await EcoRutaDatabase.Instance.GetConnectionAsync();
         IReadOnlyList<ResumenJornadaCampo> resultado = [];
-        await db.RunInTransactionAsync(connection =>
-        {
-            var jornadas = connection.Query<JornadaCampoFila>("""
-                SELECT Id, Zona, FechaProgramada, HuellaRuta, MetodoRuta FROM Jornadas
-                WHERE Estado = ? ORDER BY FechaProgramada, Id
-                """, JornadaRecoleccion.Programada);
-            var paradas = LeerParadasCampo(connection, null).ToLookup(p => p.JornadaId);
-            resultado = jornadas.Select(j => PrepararCampo(j, paradas[j.Id].ToArray()).Resumen).ToArray();
-        });
+        await db.RunInTransactionAsync(connection => resultado = LeerPortadaCampo(connection));
         return resultado;
+    }
+
+    internal static IReadOnlyList<ResumenJornadaCampo> LeerPortadaCampo(SQLiteConnection connection)
+    {
+        var jornadas = connection.Query<JornadaCampoFila>("""
+            SELECT Id, Zona, FechaProgramada, HuellaRuta, MetodoRuta FROM Jornadas
+            WHERE Estado = ? ORDER BY FechaProgramada, Id
+            """, JornadaRecoleccion.Programada);
+        var paradas = LeerParadasCampo(connection, null).ToLookup(p => p.JornadaId);
+        return jornadas.Select(j => PrepararCampo(j, paradas[j.Id].ToArray()).Resumen).ToArray();
     }
 
     internal async Task<ConsultaCampo?> ObtenerConsultaCampoAsync(int jornadaId, int? solicitudId = null)
@@ -189,10 +197,11 @@ internal sealed class JornadaService
         bool vigente = filas.Count > 0 && jornada.HuellaRuta is { } huella &&
             huella == PlanificadorRutas.CalcularHuella(filas) &&
             OrdenGuardadoValido(jornada.MetodoRuta, filas.Count, ordenadas.Select(p => p.OrdenRuta));
-        string estado = vigente ? "Orden de paradas disponible" : jornada.HuellaRuta is not null
-            ? "Orden desactualizado" : "Orden de paradas pendiente";
+        var estado = vigente ? EstadoOrdenCampo.Vigente : jornada.HuellaRuta is not null
+            ? EstadoOrdenCampo.Desactualizado : EstadoOrdenCampo.Pendiente;
         return new(new ResumenJornadaCampo(jornada.Id, jornada.Zona, jornada.FechaProgramada, filas.Count,
-                filas.Sum(p => p.Unidades), filas.Sum(p => p.PesoTotalEstimado), estado), vigente,
+                filas.Sum(p => p.Unidades), filas.Sum(p => p.PesoTotalEstimado), estado,
+                filas.Count(p => p.UbicacionPendiente), filas.Count(p => !p.TieneTelefono)), vigente,
             (vigente ? ordenadas : filas).Select(p => new ParadaCampo(p, p.Unidades)).ToArray(), []);
     }
 
@@ -210,6 +219,7 @@ internal sealed class JornadaService
         public int JornadaId { get; set; }
         public int? OrdenRuta { get; set; }
         public long Unidades { get; set; }
+        public bool TieneTelefono { get; set; }
     }
 
     public async Task<JornadaRecoleccion?> GenerarRutaAsync(int id)
@@ -323,7 +333,10 @@ internal sealed class JornadaService
         LeerDisponibilidad(SQLiteConnection connection)
     {
         var umbrales = LeerUmbrales(connection);
-        var pendientes = LeerPendientesSinAsignar(connection);
+        var pendientes = connection.Query<SolicitudRecoleccion>("""
+            SELECT s.Zona, s.Estado, s.PesoTotalEstimado, s.Latitud, s.Longitud
+            FROM Solicitudes s WHERE
+            """ + " " + FiltroDisponible);
         var elegibles = pendientes.Where(ElegibilidadRecogida.EsElegible)
             .Select(s => new TotalesSolicitudesZona { Zona = s.Zona, Cantidad = 1, Peso = s.PesoTotalEstimado });
         var zonas = AgruparZonas(elegibles)
@@ -332,8 +345,9 @@ internal sealed class JornadaService
             .ThenBy(z => z.Zona)
             .ToList();
         return (umbrales, zonas, pendientes.Count(s => !EsZonaEspecifica(s.Zona)),
-            connection.Table<SolicitudRecoleccion>().Where(s => s.Estado == ElegibilidadRecogida.Pendiente)
-                .ToList().Count(s => s.UbicacionPendiente));
+            connection.Query<SolicitudRecoleccion>(
+                "SELECT Latitud, Longitud FROM Solicitudes WHERE Estado = ?", ElegibilidadRecogida.Pendiente)
+                .Count(s => s.UbicacionPendiente));
     }
 
     internal static IEnumerable<TotalesSolicitudesZona> AgruparZonas(IEnumerable<TotalesSolicitudesZona> zonas) =>

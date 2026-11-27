@@ -6,6 +6,10 @@ using System.Text.Json;
 
 await VerificarZonasAsync();
 
+var vacioGestion = await EstadisticasAmbientalesService.Instancia.ObtenerGestionAsync();
+Verificar(vacioGestion.Panel.Indicadores is { Solicitudes: 0, PesoVigente: 0, UnidadesEquipos: 0 } &&
+    vacioGestion.Alertas.Count == 0 && (await SolicitudService.Instancia.ObtenerGestionAsync()).Count == 0,
+    "El centro de operaciones vacío no debe inventar cifras ni alertas.");
 var servicio = SolicitudService.Instancia;
 var creada = new SolicitudRecoleccion
 {
@@ -157,6 +161,12 @@ Verificar(await jornadas.CrearAsync("Pedro Brand", DateTime.Today, previa.Solici
 await servicio.CompletarUbicacionAsync(tercera, puntoValido);
 var programada = await jornadas.CrearAsync("Pedro Brand", DateTime.Today, [primera.Id, segunda.Id, tercera.Id])
     ?? throw new InvalidOperationException("No se pudo programar una jornada por cantidad.");
+var alertasPendientes = (await EstadisticasAmbientalesService.Instancia.ObtenerGestionAsync()).Alertas;
+Verificar(alertasPendientes.Any(a => a.JornadaId == programada.Id && a.Ruta == AlertaGestion.RutaJornada &&
+    a.Clave == "JornadaId" && Equals(a.Valor, programada.Id)) &&
+    alertasPendientes.Any(a => a.Filtro == FiltroGestion.ProgramadasSinTelefono &&
+        a.Ruta == AlertaGestion.RutaSolicitudes && a.Clave == "Filtro"),
+    "Las alertas deben señalar la jornada y el filtro reales.");
 var vistaPendiente = await jornadas.ObtenerConsultaCampoAsync(programada.Id);
 Verificar(vistaPendiente is { OrdenVigente: false } && vistaPendiente.Paradas.Count == 3 &&
     vistaPendiente.Resumen.EstadoOrden == "Orden de paradas pendiente",
@@ -248,6 +258,11 @@ Verificar(desactualizadaCampo is { OrdenVigente: false } &&
     !Coordenadas.SonValidas(desactualizadaCampo.Paradas[desactualizadaCampo.Indice(segunda.Id)].Solicitud) &&
     await jornadas.ObtenerConsultaCampoAsync(programada.Id, int.MaxValue) is null,
     "Una parada sin punto o ajena a la jornada no debe proporcionar un destino.");
+var alertasHistoricas = (await EstadisticasAmbientalesService.Instancia.ObtenerGestionAsync()).Alertas
+    .Where(a => a.JornadaId == programada.Id).ToArray();
+Verificar(alertasHistoricas.Length == 1 && alertasHistoricas[0].Detalle.Contains("Orden desactualizado") &&
+    alertasHistoricas[0].Detalle.Contains("sin punto"),
+    "Una sola alerta por jornada debe reunir el orden desactualizado y los puntos faltantes.");
 var asignadaSinPunto = await servicio.ObtenerPorIdAsync(segunda.Id)
     ?? throw new InvalidOperationException("Falta la solicitud histórica.");
 Verificar(await servicio.TieneAsignacionActivaAsync(segunda.Id) &&
@@ -311,6 +326,36 @@ Verificar(await reabierta.FindAsync<SolicitudRecoleccion>(primera.Id) is { Telef
     "El contacto se conserva al reabrir.");
 await reabierta.CloseAsync();
 await VerificarMigracionContactoAsync();
+var gestion = new SolicitudesViewModel();
+await gestion.CargarSolicitudesAsync();
+gestion.AbrirFiltro(FiltroGestion.Programadas);
+gestion.TextoBusqueda = primera.CodigoSolicitud;
+var filaGestion = gestion.Solicitudes.Single();
+Verificar(filaGestion.FechaProgramada == DateTime.Today && filaGestion.TieneTelefono &&
+    filaGestion.TelefonoContacto is null && filaGestion.NombreContacto is null,
+    "El listado administrativo debe mostrar fecha y disponibilidad sin cargar el contacto completo.");
+await gestion.CargarSolicitudesAsync();
+Verificar(ReferenceEquals(filaGestion, gestion.Solicitudes.Single()) &&
+    gestion.TextoBusqueda == primera.CodigoSolicitud && gestion.FiltroSeleccionado == (int)FiltroGestion.Programadas,
+    "Volver de un detalle sin cambios debe conservar la lista, filtro y búsqueda.");
+await gestion.EditarCommand.ExecuteAsync(filaGestion);
+Verificar(Shell.Current.UltimaRuta == "SolicitudFormPage" &&
+    Shell.Current.UltimosParametros?["VolverAListadoGestion"] is true &&
+    Equals(Shell.Current.UltimosParametros["SolicitudId"], filaGestion.Id),
+    "Editar debe regresar al listado con el contexto actual.");
+gestion.AbrirFiltro(FiltroGestion.SinUbicacion);
+Verificar(gestion.Solicitudes.Any(s => s.Id == segunda.Id) &&
+    gestion.Solicitudes.All(s => s.UbicacionPendiente), "El filtro sin ubicación debe incluir las paradas históricas.");
+gestion.AbrirFiltro(FiltroGestion.ProgramadasSinTelefono);
+Verificar(gestion.Solicitudes.Count > 0 &&
+    gestion.Solicitudes.All(s => s.EnJornadaActiva && !s.TieneTelefono), "El filtro para contacto no cambia elegibilidad.");
+var panelGestion = await EstadisticasAmbientalesService.Instancia.ObtenerGestionAsync();
+Verificar(panelGestion.Panel.Indicadores.Solicitudes == (await servicio.ObtenerTodasAsync()).Count &&
+    panelGestion.Panel.Indicadores.UnidadesEquipos == panelGestion.Panel.Categorias.Sum(c => c.Unidades) &&
+    Math.Abs(panelGestion.Panel.Categorias.Sum(c => c.ProporcionEquipos) - 1) < 1e-9 &&
+    (await jornadas.ObtenerDetalleAsync(programada.Id, incluirUnidades: true))!.UnidadesEquipos ==
+    (await servicio.ObtenerGestionAsync()).Where(s => s.FechaProgramada.HasValue).Sum(s => s.Unidades),
+    "Los totales administrativos y la dona deben coincidir con SQLite.");
 var publicada = (await servicio.ObtenerVistaCiudadanaAsync(primera.Id)).Single();
 Verificar(publicada.FechaProgramada == DateTime.Today && publicada.EstadoVisual == "Programada",
     "La vista ciudadana debe consultar la fecha de la jornada activa.");
@@ -319,6 +364,10 @@ Verificar(await jornadas.ObtenerConsultaCampoAsync(programada.Id, primera.Id) is
     (await jornadas.ObtenerPortadaCampoAsync()).All(j => j.Id != programada.Id),
     "Las consultas y acciones de campo deben excluir jornadas canceladas.");
 Console.WriteLine("APROBADO: jornadas de campo, orden persistido, adyacencia, cambios y protección de acciones.");
+await gestion.CargarSolicitudesAsync();
+Verificar(gestion.Solicitudes.Count == 0 && gestion.FiltroSeleccionado == (int)FiltroGestion.ProgramadasSinTelefono &&
+    (await EstadisticasAmbientalesService.Instancia.ObtenerGestionAsync()).Alertas.All(a => a.JornadaId != programada.Id),
+    "La cancelación debe actualizar filtros y alertas sin reiniciar el filtro.");
 var liberada = (await servicio.ObtenerVistaCiudadanaAsync(primera.Id)).Single();
 Verificar(liberada.FechaProgramada is null && liberada.EstadoVisual == "En espera",
     "Una jornada cancelada no debe mostrar fecha activa después de volver a consultar.");
@@ -331,6 +380,14 @@ await servicio.ActualizarAsync(otra);
 Verificar((await servicio.ObtenerVistaCiudadanaAsync(otra.Id)).Single().EstadoVisual == "Fuera de agrupación",
     "Otra zona se explica con sus datos existentes.");
 
+await gestion.CargarSolicitudesAsync();
+gestion.AbrirFiltro(FiltroGestion.OtraZona);
+Verificar(gestion.Solicitudes.Any(s => s.Id == otra.Id) &&
+    gestion.Solicitudes.All(s => s.Zona == "Otra zona"), "Otra zona debe tener filtro propio.");
+gestion.AbrirFiltro(FiltroGestion.Disponibles);
+Verificar(gestion.Solicitudes.All(ElegibilidadRecogida.EsElegible) &&
+    gestion.Solicitudes.Any(s => s.Id == primera.Id), "El filtro disponible debe reutilizar la elegibilidad.");
+Console.WriteLine("APROBADO: centro de operaciones, destinos, filtros, datos privados y actualización de indicadores.");
 var confirmacion = new SolicitudFormViewModel { FormularioDisponible = true, VolverAPortada = true };
 confirmacion.AplicarUbicacion(SeleccionUbicacion.Crear(puntoValido, "Herrera", null)!);
 confirmacion.DireccionReferencia = "Referencia de la confirmación";
@@ -379,6 +436,29 @@ Verificar(await jornadas.ObtenerConsultaCampoAsync(jornadaCampo.Id, eliminableCa
     await jornadas.ObtenerConsultaCampoAsync(jornadaCampo.Id, eliminableCampo.Id) is null,
     "Una parada eliminada no debe conservar un destino operativo.");
 Console.WriteLine("APROBADO: destino válido y revocación de consulta al eliminar una parada.");
+
+var ajusteGestion = await CrearPrueba("Los Alcarrizos", 42, puntoValido);
+await CrearPrueba("Herrera", 55, puntoValido);
+var actualizadoGestion = await EstadisticasAmbientalesService.Instancia.ObtenerGestionAsync();
+Verificar(actualizadoGestion.Alertas.Any(a => a.Zona == "Los Alcarrizos" &&
+    a.Accion == "Ver disponibilidad" && a.Clave == "Zona" && Equals(a.Valor, "Los Alcarrizos")) &&
+    actualizadoGestion.Alertas.Any(a => a.Zona == "Herrera" && a.Accion == "Programar jornada"),
+    "Las zonas listas por peso y las próximas deben abrir la vista previa correcta.");
+Verificar(actualizadoGestion.Alertas.All(a => RutasDemostracion.Permite(PerfilDemostracion.Gestor, a.Ruta) &&
+    !RutasDemostracion.Permite(PerfilDemostracion.Ciudadano, a.Ruta) &&
+    !RutasDemostracion.Permite(PerfilDemostracion.Recolector, a.Ruta)),
+    "Los destinos operativos deben seguir restringidos al gestor.");
+Verificar(Math.Abs(actualizadoGestion.Panel.Indicadores.PesoVigente -
+    (await servicio.ObtenerTodasAsync()).Sum(s => s.PesoTotalEstimado)) < 1e-9,
+    "El peso vigente debe reflejar cambios sin sumar de nuevo el peso de los residuos.");
+ajusteGestion.PesoTotalEstimado = 55;
+Verificar(await servicio.ActualizarAsync(ajusteGestion), "El peso de una solicitud manual debe editarse.");
+var trasAjusteGestion = await EstadisticasAmbientalesService.Instancia.ObtenerGestionAsync();
+Verificar(Math.Abs(trasAjusteGestion.Panel.Indicadores.PesoVigente -
+    actualizadoGestion.Panel.Indicadores.PesoVigente - 13) < 1e-9 &&
+    trasAjusteGestion.Alertas.Any(a => a.Zona == "Los Alcarrizos" && a.Accion == "Programar jornada"),
+    "Al editar el peso, el centro debe actualizar el total y promover una zona próxima a lista.");
+Console.WriteLine("APROBADO: alertas por zona, destinos protegidos y peso vigente sin doble contabilización.");
 
 static async Task VerificarMigracionContactoAsync()
 {

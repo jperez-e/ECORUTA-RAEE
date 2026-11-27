@@ -1,7 +1,17 @@
 namespace ECORUTA_RAEE.Models;
 
+internal enum EstadoOrdenCampo { Pendiente, Vigente, Desactualizado }
+
 internal sealed record ResumenJornadaCampo(int Id, string Zona, DateTime Fecha, int Paradas,
-    long Unidades, double Peso, string EstadoOrden);
+    long Unidades, double Peso, EstadoOrdenCampo Orden, int UbicacionesIncompletas, int SinTelefono)
+{
+    internal string EstadoOrden => Orden switch
+    {
+        EstadoOrdenCampo.Vigente => "Orden de paradas disponible",
+        EstadoOrdenCampo.Desactualizado => "Orden desactualizado",
+        _ => "Orden de paradas pendiente"
+    };
+}
 
 internal sealed record ParadaCampo(SolicitudRecoleccion Solicitud, long Unidades)
 {

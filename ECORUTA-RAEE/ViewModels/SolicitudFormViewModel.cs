@@ -18,6 +18,7 @@ public partial class SolicitudFormViewModel : ObservableObject
     private bool altaConfirmada;
     private SolicitudRecoleccion? solicitudOriginal;
     internal bool VolverAJornada { get; set; }
+    internal bool VolverAListadoGestion { get; set; }
     internal bool VolverAPortada { get; set; }
     internal Func<SolicitudCiudadana, Task>? MostrarConfirmacionCiudadana { get; set; }
     internal bool SalidaConfirmada { get; private set; }
@@ -606,7 +607,7 @@ public partial class SolicitudFormViewModel : ObservableObject
     }
 
     private Task VolverDespuesDeGuardarAsync() =>
-        Shell.Current.GoToAsync(VolverAJornada || VolverAPortada ? ".." : "//solicitudes");
+        Shell.Current.GoToAsync(VolverAJornada || VolverAPortada || VolverAListadoGestion ? ".." : "//solicitudes");
 
     private bool ValidarCoordenadas(out double? latitud, out double? longitud)
     {

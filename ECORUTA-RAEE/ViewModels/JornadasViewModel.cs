@@ -25,6 +25,8 @@ internal partial class JornadasViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(JornadasProgramadas))]
     private IReadOnlyList<JornadaRecoleccion> jornadas = Array.Empty<JornadaRecoleccion>();
 
+    [ObservableProperty] private string criteriosVigentes = string.Empty;
+
     [ObservableProperty]
     private string cantidadTexto = string.Empty;
 
@@ -53,6 +55,7 @@ internal partial class JornadasViewModel : ObservableObject
     private async Task CargarAsync()
     {
         var panel = await JornadaService.Instancia.ObtenerPanelAsync();
+        CriteriosVigentes = $"{panel.Umbrales.Cantidad} solicitudes elegibles o {panel.Umbrales.Peso:0.##} kg elegibles.";
         CantidadTexto = panel.Umbrales.Cantidad.ToString(CultureInfo.InvariantCulture);
         PesoTexto = panel.Umbrales.Peso.ToString(CultureInfo.InvariantCulture);
         Zonas = panel.Zonas.Select(z => new AvanceZona(z)).OrderByDescending(z => z.Lista)
@@ -121,11 +124,13 @@ internal sealed record AvanceZona(ZonaDisponible Datos)
     public double AvanceCantidad => Proporcion(Datos.Cantidad, Datos.Umbrales.Cantidad);
     public double AvancePeso => Proporcion(Datos.Peso, Datos.Umbrales.Peso);
     public bool Lista => Datos.AlcanzaUmbral;
-    public bool Proxima => !Lista && Math.Max(AvanceCantidad, AvancePeso) >= 0.75;
+    public bool Proxima => ZonaAmbiental.Clasificar(Datos, Math.Max(AvanceCantidad, AvancePeso)) == NivelAlertaZona.Proxima;
+    public bool MostrarFaltantes => !Lista;
+    public string Faltantes => $"Por cantidad: {Datos.FaltanSolicitudes} para el mínimo. Por peso: {Datos.FaltanKilogramos:0.##} kg para el mínimo.";
     public string Estado => Lista ? "Lista para generar" : Proxima ? "Próxima al umbral" : "Por debajo del umbral";
     public string Cantidad => $"{Datos.Cantidad} de {Datos.Umbrales.Cantidad} solicitudes";
     public string Peso => $"{Datos.Peso:0.##} de {Datos.Umbrales.Peso:0.##} kg";
-    public string Accion => Lista ? "Revisar propuesta" : "Ver solicitudes";
+    public string Accion => Lista ? "Programar jornada" : "Ver solicitudes";
 
     private static double Proporcion(double valor, double umbral) =>
         umbral > 0 ? Math.Clamp(valor / umbral, 0, 1) : 0;
