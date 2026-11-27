@@ -1,4 +1,4 @@
-﻿
+
 using SQLite;
 
 namespace ECORUTA_RAEE.Models;
@@ -16,6 +16,9 @@ public class SolicitudRecoleccion
 
     public string Zona { get; set; } = string.Empty;
     public string? SectorOtraZona { get; set; }
+
+    public string? NombreContacto { get; set; }
+    public string? TelefonoContacto { get; set; }
 
     public string DireccionReferencia { get; set; } = string.Empty;
 

@@ -1,3 +1,4 @@
+using Microsoft.Maui.ApplicationModel.Communication;
 using ECORUTA_RAEE.Models;
 using ECORUTA_RAEE.Services;
 using ECORUTA_RAEE.ViewModels;
@@ -9,6 +10,7 @@ internal sealed class DetalleCampoPage : ContentPage
 {
     private readonly VerticalStackLayout _contenido = new() { Padding = 16, Spacing = 9 };
     private int? _jornadaId;
+    private bool _consultaDeJornada;
 
     private DetalleCampoPage(string titulo)
     {
@@ -19,7 +21,7 @@ internal sealed class DetalleCampoPage : ContentPage
         Content = new ScrollView { Content = _contenido };
     }
 
-    internal static DetalleCampoPage ParaJornada(int id) => new("Detalle de recogida") { _jornadaId = id };
+    internal static DetalleCampoPage ParaJornada(int id) => new("Detalle de recogida") { _jornadaId = id, _consultaDeJornada = true };
 
     internal static DetalleCampoPage ParaSolicitud(SolicitudRecoleccion solicitud, IReadOnlyList<ResiduoElectronico> equipos)
     {
@@ -95,12 +97,77 @@ internal sealed class DetalleCampoPage : ContentPage
         return fila;
     }
 
+    private View ContactoDeParada(SolicitudRecoleccion solicitud)
+    {
+        var nombre = Texto(solicitud.NombreContacto ?? "Sin nombre registrado");
+        var telefono = Texto(solicitud.TelefonoContacto ?? "Sin teléfono registrado");
+        var campos = new List<View> { Texto("Contacto de recogida", "TituloVisual"), nombre, telefono };
+        if (solicitud.TelefonoContacto is { } numero &&
+            DatosContacto.TryNormalizarTelefono(numero, false, out var normalizado) && normalizado is not null)
+        {
+            var acciones = new Grid { ColumnDefinitions = { new(GridLength.Star), new(GridLength.Star) }, ColumnSpacing = 8 };
+            acciones.Add(Boton("Llamar", () => AbrirMarcadorAsync(normalizado), principal: true));
+            acciones.Add(Boton("WhatsApp", () => AbrirWhatsAppAsync(normalizado, solicitud.CodigoSolicitud)), 1, 0);
+            campos.Add(acciones);
+        }
+        return Tarjeta(campos.ToArray());
+    }
+
+    private async Task AbrirMarcadorAsync(string numero)
+    {
+        try
+        {
+            if (PhoneDialer.Default.IsSupported)
+            {
+                PhoneDialer.Default.Open(numero);
+                return;
+            }
+        }
+        catch (Exception ex) when (ex is FeatureNotSupportedException or InvalidOperationException or ArgumentException) { }
+
+        await DisplayAlertAsync("Marcador no disponible", "Puedes consultar el número en el detalle de la parada.", "Entendido");
+    }
+
+    private async Task AbrirWhatsAppAsync(string numero, string codigo)
+    {
+        var mensaje = $"Hola, soy parte del equipo de recogida de EcoRuta RAEE. Me comunico contigo para coordinar la entrega de los equipos electrónicos correspondientes a la solicitud {codigo}.";
+        var enlace = new Uri($"https://wa.me/{numero[1..]}?text={Uri.EscapeDataString(mensaje)}");
+#if ANDROID
+        var actividad = Platform.CurrentActivity;
+        if (actividad is not null)
+        {
+            foreach (var paquete in new[] { "com.whatsapp", "com.whatsapp.w4b" })
+            {
+                using var destino = Android.Net.Uri.Parse(enlace.AbsoluteUri);
+                using var intent = new Android.Content.Intent(Android.Content.Intent.ActionView, destino);
+                intent.SetPackage(paquete);
+                try
+                {
+                    actividad.StartActivity(intent);
+                    return;
+                }
+                catch (Android.Content.ActivityNotFoundException) { }
+                catch (Java.Lang.SecurityException) { }
+            }
+        }
+#else
+        if (await Launcher.Default.TryOpenAsync(enlace))
+            return;
+#endif
+        await DisplayAlertAsync("WhatsApp no disponible", "Puedes consultar el número o usar el marcador telefónico.", "Entendido");
+    }
+
     private void MostrarSolicitud(string titulo, SolicitudRecoleccion solicitud, IReadOnlyList<ResiduoElectronico> equipos, int orden = 0)
     {
         var encabezado = orden > 0 ? IndicadorParada(orden, titulo) : ConIcono("punto", Texto(titulo, "TituloVisual"));
-        var contenido = new List<View> { encabezado,
-            Texto(solicitud.DireccionReferencia, "TituloVisual"),
-            Texto($"{solicitud.Zona} · {solicitud.Estado}"), Texto(PortadaDemoPage.Resumen(solicitud, equipos)) };
+        var contenido = new List<View> { encabezado };
+        if (_consultaDeJornada && SesionDemostracion.Perfil == PerfilDemostracion.Recolector)
+            contenido.Add(ContactoDeParada(solicitud));
+        contenido.Add(ConIcono("punto", Texto("Ubicación", "TituloVisual")));
+        contenido.Add(Texto(solicitud.DireccionReferencia, "TituloVisual"));
+        contenido.AddRange([
+            Texto($"{solicitud.Zona} · {solicitud.Estado}"), Texto(PortadaDemoPage.Resumen(solicitud, equipos))]);
+        contenido.Add(Texto("Equipos para recoger", "TituloVisual"));
         if (equipos.Count == 0)
             contenido.Add(Texto("Sin equipos asociados."));
         foreach (var equipo in equipos)

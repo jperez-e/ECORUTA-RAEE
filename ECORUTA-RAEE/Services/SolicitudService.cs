@@ -43,6 +43,7 @@ public class SolicitudService
             FechaRegistro = DateTime.Now,
             Zona = solicitud.Zona,
             SectorOtraZona = solicitud.SectorOtraZona,
+            NombreContacto = solicitud.NombreContacto, TelefonoContacto = solicitud.TelefonoContacto,
             DireccionReferencia = solicitud.DireccionReferencia,
             Latitud = solicitud.Latitud,
             Longitud = solicitud.Longitud,
@@ -95,12 +96,13 @@ public class SolicitudService
                 UPDATE Solicitudes
                 SET CodigoSolicitud = COALESCE(?, CodigoSolicitud),
                     Zona = ?, SectorOtraZona = ?, DireccionReferencia = ?, Latitud = ?, Longitud = ?,
+                    NombreContacto = ?, TelefonoContacto = ?,
                     PesoTotalEstimado = CASE
                         WHEN ? AND NOT EXISTS (SELECT 1 FROM Residuos WHERE SolicitudId = Solicitudes.Id)
                         THEN ? ELSE PesoTotalEstimado END
                 WHERE Id = ?
                 """, codigo, solicitud.Zona, solicitud.SectorOtraZona, solicitud.DireccionReferencia, solicitud.Latitud,
-                solicitud.Longitud, actualizarPesoManual, solicitud.PesoTotalEstimado, solicitud.Id));
+                solicitud.Longitud, solicitud.NombreContacto, solicitud.TelefonoContacto, actualizarPesoManual, solicitud.PesoTotalEstimado, solicitud.Id));
 
         if (actualizadas == 1 && numeroPersonalizado is int numeroManual)
             ActualizarSecuencia(connection, numeroManual);
@@ -109,6 +111,12 @@ public class SolicitudService
 
     private static void ValidarUbicacion(SolicitudRecoleccion solicitud)
     {
+        solicitud.NombreContacto = DatosContacto.NormalizarNombre(solicitud.NombreContacto);
+        if (!DatosContacto.NombreValido(solicitud.NombreContacto) ||
+            !DatosContacto.TryNormalizarTelefono(solicitud.TelefonoContacto, false, out var telefono))
+            throw new ArgumentException("El contacto contiene datos inválidos.", nameof(solicitud));
+        solicitud.TelefonoContacto = telefono;
+
         if ((solicitud.Latitud.HasValue || solicitud.Longitud.HasValue) && solicitud.UbicacionPendiente)
             throw new ArgumentException("La ubicación debe contener ambas coordenadas válidas.", nameof(solicitud));
     }
@@ -257,10 +265,11 @@ public class SolicitudService
     private static (int, int, string, string, int, double) ValoresEquipo(ResiduoElectronico equipo) =>
         (equipo.Id, equipo.SolicitudId, equipo.Categoria, equipo.Descripcion, equipo.Cantidad, equipo.PesoEstimado);
 
-    private static (string, string, string?, string, double?, double?, string, double) ValoresSolicitud(
+    private static (string, string, string?, string, double?, double?, string, double, string?, string?) ValoresSolicitud(
         SolicitudRecoleccion solicitud) =>
         (solicitud.CodigoSolicitud, solicitud.Zona, solicitud.SectorOtraZona, solicitud.DireccionReferencia,
-            solicitud.Latitud, solicitud.Longitud, solicitud.Estado, solicitud.PesoTotalEstimado);
+            solicitud.Latitud, solicitud.Longitud, solicitud.Estado, solicitud.PesoTotalEstimado,
+            solicitud.NombreContacto, solicitud.TelefonoContacto);
 
     private static void ValidarSolicitudCompleta(SolicitudRecoleccion solicitud, bool pesoManual, double? pesoActual)
     {

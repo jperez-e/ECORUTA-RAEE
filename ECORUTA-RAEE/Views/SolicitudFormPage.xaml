@@ -112,6 +112,25 @@
                 </Grid>
             </Border>
 
+            <Border Style="{StaticResource TarjetaVisual}">
+                <VerticalStackLayout Spacing="7">
+                    <Label Text="Datos de contacto" Style="{StaticResource TituloVisual}" />
+                    <Label Text="¿Con quién podemos comunicarnos?" Style="{StaticResource TextoVisual}" />
+                    <Label Text="Nombre de contacto (opcional)" Style="{StaticResource TextoVisual}" />
+                    <Entry Text="{Binding NombreContacto}" MaxLength="100"
+                           Style="{StaticResource CampoVisual}" SemanticProperties.Description="Nombre de contacto" />
+                    <Label Text="{Binding ErrorNombreContacto}" Style="{StaticResource ErrorEquipo}" />
+                    <Label Text="Número de teléfono (opcional)" Style="{StaticResource TextoVisual}" />
+                    <Picker ItemsSource="{Binding PrefijosContacto}" SelectedItem="{Binding PrefijoContacto}"
+                            Title="Prefijo internacional" SemanticProperties.Description="Prefijo internacional" />
+                    <Entry Text="{Binding TelefonoContacto}" Keyboard="Telephone" MaxLength="32"
+                           Style="{StaticResource CampoVisual}" SemanticProperties.Description="Número de teléfono" />
+                    <Label Text="{Binding ErrorTelefonoContacto}" Style="{StaticResource ErrorEquipo}" />
+                    <Label Text="El teléfono ayuda a coordinar la recogida. En modo demostración, el contacto se guarda en este dispositivo y los perfiles Gestor y Recolector pueden consultarlo."
+                           Style="{StaticResource TextoVisual}" FontSize="12" />
+                </VerticalStackLayout>
+            </Border>
+
             <!-- Ubicación de recogida -->
             <Border
                 Style="{StaticResource TarjetaVisual}"
@@ -385,6 +404,7 @@
                            Style="{StaticResource TextoVisual}"/>
                     <Label Text="{Binding ZonaResumen, StringFormat='Zona: {0}'}"
                            Style="{StaticResource TextoVisual}"/>
+                    <Label Text="{Binding ResumenContacto}" Style="{StaticResource TextoVisual}" />
                     <Label Text="{Binding PesoResumen, StringFormat='Peso total estimado: {0:F2} kg'}"
                            Style="{StaticResource TituloVisual}"/>
                     <VerticalStackLayout IsVisible="{Binding PesoEditable}" Spacing="5">

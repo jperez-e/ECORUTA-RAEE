@@ -5,7 +5,7 @@ namespace ECORUTA_RAEE.Services;
 
 internal sealed class EcoRutaDatabase
 {
-    private const int SchemaVersion = 4;
+    private const int SchemaVersion = 5;
     private const string FileName = "ecoruta-raee.db3";
     private static readonly Lazy<EcoRutaDatabase> DefaultInstance =
         new(() => new EcoRutaDatabase(Path.Combine(FileSystem.AppDataDirectory, FileName)));
@@ -70,6 +70,12 @@ internal sealed class EcoRutaDatabase
         {
             connection.Execute("ALTER TABLE Solicitudes ADD COLUMN SectorOtraZona TEXT");
             connection.Execute("PRAGMA user_version = 4");
+        }
+        if (version < 5)
+        {
+            connection.Execute("ALTER TABLE Solicitudes ADD COLUMN NombreContacto TEXT");
+            connection.Execute("ALTER TABLE Solicitudes ADD COLUMN TelefonoContacto TEXT");
+            connection.Execute("PRAGMA user_version = 5");
         }
     }
 

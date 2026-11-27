@@ -100,6 +100,35 @@ public partial class SolicitudFormViewModel : ObservableObject
 
     public bool MostrarBotonEliminar => EsEdicion;
 
+    public IReadOnlyList<string> PrefijosContacto { get; } = [DatosContacto.Internacional, DatosContacto.Dominicano];
+
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(ResumenContacto))]
+    private string nombreContacto = string.Empty;
+
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(ResumenContacto))]
+    private string telefonoContacto = string.Empty;
+
+    [ObservableProperty]
+    private string prefijoContacto = DatosContacto.Internacional;
+
+    [ObservableProperty] private string errorNombreContacto = string.Empty;
+    [ObservableProperty] private string errorTelefonoContacto = string.Empty;
+
+    public string ResumenContacto => string.Join(" · ", new[]
+    {
+        DatosContacto.NormalizarNombre(NombreContacto) ?? "Sin nombre registrado",
+        DatosContacto.TryNormalizarTelefono(TelefonoContacto, PrefijoContacto == DatosContacto.Dominicano, out var tel)
+            ? tel ?? "Sin teléfono registrado" : "Revisa el teléfono"
+    });
+
+    partial void OnNombreContactoChanged(string value) => ErrorNombreContacto = string.Empty;
+    partial void OnTelefonoContactoChanged(string value) => ErrorTelefonoContacto = string.Empty;
+    partial void OnPrefijoContactoChanged(string value)
+    {
+        ErrorTelefonoContacto = string.Empty;
+        OnPropertyChanged(nameof(ResumenContacto));
+    }
+
     public bool TieneErrorZona => !string.IsNullOrEmpty(ErrorZona);
     public bool TieneErrorDireccion => !string.IsNullOrEmpty(ErrorDireccion);
     public bool TieneErrorPeso => !string.IsNullOrEmpty(ErrorPeso);
@@ -233,6 +262,8 @@ public partial class SolicitudFormViewModel : ObservableObject
         EsEdicion = false;
         CargarEquipos(Array.Empty<ResiduoElectronico>(), 0);
 
+        NombreContacto = TelefonoContacto = string.Empty;
+        PrefijoContacto = DatosContacto.Internacional;
         ZonaSeleccionada = null;
         SectorOtraZona = string.Empty;
         ZonaConfirmada = false;
@@ -263,6 +294,11 @@ public partial class SolicitudFormViewModel : ObservableObject
         PersonalizarCodigo = false;
         CodigoTexto = codigoSolicitud;
 
+        NombreContacto = solicitud.NombreContacto ?? string.Empty;
+        bool dominicano = solicitud.TelefonoContacto is { } tel &&
+            (tel.StartsWith("+1809") || tel.StartsWith("+1829") || tel.StartsWith("+1849"));
+        PrefijoContacto = dominicano ? DatosContacto.Dominicano : DatosContacto.Internacional;
+        TelefonoContacto = dominicano ? solicitud.TelefonoContacto![2..] : solicitud.TelefonoContacto ?? string.Empty;
         ZonaSeleccionada = solicitud.Zona;
         SectorOtraZona = solicitud.SectorOtraZona ?? string.Empty;
         ZonaConfirmada = false;
@@ -431,12 +467,23 @@ public partial class SolicitudFormViewModel : ObservableObject
             return;
         }
 
+        var nombre = DatosContacto.NormalizarNombre(NombreContacto);
+        if (!DatosContacto.NombreValido(nombre))
+            ErrorNombreContacto = "Escribe un nombre de hasta 100 caracteres.";
+        if (!DatosContacto.TryNormalizarTelefono(TelefonoContacto, PrefijoContacto == DatosContacto.Dominicano, out var telefono))
+            ErrorTelefonoContacto = PrefijoContacto == DatosContacto.Dominicano
+                ? "Introduce los 10 dígitos, comenzando por 809, 829 o 849."
+                : "Introduce el número completo con + y su código de país.";
+        if (ErrorNombreContacto.Length > 0 || ErrorTelefonoContacto.Length > 0)
+            return;
+
         var solicitud = new SolicitudRecoleccion
         {
             Id = solicitudId,
             CodigoSolicitud = codigoSolicitud,
             Zona = ZonaSeleccionada!,
             SectorOtraZona = sector,
+            NombreContacto = nombre, TelefonoContacto = telefono,
             DireccionReferencia = direccion,
             Latitud = latitud,
             Longitud = longitud,
@@ -594,6 +641,7 @@ public partial class SolicitudFormViewModel : ObservableObject
 
     private void LimpiarErrores()
     {
+        ErrorNombreContacto = ErrorTelefonoContacto = string.Empty;
         ErrorZona = string.Empty;
         ErrorDireccion = string.Empty;
         ErrorPeso = string.Empty;

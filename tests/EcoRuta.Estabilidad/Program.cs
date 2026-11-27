@@ -158,6 +158,34 @@ await servicio.CompletarUbicacionAsync(tercera, puntoValido);
 var programada = await jornadas.CrearAsync("Pedro Brand", DateTime.Today, [primera.Id, segunda.Id, tercera.Id])
     ?? throw new InvalidOperationException("No se pudo programar una jornada por cantidad.");
 await jornadas.GenerarRutaAsync(programada.Id);
+var contacto = new SolicitudFormViewModel { FormularioDisponible = true };
+var contactoObsoleto = new SolicitudFormViewModel { FormularioDisponible = true };
+await contacto.CargarParaEditarAsync(primera.Id);
+await contactoObsoleto.CargarParaEditarAsync(primera.Id);
+contacto.NombreContacto = "  Contacto técnico  ";
+contacto.PrefijoContacto = DatosContacto.Dominicano;
+contacto.TelefonoContacto = "809 555 01";
+contacto.ZonaConfirmada = true;
+await contacto.GuardarCommand.ExecuteAsync(null);
+Verificar(contacto.ErrorTelefonoContacto.Length > 0 &&
+    (await servicio.ObtenerPorIdAsync(primera.Id))?.TelefonoContacto is null,
+    "Un teléfono incompleto debe producir error inline sin escritura.");
+contacto.TelefonoContacto = "809 555 0100";
+contacto.AplicarUbicacion(SeleccionUbicacion.Crear(puntoValido, "Pedro Brand", null)!);
+Verificar(contacto.TelefonoContacto == "809 555 0100", "El mapa debe conservar el contacto en el borrador.");
+await contacto.GuardarCommand.ExecuteAsync(null);
+Verificar((await servicio.ObtenerPorIdAsync(primera.Id)) is
+    { NombreContacto: "Contacto técnico", TelefonoContacto: "+18095550100" } &&
+    (await jornadas.ObtenerDetalleAsync(programada.Id)) is { RutaDesactualizada: false, Ruta: not null },
+    "El contacto debe guardarse sin invalidar la ruta programada.");
+contactoObsoleto.NombreContacto = "Borrador de prueba";
+contactoObsoleto.ZonaConfirmada = true;
+await contactoObsoleto.GuardarCommand.ExecuteAsync(null);
+Verificar(contactoObsoleto.NombreContacto == "Borrador de prueba" &&
+    (await servicio.ObtenerPorIdAsync(primera.Id))?.NombreContacto == "Contacto técnico",
+    "Un borrador obsoleto de contacto no debe sobrescribir los datos.");
+Console.WriteLine("APROBADO: validación inline, borrador, concurrencia y ruta vigente después de editar contacto.");
+primera = (await servicio.ObtenerPorIdAsync(primera.Id))!;
 primera.Latitud = primera.Longitud = null;
 try
 {
@@ -201,7 +229,7 @@ Verificar(ambiental.CantidadElegible == resumen.Zonas.Sum(z => z.Cantidad) &&
     gestor.Panel?.CantidadElegible == ambiental.CantidadElegible &&
     gestor.Panel?.PesoElegible == ambiental.PesoElegible &&
     ambiental.Indicadores.PesoVigente > ambiental.PesoElegible &&
-    await db.ExecuteScalarAsync<int>("PRAGMA user_version") == 4,
+    await db.ExecuteScalarAsync<int>("PRAGMA user_version") == 5,
     "Los paneles deben compartir disponibilidad y mantener totales generales y esquema.");
 Console.WriteLine("APROBADO: elegibilidad, umbrales, protección transaccional, jornadas antiguas y estadísticas.");
 
@@ -220,14 +248,93 @@ Verificar((await servicio.ObtenerTodasAsync()).Single(s => s.Zona == "Los Alcarr
     { UbicacionPendiente: true, PesoTotalEstimado: 75, Estado: "Pendiente" } &&
     (await jornadas.ObtenerVistaPreviaAsync("Los Alcarrizos")).Solicitudes.Count == 0,
     "El formulario integrado debe registrar el alta sin coordenadas y excluirla de la jornada.");
+var altaConContacto = new SolicitudFormViewModel
+{
+    FormularioDisponible = true, ZonaSeleccionada = "Herrera", ZonaConfirmada = true,
+    DireccionReferencia = "Referencia de prueba de contacto", NombreContacto = "Contacto de prueba",
+    PrefijoContacto = DatosContacto.Dominicano, TelefonoContacto = "849 555 0100"
+};
+altaConContacto.AgregarEquipoCommand.Execute(null);
+var equipoContacto = altaConContacto.Equipos.Single();
+equipoContacto.Categoria = "Monitor";
+equipoContacto.Descripcion = "Monitor de prueba";
+equipoContacto.PesoTexto = "8";
+await altaConContacto.GuardarCommand.ExecuteAsync(null);
+Verificar((await servicio.ObtenerTodasAsync()).SingleOrDefault(s => s.NombreContacto == "Contacto de prueba") is
+    { TelefonoContacto: "+18495550100", PesoTotalEstimado: 8 },
+    "El alta integrada debe persistir contacto y equipos juntos.");
+Console.WriteLine("APROBADO: alta integrada con contacto opcional normalizado.");
 await db.CloseAsync();
 var reabierta = await new EcoRutaDatabase(Path.Combine(Microsoft.Maui.Storage.FileSystem.AppDataDirectory,
     "ecoruta-raee.db3")).GetConnectionAsync();
 Verificar(await reabierta.FindAsync<SolicitudRecoleccion>(sinPunto.Id) is { UbicacionPendiente: false } &&
     await reabierta.FindAsync<SolicitudRecoleccion>(segunda.Id) is { UbicacionPendiente: true } &&
-    await reabierta.ExecuteScalarAsync<int>("PRAGMA user_version") == 4,
+    await reabierta.ExecuteScalarAsync<int>("PRAGMA user_version") == 5,
     "Los puntos corregidos y los registros históricos deben mantenerse tras reabrir SQLite.");
-Console.WriteLine("APROBADO: alta integrada sin punto y persistencia tras reabrir SQLite v4.");
+Console.WriteLine("APROBADO: alta integrada sin punto y persistencia tras reabrir SQLite v5.");
+
+Verificar(await reabierta.FindAsync<SolicitudRecoleccion>(primera.Id) is { TelefonoContacto: "+18095550100" },
+    "El contacto se conserva al reabrir.");
+await reabierta.CloseAsync();
+await VerificarMigracionContactoAsync();
+
+static async Task VerificarMigracionContactoAsync()
+{
+    var directorio = Microsoft.Maui.Storage.FileSystem.AppDataDirectory;
+    var original = Path.Combine(directorio, "ecoruta-raee.db3");
+    var legado = Path.Combine(directorio, "contacto-v4-fixture.db3");
+    File.Copy(original, legado);
+    long secuencia;
+    int asociaciones;
+    int equipos;
+    int ruta;
+    string[] indices;
+    using (var db = new SQLite.SQLiteConnection(legado))
+    {
+        db.Execute("ALTER TABLE Solicitudes DROP COLUMN TelefonoContacto");
+        db.Execute("ALTER TABLE Solicitudes DROP COLUMN NombreContacto");
+        db.Execute("PRAGMA user_version=4");
+        secuencia = db.ExecuteScalar<long>("SELECT UltimoNumero FROM SecuenciaCodigoSolicitud");
+        asociaciones = db.ExecuteScalar<int>("SELECT COUNT(*) FROM JornadaSolicitudes");
+        equipos = db.ExecuteScalar<int>("SELECT COUNT(*) FROM Residuos");
+        ruta = db.ExecuteScalar<int>("SELECT COUNT(OrdenRuta) FROM JornadaSolicitudes");
+        indices = db.QueryScalars<string>("SELECT name FROM sqlite_schema WHERE type='index' ORDER BY name").ToArray();
+    }
+    var fallo = Path.Combine(directorio, "contacto-v4-fallo.db3");
+    File.Copy(legado, fallo);
+    using (var db = new SQLite.SQLiteConnection(fallo))
+        db.Execute("ALTER TABLE Solicitudes ADD COLUMN TelefonoContacto TEXT");
+    try
+    {
+        await new EcoRutaDatabase(fallo).GetConnectionAsync();
+        throw new InvalidOperationException("La segunda escritura de la migración debió fallar.");
+    }
+    catch (SQLite.SQLiteException) { }
+    using (var db = new SQLite.SQLiteConnection(fallo))
+        Verificar(db.ExecuteScalar<int>("PRAGMA user_version") == 4 &&
+            db.ExecuteScalar<int>("SELECT COUNT(*) FROM pragma_table_info('Solicitudes') WHERE name='NombreContacto'") == 0,
+            "La primera columna y la versión deben revertirse si falla la segunda.");
+
+    var migrada = await new EcoRutaDatabase(legado).GetConnectionAsync();
+    Verificar(await migrada.ExecuteScalarAsync<int>("PRAGMA user_version") == 5 &&
+        await migrada.ExecuteScalarAsync<long>("SELECT UltimoNumero FROM SecuenciaCodigoSolicitud") == secuencia &&
+        asociaciones > 0 && await migrada.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM JornadaSolicitudes") == asociaciones &&
+        equipos > 0 && await migrada.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM Residuos") == equipos &&
+        await migrada.ExecuteScalarAsync<int>("SELECT COUNT(OrdenRuta) FROM JornadaSolicitudes") == ruta &&
+        (await migrada.QueryScalarsAsync<string>("SELECT name FROM sqlite_schema WHERE type='index' ORDER BY name")).SequenceEqual(indices) &&
+        await migrada.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM pragma_foreign_key_check") == 0 &&
+        await migrada.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM Solicitudes WHERE NombreContacto IS NOT NULL OR TelefonoContacto IS NOT NULL") == 0,
+        "La migración debe conservar datos, índices, secuencia y relaciones con contacto nulo.");
+    Verificar(DatosContacto.TryNormalizarTelefono("(829) 555-0100", true, out var local) && local == "+18295550100" &&
+        DatosContacto.TryNormalizarTelefono("849 555 0100", true, out _) &&
+        DatosContacto.TryNormalizarTelefono("+34 600 000 000", false, out var internacional) && internacional == "+34600000000" &&
+        !DatosContacto.TryNormalizarTelefono("8095550100", false, out _) &&
+        !DatosContacto.TryNormalizarTelefono("2125550100", true, out _) &&
+        !DatosContacto.TryNormalizarTelefono("+1 809 555 ABCD", false, out _),
+        "La normalización exige prefijo explícito y formato compatible.");
+    await migrada.CloseAsync();
+    Console.WriteLine("APROBADO: migración v4 a v5 con datos, índices, claves foráneas, secuencia y rollback.");
+}
 
 static async Task VerificarZonasAsync()
 {

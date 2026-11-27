@@ -111,6 +111,7 @@ public partial class SolicitudFormPage : ContentPage, IQueryAttributable, IFormu
     private string Capturar() => JsonSerializer.Serialize(new
     {
         _viewModel.ZonaSeleccionada, _viewModel.SectorOtraZona, _viewModel.ZonaConfirmada,
+        _viewModel.NombreContacto, _viewModel.TelefonoContacto, _viewModel.PrefijoContacto,
         _viewModel.DireccionReferencia, _viewModel.LatitudTexto, _viewModel.LongitudTexto,
         _viewModel.PersonalizarCodigo, _viewModel.CodigoTexto, _viewModel.PesoTexto,
         Equipos = _viewModel.Equipos.Select(e => new { e.IdPersistido, e.Categoria, e.Descripcion, e.CantidadTexto, e.PesoTexto })
