@@ -12,16 +12,18 @@ public partial class MapaJornadaPage : ContentPage
     private readonly int _jornadaId;
     private readonly MapaJornada? _ubicacion;
     private readonly bool _consultaDeCampo;
+    private readonly int? _paradaInicial;
     private readonly string _sesion = Guid.NewGuid().ToString("N");
     private readonly CancellationTokenSource _vida = new();
     private bool _iniciada;
     private bool _lista;
 
-    internal MapaJornadaPage(int jornadaId, bool consultaDeCampo = false)
+    internal MapaJornadaPage(int jornadaId, bool consultaDeCampo = false, int? paradaInicial = null)
     {
         InitializeComponent();
         _jornadaId = jornadaId;
         _consultaDeCampo = consultaDeCampo;
+        _paradaInicial = paradaInicial;
     }
 
     internal MapaJornadaPage(MapaJornada ubicacion)
@@ -38,12 +40,19 @@ public partial class MapaJornadaPage : ContentPage
             return;
         _iniciada = true;
 
+        bool cambioDeJornada = false;
         BindingContext = _ubicacion;
         bool consultada = _ubicacion is not null || await OperacionBaseDatos.EjecutarAsync(async () =>
         {
             var jornada = await JornadaService.Instancia.ObtenerDetalleAsync(_jornadaId, incluirRutaCancelada: true);
             if (jornada is null || _vida.IsCancellationRequested)
                 return;
+            if (_consultaDeCampo && (jornada.Estado != JornadaRecoleccion.Programada ||
+                (_paradaInicial is int id && jornada.Solicitudes.All(s => s.Id != id))))
+            {
+                cambioDeJornada = true;
+                return;
+            }
             var resultado = MapaJornada.Crear(jornada);
             if (_consultaDeCampo && jornada.Estado == JornadaRecoleccion.Programada && jornada.Ruta is null)
                 resultado = resultado with { Metodo = jornada.RutaDesactualizada
@@ -55,7 +64,8 @@ public partial class MapaJornadaPage : ContentPage
             return;
         if (BindingContext is not MapaJornada datos)
         {
-            EstadoMapa.Text = consultada ? "La jornada ya no existe." : "No se pudo consultar la jornada.";
+            EstadoMapa.Text = cambioDeJornada ? "La jornada o la parada cambió. Vuelve al detalle para actualizar."
+                : consultada ? "La jornada ya no existe." : "No se pudo consultar la jornada.";
             return;
         }
 
@@ -89,6 +99,8 @@ public partial class MapaJornadaPage : ContentPage
                 _lista = sesion == _sesion || sesion == JsonSerializer.Serialize(_sesion);
             }
             Todas.IsEnabled = true;
+            if (_paradaInicial is int id && datos.Paradas.Any(p => p.Id == id && p.Ubicada))
+                await EjecutarMapaAsync(FormattableString.Invariant($"centrar({id})"));
             if (internet)
                 EstadoMapa.Text = "Toca un marcador o elige una parada del listado.";
         }

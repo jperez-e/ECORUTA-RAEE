@@ -104,30 +104,112 @@ internal sealed class JornadaService
         return jornada;
     }
 
-    internal async Task<IReadOnlyList<JornadaRecoleccion>> ObtenerProgramadasAsync()
+    private const string ColumnasParadaCampo = """
+        s.Id, s.CodigoSolicitud, s.FechaRegistro, s.Zona, s.SectorOtraZona,
+        s.DireccionReferencia, s.Latitud, s.Longitud, s.Estado, s.PesoTotalEstimado
+        """;
+
+    internal async Task<IReadOnlyList<ResumenJornadaCampo>> ObtenerPortadaCampoAsync()
     {
         var db = await EcoRutaDatabase.Instance.GetConnectionAsync();
-        var jornadas = new List<JornadaRecoleccion>();
+        IReadOnlyList<ResumenJornadaCampo> resultado = [];
         await db.RunInTransactionAsync(connection =>
         {
-            jornadas = connection.Table<JornadaRecoleccion>()
-                .Where(j => j.Estado == JornadaRecoleccion.Programada)
-                .OrderBy(j => j.FechaProgramada).ThenBy(j => j.Id).ToList();
-            var asignaciones = connection.Query<AsignacionProgramada>("""
-                SELECT js.JornadaId, s.* FROM JornadaSolicitudes js
-                JOIN Jornadas j ON j.Id = js.JornadaId
-                JOIN Solicitudes s ON s.Id = js.SolicitudId
-                WHERE j.Estado = ? AND js.Activa = 1
-                """, JornadaRecoleccion.Programada).ToLookup(s => s.JornadaId);
-            foreach (var jornada in jornadas)
-                jornada.Solicitudes = asignaciones[jornada.Id].ToArray();
+            var jornadas = connection.Query<JornadaCampoFila>("""
+                SELECT Id, Zona, FechaProgramada, HuellaRuta, MetodoRuta FROM Jornadas
+                WHERE Estado = ? ORDER BY FechaProgramada, Id
+                """, JornadaRecoleccion.Programada);
+            var paradas = LeerParadasCampo(connection, null).ToLookup(p => p.JornadaId);
+            resultado = jornadas.Select(j => PrepararCampo(j, paradas[j.Id].ToArray()).Resumen).ToArray();
         });
-        return jornadas;
+        return resultado;
     }
 
-    private sealed class AsignacionProgramada : SolicitudRecoleccion
+    internal async Task<ConsultaCampo?> ObtenerConsultaCampoAsync(int jornadaId, int? solicitudId = null)
+    {
+        var db = await EcoRutaDatabase.Instance.GetConnectionAsync();
+        ConsultaCampo? resultado = null;
+        await db.RunInTransactionAsync(connection =>
+        {
+            var jornada = connection.Query<JornadaCampoFila>("""
+                SELECT Id, Zona, FechaProgramada, HuellaRuta, MetodoRuta FROM Jornadas
+                WHERE Id = ? AND Estado = ?
+                """, jornadaId, JornadaRecoleccion.Programada).SingleOrDefault();
+            if (jornada is null)
+                return;
+
+            var paradas = LeerParadasCampo(connection, jornadaId);
+            var consulta = PrepararCampo(jornada, paradas);
+            if (solicitudId is int id)
+            {
+                var parada = consulta.Paradas.FirstOrDefault(p => p.Solicitud.Id == id);
+                if (parada is null)
+                    return;
+
+                var contacto = connection.Query<SolicitudRecoleccion>("""
+                    SELECT NombreContacto, TelefonoContacto FROM Solicitudes WHERE Id = ?
+                    """, id).Single();
+                parada.Solicitud.NombreContacto = contacto.NombreContacto;
+                parada.Solicitud.TelefonoContacto = contacto.TelefonoContacto;
+                consulta = consulta with
+                {
+                    Equipos = connection.Table<ResiduoElectronico>().Where(e => e.SolicitudId == id)
+                        .OrderBy(e => e.Id).ToList()
+                };
+            }
+            resultado = consulta;
+        });
+        return resultado;
+    }
+
+    private static List<ParadaCampoFila> LeerParadasCampo(SQLiteConnection connection, int? jornadaId)
+    {
+        string filtro = jornadaId.HasValue ? " AND js.JornadaId = ?" : "";
+        object[] argumentos = jornadaId is int id ? [JornadaRecoleccion.Programada, id] : [JornadaRecoleccion.Programada];
+        return connection.Query<ParadaCampoFila>($"""
+            SELECT js.JornadaId, js.OrdenRuta, {ColumnasParadaCampo}, COALESCE(e.Unidades, 0) AS Unidades
+            FROM JornadaSolicitudes js
+            JOIN Jornadas j ON j.Id = js.JornadaId
+            JOIN Solicitudes s ON s.Id = js.SolicitudId
+            LEFT JOIN (
+                SELECT r.SolicitudId, SUM(r.Cantidad) AS Unidades
+                FROM Residuos r JOIN JornadaSolicitudes a ON a.SolicitudId = r.SolicitudId AND a.Activa = 1
+                JOIN Jornadas aj ON aj.Id = a.JornadaId AND aj.Estado = ?
+                {(jornadaId.HasValue ? "WHERE a.JornadaId = ?" : "")}
+                GROUP BY r.SolicitudId
+            ) e ON e.SolicitudId = s.Id
+            WHERE js.Activa = 1 AND j.Estado = ?{filtro}
+            ORDER BY s.FechaRegistro, s.Id
+            """, [.. argumentos, .. argumentos]);
+    }
+
+    private static ConsultaCampo PrepararCampo(JornadaCampoFila jornada, IReadOnlyList<ParadaCampoFila> filas)
+    {
+        var ordenadas = filas.OrderBy(p => p.OrdenRuta).ToArray();
+        bool vigente = filas.Count > 0 && jornada.HuellaRuta is { } huella &&
+            huella == PlanificadorRutas.CalcularHuella(filas) &&
+            OrdenGuardadoValido(jornada.MetodoRuta, filas.Count, ordenadas.Select(p => p.OrdenRuta));
+        string estado = vigente ? "Orden de paradas disponible" : jornada.HuellaRuta is not null
+            ? "Orden desactualizado" : "Orden de paradas pendiente";
+        return new(new ResumenJornadaCampo(jornada.Id, jornada.Zona, jornada.FechaProgramada, filas.Count,
+                filas.Sum(p => p.Unidades), filas.Sum(p => p.PesoTotalEstimado), estado), vigente,
+            (vigente ? ordenadas : filas).Select(p => new ParadaCampo(p, p.Unidades)).ToArray(), []);
+    }
+
+    private sealed class JornadaCampoFila
+    {
+        public int Id { get; set; }
+        public string Zona { get; set; } = "";
+        public DateTime FechaProgramada { get; set; }
+        public string? HuellaRuta { get; set; }
+        public int? MetodoRuta { get; set; }
+    }
+
+    private sealed class ParadaCampoFila : SolicitudRecoleccion
     {
         public int JornadaId { get; set; }
+        public int? OrdenRuta { get; set; }
+        public long Unidades { get; set; }
     }
 
     public async Task<JornadaRecoleccion?> GenerarRutaAsync(int id)
@@ -187,9 +269,7 @@ internal sealed class JornadaService
             FROM JornadaSolicitudes WHERE JornadaId = ? AND OrdenRuta IS NOT NULL ORDER BY OrdenRuta
             """, jornada.Id);
 
-        if (guardadas.Count != jornada.Solicitudes.Count ||
-            !guardadas.Select(p => p.Orden).SequenceEqual(Enumerable.Range(1, guardadas.Count)) ||
-            metodo is not (MetodoRuta.VecinoMasCercano or MetodoRuta.Antiguedad))
+        if (!OrdenGuardadoValido((int)metodo, jornada.Solicitudes.Count, guardadas.Select(p => (int?)p.Orden)))
         {
             jornada.RutaDesactualizada = true;
             return;
@@ -200,6 +280,10 @@ internal sealed class JornadaService
             .Select(p => new ParadaRuta(solicitudes[p.SolicitudId], p.Orden, p.DistanciaKm))
             .ToList());
     }
+
+    private static bool OrdenGuardadoValido(int? metodo, int cantidad, IEnumerable<int?> orden) =>
+        metodo is (int)MetodoRuta.VecinoMasCercano or (int)MetodoRuta.Antiguedad &&
+        orden.SequenceEqual(Enumerable.Range(1, cantidad).Select(i => (int?)i));
 
     private sealed class OrdenRutaGuardado
     {

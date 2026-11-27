@@ -98,10 +98,10 @@ if (jornada is null || await jornadas.GenerarRutaAsync(jornada.Id) is null)
     throw new InvalidOperationException("El flujo gestor debe programar y guardar la ruta.");
 var recolector = new PortadaDemoViewModel(PerfilDemostracion.Recolector);
 if (!await recolector.CargarAsync() ||
-    recolector.Jornadas.Single() is not { CantidadSolicitudes: 1, PesoTotal: 50 } disponible ||
+    recolector.PortadaCampo.Single() is not { Paradas: 1, Peso: 50 } disponible ||
     (await jornadas.ObtenerDetalleAsync(disponible.Id))?.Ruta?.Paradas.Single().Solicitud.Id != registrada.Id)
     throw new InvalidOperationException("La consulta de campo debe conservar la jornada, el peso y el orden.");
-if (!await jornadas.CancelarAsync(jornada.Id) || !await recolector.CargarAsync() || recolector.Jornadas.Count != 0)
+if (!await jornadas.CancelarAsync(jornada.Id) || !await recolector.CargarAsync() || recolector.PortadaCampo.Count != 0)
     throw new InvalidOperationException("La portada de campo solo incluye jornadas programadas.");
 Console.WriteLine("APROBADO: ciudadano registra, gestor programa y recolector consulta la misma base local.");
 
@@ -157,7 +157,30 @@ Verificar(await jornadas.CrearAsync("Pedro Brand", DateTime.Today, previa.Solici
 await servicio.CompletarUbicacionAsync(tercera, puntoValido);
 var programada = await jornadas.CrearAsync("Pedro Brand", DateTime.Today, [primera.Id, segunda.Id, tercera.Id])
     ?? throw new InvalidOperationException("No se pudo programar una jornada por cantidad.");
+var vistaPendiente = await jornadas.ObtenerConsultaCampoAsync(programada.Id);
+Verificar(vistaPendiente is { OrdenVigente: false } && vistaPendiente.Paradas.Count == 3 &&
+    vistaPendiente.Resumen.EstadoOrden == "Orden de paradas pendiente",
+    "Una jornada sin ruta debe ofrecer las solicitudes sin un orden vigente.");
+Verificar((await jornadas.ObtenerPortadaCampoAsync()).Any(j => j.Id == programada.Id && j.Paradas == 3),
+    "La portada debe leer paradas de jornadas activas.");
 await jornadas.GenerarRutaAsync(programada.Id);
+var vistaOrdenada = (await jornadas.ObtenerConsultaCampoAsync(programada.Id))!;
+var ordenGuardado = (await jornadas.ObtenerDetalleAsync(programada.Id))!.Ruta!.Paradas.Select(p => p.Solicitud.Id);
+Verificar(vistaOrdenada.OrdenVigente && vistaOrdenada.Paradas.Select(p => p.Solicitud.Id).SequenceEqual(ordenGuardado),
+    "El orden de consulta debe ser idéntico al persistido.");
+int inicialCampo = vistaOrdenada.Paradas[0].Solicitud.Id;
+int intermediaCampo = vistaOrdenada.Paradas[1].Solicitud.Id;
+int ultimaCampo = vistaOrdenada.Paradas[^1].Solicitud.Id;
+Verificar(vistaOrdenada.Adyacente(inicialCampo, -1) is null &&
+    vistaOrdenada.Adyacente(inicialCampo, 1) == intermediaCampo &&
+    vistaOrdenada.Adyacente(intermediaCampo, -1) == inicialCampo &&
+    vistaOrdenada.Adyacente(intermediaCampo, 1) == ultimaCampo &&
+    vistaOrdenada.Adyacente(ultimaCampo, 1) is null,
+    "Anterior y Siguiente deben respetar el orden y sus límites.");
+var consultaRecolector = new DetalleCampoViewModel(programada.Id, primera.Id);
+var antesContactoCampo = (await consultaRecolector.ActualizarAsync()).Datos;
+Verificar(antesContactoCampo is not null && antesContactoCampo.Paradas[antesContactoCampo.Indice(primera.Id)]
+    .Solicitud.TelefonoContacto is null, "Debe tolerar ausencia de contacto.");
 var contacto = new SolicitudFormViewModel { FormularioDisponible = true };
 var contactoObsoleto = new SolicitudFormViewModel { FormularioDisponible = true };
 await contacto.CargarParaEditarAsync(primera.Id);
@@ -178,6 +201,11 @@ Verificar((await servicio.ObtenerPorIdAsync(primera.Id)) is
     { NombreContacto: "Contacto técnico", TelefonoContacto: "+18095550100" } &&
     (await jornadas.ObtenerDetalleAsync(programada.Id)) is { RutaDesactualizada: false, Ruta: not null },
     "El contacto debe guardarse sin invalidar la ruta programada.");
+var despuesContactoCampo = (await consultaRecolector.ActualizarAsync()).Datos!;
+Verificar(!DetalleCampoViewModel.Equivalentes(antesContactoCampo, despuesContactoCampo) &&
+    despuesContactoCampo.Paradas[despuesContactoCampo.Indice(primera.Id)].Solicitud.TelefonoContacto == "+18095550100" &&
+    despuesContactoCampo.Paradas.Where(p => p.Solicitud.Id != primera.Id).All(p => p.Solicitud.TelefonoContacto is null),
+    "Una nueva consulta debe detectar contacto cambiado y limitar la carga a la parada visible.");
 contactoObsoleto.NombreContacto = "Borrador de prueba";
 contactoObsoleto.ZonaConfirmada = true;
 await contactoObsoleto.GuardarCommand.ExecuteAsync(null);
@@ -214,6 +242,12 @@ await db.ExecuteAsync("UPDATE Solicitudes SET Latitud = NULL, Longitud = NULL WH
 Verificar((await jornadas.ObtenerDetalleAsync(programada.Id)) is { Estado: JornadaRecoleccion.Programada } historica &&
     MapaJornada.Crear(historica).SinCoordenadas == 1,
     "Una jornada histórica debe continuar visible y advertir la ubicación faltante.");
+var desactualizadaCampo = await jornadas.ObtenerConsultaCampoAsync(programada.Id, segunda.Id);
+Verificar(desactualizadaCampo is { OrdenVigente: false } &&
+    desactualizadaCampo.Resumen.EstadoOrden == "Orden desactualizado" &&
+    !Coordenadas.SonValidas(desactualizadaCampo.Paradas[desactualizadaCampo.Indice(segunda.Id)].Solicitud) &&
+    await jornadas.ObtenerConsultaCampoAsync(programada.Id, int.MaxValue) is null,
+    "Una parada sin punto o ajena a la jornada no debe proporcionar un destino.");
 var asignadaSinPunto = await servicio.ObtenerPorIdAsync(segunda.Id)
     ?? throw new InvalidOperationException("Falta la solicitud histórica.");
 Verificar(await servicio.TieneAsignacionActivaAsync(segunda.Id) &&
@@ -281,6 +315,10 @@ var publicada = (await servicio.ObtenerVistaCiudadanaAsync(primera.Id)).Single()
 Verificar(publicada.FechaProgramada == DateTime.Today && publicada.EstadoVisual == "Programada",
     "La vista ciudadana debe consultar la fecha de la jornada activa.");
 Verificar(await jornadas.CancelarAsync(programada.Id), "Se debe poder cancelar la jornada de prueba.");
+Verificar(await jornadas.ObtenerConsultaCampoAsync(programada.Id, primera.Id) is null &&
+    (await jornadas.ObtenerPortadaCampoAsync()).All(j => j.Id != programada.Id),
+    "Las consultas y acciones de campo deben excluir jornadas canceladas.");
+Console.WriteLine("APROBADO: jornadas de campo, orden persistido, adyacencia, cambios y protección de acciones.");
 var liberada = (await servicio.ObtenerVistaCiudadanaAsync(primera.Id)).Single();
 Verificar(liberada.FechaProgramada is null && liberada.EstadoVisual == "En espera",
     "Una jornada cancelada no debe mostrar fecha activa después de volver a consultar.");
@@ -328,6 +366,19 @@ Verificar(confirmaciones == 1 &&
     "Las pulsaciones repetidas solo deben producir una solicitud y una confirmación.");
 Console.WriteLine("APROBADO: próximo paso, fecha activa, cancelación, resumen, UNIQUE y confirmación única posterior al guardado.");
 
+
+var eliminableCampo = await CrearPrueba("Manoguayabo", 60, puntoValido);
+var previaCampo = await jornadas.ObtenerVistaPreviaAsync("Manoguayabo");
+var jornadaCampo = await jornadas.CrearAsync("Manoguayabo", DateTime.Today,
+    previaCampo.Solicitudes.Select(s => s.Id).ToArray())
+    ?? throw new InvalidOperationException("No se pudo programar la jornada para probar la eliminación.");
+await jornadas.GenerarRutaAsync(jornadaCampo.Id);
+Verificar(await jornadas.ObtenerConsultaCampoAsync(jornadaCampo.Id, eliminableCampo.Id) is { OrdenVigente: true } conDestino &&
+    Coordenadas.SonValidas(conDestino.Paradas[conDestino.Indice(eliminableCampo.Id)].Solicitud) &&
+    await servicio.EliminarAsync(eliminableCampo.Id) &&
+    await jornadas.ObtenerConsultaCampoAsync(jornadaCampo.Id, eliminableCampo.Id) is null,
+    "Una parada eliminada no debe conservar un destino operativo.");
+Console.WriteLine("APROBADO: destino válido y revocación de consulta al eliminar una parada.");
 
 static async Task VerificarMigracionContactoAsync()
 {

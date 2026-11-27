@@ -33,7 +33,7 @@ internal sealed class PortadaDemoPage : ContentPage
             {
                 PerfilDemostracion.Ciudadano => ("Pequeñas acciones, grandes cambios.", "Dale una segunda vida a tus equipos electrónicos."),
                 PerfilDemostracion.Gestor => ("Centro de gestión", "Planifica y coordina las recogidas de residuos electrónicos."),
-                _ => ("Panel de recolección", "Consulta las jornadas y los puntos de recogida.")
+                _ => ("Cada recogida cuenta.", "Consulta las jornadas disponibles y organiza tus paradas.")
             };
             var nuevaSolicitud = _perfil == PerfilDemostracion.Ciudadano
                 ? Boton("Nueva solicitud", () => Shell.Current.GoToAsync(nameof(SolicitudFormPage)), true)
@@ -52,6 +52,15 @@ internal sealed class PortadaDemoPage : ContentPage
                 if (!_contenido.Children.Contains(estado))
                     _contenido.Insert(0, estado);
                 return;
+            }
+            if (_perfil == PerfilDemostracion.Recolector)
+            {
+                var resumenCampo = CrearCuadricula();
+                resumenCampo.Add(new MetricaVisual { Etiqueta = "Jornadas disponibles", Icono = "calendario",
+                    Valor = _vm.PortadaCampo.Count });
+                resumenCampo.Add(new MetricaVisual { Etiqueta = "Paradas programadas", Icono = "punto",
+                    Valor = _vm.PortadaCampo.Sum(j => j.Paradas) }, 1, 0);
+                cabecera = Cabecera(titulo, detalle, resumenCampo);
             }
             _contenido.Clear();
             _contenido.Add(cabecera);
@@ -132,17 +141,25 @@ internal sealed class PortadaDemoPage : ContentPage
 
     private void MostrarJornadas()
     {
-        _contenido.Add(Texto("Jornadas programadas disponibles", "TituloVisual"));
-        if (_vm.Jornadas.Count == 0)
+        _contenido.Add(Texto("Próximas jornadas", "TituloVisual"));
+        if (_vm.PortadaCampo.Count == 0)
             _contenido.Add(Tarjeta(ConIcono("calendario", Texto("No hay jornadas programadas disponibles."))));
-        foreach (var jornada in _vm.Jornadas)
+        foreach (var jornada in _vm.PortadaCampo)
         {
-            _contenido.Add(Tarjeta(ConIcono("camion", Texto($"Recogida en {jornada.Zona}", "TituloVisual")),
-                EstadoVisual("Jornada programada", "azul"),
-                Texto($"Fecha de recogida · {jornada.FechaProgramada:dd/MM/yyyy}"),
-                Texto($"{jornada.CantidadSolicitudes} solicitudes · {jornada.PesoTotal:0.##} kg"),
-                Boton("Ver ruta en el mapa", () => Navigation.PushModalAsync(new MapaJornadaPage(jornada.Id, consultaDeCampo: true)), true),
-                Boton("Consultar paradas", () => Navigation.PushModalAsync(DetalleCampoPage.ParaJornada(jornada.Id)))));
+            var totales = new Grid
+            {
+                ColumnDefinitions = { new(GridLength.Star), new(GridLength.Star), new(GridLength.Star) },
+                ColumnSpacing = 6
+            };
+            totales.Add(Texto($"{jornada.Paradas} paradas"));
+            totales.Add(Texto(ParadaCampo.UnidadesVisibles(jornada.Unidades)), 1, 0);
+            totales.Add(Texto($"{jornada.Peso:0.##} kg estimados"), 2, 0);
+            _contenido.Add(Tarjeta(ConIcono("camion", Texto(jornada.Zona, "TituloVisual")),
+                EstadoVisual("Programada", "azul"),
+                ConIcono("calendario", Texto(jornada.Fecha.ToString("d 'de' MMMM 'de' yyyy"))),
+                totales, EstadoVisual(jornada.EstadoOrden,
+                    jornada.EstadoOrden == "Orden de paradas disponible" ? "verde" : "ambar"),
+                Boton("Ver jornada", () => Navigation.PushModalAsync(DetalleCampoPage.ParaJornada(jornada.Id)), true)));
         }
     }
 

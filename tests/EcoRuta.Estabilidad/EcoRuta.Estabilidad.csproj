@@ -14,5 +14,6 @@
     <Compile Include="../../ECORUTA-RAEE/ViewModels/EquipoBorradorViewModel.cs" />
     <Compile Include="../../ECORUTA-RAEE/ViewModels/OperacionBaseDatos.cs" />
     <Compile Include="../../ECORUTA-RAEE/ViewModels/PortadaDemoViewModel.cs" />
+    <Compile Include="../../ECORUTA-RAEE/ViewModels/DetalleCampoViewModel.cs" />
   </ItemGroup>
 </Project>
