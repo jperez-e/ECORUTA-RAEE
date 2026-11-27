@@ -111,7 +111,7 @@ public partial class SolicitudFormViewModel : ObservableObject
     public bool PuedeConfirmarZona => !string.IsNullOrWhiteSpace(ZonaSeleccionada);
     public string EstadoZona => ZonaConfirmada
         ? $"Confirmaste la zona {ZonaSeleccionada}. Sin verificación geográfica."
-        : "La zona no se pudo verificar automáticamente. Confirma que corresponde al punto o a la dirección.";
+        : "Confirma que la zona corresponde al punto o a la dirección.";
     public string TextoBotonMapa => TieneUbicacion ? "Revisar o cambiar el punto" : "Elegir en el mapa";
     public string EstadoUbicacion => TieneUbicacion
         ? "Ubicación seleccionada. Se guardará con la solicitud."
@@ -126,6 +126,18 @@ public partial class SolicitudFormViewModel : ObservableObject
     {
         LatitudTexto = punto.Latitud.ToString("R", CultureInfo.InvariantCulture);
         LongitudTexto = punto.Longitud.ToString("R", CultureInfo.InvariantCulture);
+    }
+
+    internal void AplicarUbicacion(SeleccionUbicacion seleccion)
+    {
+        if (seleccion.Punto is { } punto)
+            AplicarPuntoRecogida(punto);
+        else
+            QuitarUbicacion();
+
+        ZonaSeleccionada = seleccion.Zona;
+        SectorOtraZona = seleccion.Sector ?? string.Empty;
+        ZonaConfirmada = true;
     }
 
     [RelayCommand]

@@ -3,11 +3,11 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     x:Class="ECORUTA_RAEE.Views.SelectorUbicacionPage"
-    Title="Ubicación de recogida">
+    Title="Seleccionar ubicación">
     <Grid Padding="14,10,14,12" RowDefinitions="Auto,*,Auto" RowSpacing="8">
+        <Border Style="{StaticResource CabeceraVisual}">
         <VerticalStackLayout Spacing="4">
-            <Label Text="Selecciona dónde debemos recoger tus equipos"
-                   Style="{StaticResource TituloVisual}" />
+            <Label Text="Seleccionar ubicación" Style="{StaticResource OnGreen}" FontSize="20" />
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                 <Entry x:Name="Consulta" Placeholder="Calle, sector o lugar"
                        Style="{StaticResource CampoVisual}" MaxLength="160"
@@ -18,9 +18,9 @@
             </Grid>
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                 <Label x:Name="EstadoBusquedaLabel" Text="Solo se envía lo que escribas aquí al pulsar Buscar."
-                       Style="{StaticResource TextoVisual}" FontSize="12" />
+                       Style="{StaticResource OnGreen}" FontSize="12" />
                 <Label Grid.Column="1" Text="Geoapify" TextDecorations="Underline"
-                       VerticalOptions="Center" Style="{StaticResource TextoVisual}"
+                       VerticalOptions="Center" Style="{StaticResource OnGreen}"
                        SemanticProperties.Description="Geocodificación proporcionada por Geoapify">
                     <Label.GestureRecognizers>
                         <TapGestureRecognizer Tapped="Geoapify_Tapped" />
@@ -28,6 +28,7 @@
                 </Label>
             </Grid>
         </VerticalStackLayout>
+        </Border>
         <WebView x:Name="Mapa" Grid.Row="1" UserAgent="EcoRuta-RAEE/1.0 (INF-4316; MAUI Android)"
                  Navigating="Mapa_Navigating" />
         <Border Grid.Row="1" x:Name="PanelResultados" ZIndex="1" IsVisible="False"
@@ -51,15 +52,43 @@
                 </ScrollView>
             </VerticalStackLayout>
         </Border>
-        <VerticalStackLayout Grid.Row="2" Spacing="6">
-            <Label x:Name="Estado" Text="Abriendo el mapa…" Style="{StaticResource TextoVisual}" />
-            <Button x:Name="Gps" Text="Usar mi ubicación" Clicked="Gps_Clicked"
-                    Style="{StaticResource AccionVisual}" IsEnabled="False" />
-            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-                <Button Text="Volver" Clicked="Volver_Clicked" Style="{StaticResource AccionVisual}" />
-                <Button x:Name="Confirmar" Grid.Column="1" Text="Confirmar punto" Clicked="Confirmar_Clicked"
-                        Style="{StaticResource PrincipalVisual}" IsEnabled="False" />
-            </Grid>
-        </VerticalStackLayout>
+        <Border Grid.Row="1" x:Name="SinMapa" IsVisible="False" InputTransparent="True"
+                Style="{StaticResource PanelVisual}">
+            <Label Text="Mapa no disponible sin conexión" Style="{StaticResource TituloVisual}"
+                   HorizontalTextAlignment="Center" VerticalOptions="Center" />
+        </Border>
+        <ScrollView Grid.Row="2" MaximumHeightRequest="290">
+            <Border Style="{StaticResource TarjetaVisual}">
+                <VerticalStackLayout Spacing="6">
+                    <Label x:Name="Estado" Text="Abriendo el mapa…" Style="{StaticResource TextoVisual}" />
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                        <Button Text="Volver" Clicked="Volver_Clicked" Style="{StaticResource AccionVisual}" />
+                        <Button x:Name="Gps" Grid.Column="1" Text="Usar mi ubicación" Clicked="Gps_Clicked"
+                                Style="{StaticResource AccionVisual}" IsEnabled="False" />
+                    </Grid>
+                    <Label Text="Para sugerir una zona, Geoapify consulta las coordenadas del punto."
+                           Style="{StaticResource TextoVisual}" FontSize="12" />
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                        <Button x:Name="ConsultarZona" Text="Usar punto" Clicked="ConsultarZona_Clicked"
+                                Style="{StaticResource PrincipalVisual}" IsEnabled="False" />
+                        <Button Grid.Column="1" Text="Elegir zona manualmente" Clicked="ModoManual_Clicked"
+                                Style="{StaticResource AccionVisual}" />
+                    </Grid>
+                    <ActivityIndicator x:Name="BuscandoZona" IsVisible="False" IsRunning="False"
+                                       Color="{StaticResource PrimaryGreen}" SemanticProperties.Description="Buscando zona sugerida" />
+                    <VerticalStackLayout x:Name="PanelZona" IsVisible="False" Spacing="5">
+                        <Label x:Name="TituloZona" Style="{StaticResource TituloVisual}" FontSize="17" />
+                        <Label x:Name="DetalleZona" Style="{StaticResource TextoVisual}" />
+                        <Picker x:Name="Zona" Title="Selecciona o corrige tu zona" SelectedIndexChanged="Zona_Cambiada"
+                                SemanticProperties.Description="Zona de recogida" />
+                        <Entry x:Name="Sector" IsVisible="False" MaxLength="100" TextChanged="Sector_Cambiado"
+                               Placeholder="Sector o comunidad" Style="{StaticResource CampoVisual}"
+                               SemanticProperties.Description="Sector o comunidad de Otra zona" />
+                        <Button x:Name="Confirmar" Text="Confirmar ubicación" Clicked="Confirmar_Clicked"
+                                Style="{StaticResource PrincipalVisual}" IsEnabled="False" />
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </Border>
+        </ScrollView>
     </Grid>
 </ContentPage>

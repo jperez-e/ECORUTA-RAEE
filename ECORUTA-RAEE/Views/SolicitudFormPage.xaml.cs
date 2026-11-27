@@ -13,6 +13,8 @@ public partial class SolicitudFormPage : ContentPage, IQueryAttributable, IFormu
     private string? _original;
     private bool _edicionDenegada;
 
+    internal bool AbriendoMapa => _abriendoMapa;
+
     bool IFormularioDemostracion.Ocupado => _viewModel.Guardando || _viewModel.EliminarCommand.IsRunning;
     bool IFormularioDemostracion.HayBorrador => _original is not null && _original != Capturar();
     bool IFormularioDemostracion.SalidaConfirmada => _viewModel.SalidaConfirmada;
@@ -53,10 +55,15 @@ public partial class SolicitudFormPage : ContentPage, IQueryAttributable, IFormu
         _abriendoMapa = true;
         try
         {
+            bool asignada = _solicitudId is int id && await SolicitudService.Instancia.TieneAsignacionActivaAsync(id);
+            var vigente = asignada && _solicitudId is int asignadaId
+                ? await SolicitudService.Instancia.ObtenerPorIdAsync(asignadaId) : null;
             await Navigation.PushModalAsync(new SelectorUbicacionPage(
-                _viewModel.ObtenerPuntoRecogida(), _viewModel.AplicarPuntoRecogida));
+                _viewModel.ObtenerPuntoRecogida(), vigente?.Zona ?? _viewModel.ZonaSeleccionada,
+                vigente?.SectorOtraZona ?? _viewModel.SectorOtraZona, _viewModel.AplicarUbicacion,
+                bloquearZona: asignada, requierePunto: asignada));
         }
-        catch (InvalidOperationException)
+        catch (Exception ex) when (ex is InvalidOperationException or SQLite.SQLiteException or IOException)
         {
             await DisplayAlertAsync("Mapa no disponible", "Puedes continuar con la dirección de referencia.", "Aceptar");
         }

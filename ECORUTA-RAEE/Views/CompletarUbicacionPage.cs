@@ -7,7 +7,7 @@ namespace ECORUTA_RAEE.Views;
 
 internal sealed class CompletarUbicacionPage : ContentPage
 {
-    private PuntoRecogida? _punto;
+    private SeleccionUbicacion? _ubicacion;
     private bool _guardando;
 
     internal CompletarUbicacionPage(SolicitudRecoleccion solicitud)
@@ -15,21 +15,22 @@ internal sealed class CompletarUbicacionPage : ContentPage
         Title = "Completar ubicación";
         Style = Estilo("CanvasVisual");
         var estado = Texto("Ubicación por completar");
-        var confirmar = new CheckBox();
-        SemanticProperties.SetDescription(confirmar, "Confirmo que el punto corresponde a la zona registrada");
         var contenido = new VerticalStackLayout { Padding = 16, Spacing = 12 };
         contenido.Add(Encabezado(Title, SesionDemostracion.Aviso, "punto"));
         contenido.Add(Tarjeta(Texto(solicitud.CodigoSolicitud, "TituloVisual"),
             Texto(solicitud.Zona), Texto(solicitud.DireccionReferencia)));
         contenido.Add(estado);
-        contenido.Add(Boton("Elegir en el mapa", () => Navigation.PushModalAsync(new SelectorUbicacionPage(_punto, punto =>
+        contenido.Add(Boton("Elegir en el mapa", () => OperacionBaseDatos.EjecutarAsync(async () =>
         {
-            _punto = punto;
-            confirmar.IsChecked = false;
-            estado.Text = "Ubicación seleccionada. Confirma la zona antes de guardar.";
-        }))));
-        contenido.Add(Texto($"Confirma que el punto corresponde a {solicitud.Zona}. La confirmación no verifica geográficamente la zona."));
-        contenido.Add(confirmar);
+            bool asignada = await SolicitudService.Instancia.TieneAsignacionActivaAsync(solicitud.Id);
+            await Navigation.PushModalAsync(new SelectorUbicacionPage(
+                _ubicacion?.Punto, asignada ? solicitud.Zona : _ubicacion?.Zona ?? solicitud.Zona,
+                asignada ? solicitud.SectorOtraZona : _ubicacion?.Sector ?? solicitud.SectorOtraZona, ubicacion =>
+                {
+                    _ubicacion = ubicacion;
+                    estado.Text = $"Ubicación seleccionada · {ubicacion.Zona}. Guarda para aplicar el cambio.";
+                }, bloquearZona: asignada, requierePunto: true));
+        })));
         contenido.Add(Boton("Guardar ubicación", GuardarAsync, principal: true));
         contenido.Add(Boton("Volver", async () =>
         {
@@ -40,7 +41,7 @@ internal sealed class CompletarUbicacionPage : ContentPage
 
         async Task GuardarAsync()
         {
-            if (_punto is not { } punto || !confirmar.IsChecked)
+            if (_ubicacion is not { Punto: not null } ubicacion)
             {
                 estado.Text = "Selecciona un punto y confirma la zona.";
                 return;
@@ -51,10 +52,10 @@ internal sealed class CompletarUbicacionPage : ContentPage
             {
                 await OperacionBaseDatos.EjecutarAsync(async () =>
                 {
-                    if (await SolicitudService.Instancia.CompletarUbicacionAsync(solicitud, punto))
+                    if (await SolicitudService.Instancia.CompletarUbicacionAsync(solicitud, ubicacion))
                         await Navigation.PopModalAsync();
                     else
-                        estado.Text = "La solicitud cambió o su ubicación ya se completó. Vuelve al listado para actualizarla.";
+                        estado.Text = "La solicitud cambió o pertenece a una jornada activa. Actualiza el listado. Para cambiar la zona asignada, el gestor debe cancelar primero la jornada.";
                 });
             }
             finally

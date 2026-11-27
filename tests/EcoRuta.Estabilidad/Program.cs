@@ -1,6 +1,10 @@
 using ECORUTA_RAEE.Models;
 using ECORUTA_RAEE.Services;
 using ECORUTA_RAEE.ViewModels;
+using System.Net;
+using System.Text.Json;
+
+await VerificarZonasAsync();
 
 var servicio = SolicitudService.Instancia;
 var creada = new SolicitudRecoleccion
@@ -182,6 +186,12 @@ await db.ExecuteAsync("UPDATE Solicitudes SET Latitud = NULL, Longitud = NULL WH
 Verificar((await jornadas.ObtenerDetalleAsync(programada.Id)) is { Estado: JornadaRecoleccion.Programada } historica &&
     MapaJornada.Crear(historica).SinCoordenadas == 1,
     "Una jornada histórica debe continuar visible y advertir la ubicación faltante.");
+var asignadaSinPunto = await servicio.ObtenerPorIdAsync(segunda.Id)
+    ?? throw new InvalidOperationException("Falta la solicitud histórica.");
+Verificar(await servicio.TieneAsignacionActivaAsync(segunda.Id) &&
+    !await servicio.CompletarUbicacionAsync(asignadaSinPunto, new SeleccionUbicacion(puntoValido, "Pantoja", null)) &&
+    (await servicio.ObtenerPorIdAsync(segunda.Id)) is { Zona: "Pedro Brand", UbicacionPendiente: true },
+    "Completar ubicación no debe cambiar la zona asignada dentro de la transacción.");
 var resumen = await jornadas.ObtenerPanelAsync();
 var ambiental = await EstadisticasAmbientalesService.Instancia.ObtenerAsync();
 await gestor.CargarAsync();
@@ -218,3 +228,74 @@ Verificar(await reabierta.FindAsync<SolicitudRecoleccion>(sinPunto.Id) is { Ubic
     await reabierta.ExecuteScalarAsync<int>("PRAGMA user_version") == 4,
     "Los puntos corregidos y los registros históricos deben mantenerse tras reabrir SQLite.");
 Console.WriteLine("APROBADO: alta integrada sin punto y persistencia tras reabrir SQLite v4.");
+
+static async Task VerificarZonasAsync()
+{
+    static void Zona(string json, string? esperada)
+    {
+        using var documento = JsonDocument.Parse(json);
+        Verificar(BusquedaDirecciones.IdentificarZona(documento.RootElement) == esperada,
+            $"Zona sugerida incorrecta. Esperada: {esperada ?? "manual"}");
+    }
+
+    Zona("""[{"country_code":"do","result_type":"street","suburb":"herrera"}]""", "Herrera");
+    Zona("""[{"country_code":"do","result_type":"street","suburb":"Pantoja","city":"Los Alcarrizos"}]""", "Pantoja");
+    Zona("""[{"country_code":"do","result_type":"district","name":"Distrito Municipal Pantoja","city":"Los Alcarrizos"}]""", "Pantoja");
+    Zona("""[{"country_code":"do","result_type":"street","suburb":"Pantoja","district":"Los Alcarrizos"}]""", null);
+    Zona("""[{"country_code":"do","result_type":"street","suburb":"Pantoja"},{"country_code":"do","result_type":"street","suburb":"Los Alcarrizos"}]""", null);
+    Zona("""[{"country_code":"do","result_type":"street","city":"Los Alcarrizos"}]""", null);
+    Zona("""[{"country_code":"do","result_type":"street","suburb":"Villa Duarte"}]""", null);
+    Zona("""[{"country_code":"do","result_type":"county","name":"Pedro Brand"}]""", null);
+    Zona("""[{"country_code":"do","result_type":"city","city":"Pedro Brand"}]""", null);
+    Zona("[]", null);
+
+    var punto = PuntoRecogida.Crear(18.5, -70)!;
+    var vm = new SolicitudFormViewModel { DireccionReferencia = "Portón lateral" };
+    vm.AgregarEquipoCommand.Execute(null);
+    var equipo = vm.Equipos.Single();
+    vm.AplicarUbicacion(SeleccionUbicacion.Crear(punto, "Pantoja", null)!);
+    Verificar(vm.ZonaSeleccionada == "Pantoja" && vm.ZonaConfirmada &&
+        vm.ObtenerPuntoRecogida() == punto && vm.DireccionReferencia == "Portón lateral" &&
+        vm.Equipos.Single() == equipo, "La zona manual debe conservar referencia y equipos.");
+    Verificar(SeleccionUbicacion.Crear(null, "Otra zona", " ") is null &&
+        SeleccionUbicacion.Crear(null, "Otra zona", " Sector local ")?.Sector == "Sector local",
+        "Otra zona debe exigir sector incluso sin coordenadas.");
+
+    int llamadas = 0;
+    using var http = new HttpClient(new MapaHttp((request, _) =>
+    {
+        llamadas++;
+        Verificar(request.RequestUri!.AbsolutePath.EndsWith("/reverse") &&
+            !request.RequestUri.Query.Contains("Portón", StringComparison.Ordinal), "La consulta inversa solo debe incluir el punto.");
+        return Task.FromResult(new HttpResponseMessage(HttpStatusCode.TooManyRequests));
+    }));
+    var proveedor = new BusquedaDirecciones(http, TimeProvider.System);
+    Verificar((await proveedor.SugerirZonaAsync(punto, null, default)).Estado == EstadoBusqueda.SinClave,
+        "Sin clave no debe consultar.");
+    Verificar((await proveedor.SugerirZonaAsync(punto, "fixture", default)).Estado == EstadoBusqueda.Limite &&
+        (await proveedor.BuscarAsync("parque", "fixture", default)).Estado == EstadoBusqueda.Limite && llamadas == 1,
+        "Debe compartir la pausa por cuota entre búsquedas.");
+
+    using var sinRed = new HttpClient(new MapaHttp((_, _) => throw new HttpRequestException()));
+    Verificar((await new BusquedaDirecciones(sinRed, TimeProvider.System)
+        .SugerirZonaAsync(punto, "fixture", default)).Estado == EstadoBusqueda.NoDisponible, "Error de red.");
+
+    using var cancelar = new CancellationTokenSource();
+    using var lenta = new HttpClient(new MapaHttp(async (_, token) =>
+    {
+        await Task.Delay(Timeout.Infinite, token);
+        return new HttpResponseMessage(HttpStatusCode.OK);
+    }));
+    var pendiente = new BusquedaDirecciones(lenta, TimeProvider.System)
+        .SugerirZonaAsync(punto, "fixture", cancelar.Token);
+    cancelar.Cancel();
+    try { await pendiente; throw new InvalidOperationException("La consulta debía cancelarse."); }
+    catch (OperationCanceledException) { }
+    Console.WriteLine("APROBADO: zonas explícitas y ambiguas, borrador manual, red, cuota compartida y cancelación.");
+}
+
+sealed class MapaHttp(Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> responder) : HttpMessageHandler
+{
+    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+        responder(request, cancellationToken);
+}

@@ -113,8 +113,21 @@ public class SolicitudService
             throw new ArgumentException("La ubicación debe contener ambas coordenadas válidas.", nameof(solicitud));
     }
 
-    internal async Task<bool> CompletarUbicacionAsync(SolicitudRecoleccion original, PuntoRecogida punto)
+    internal async Task<bool> TieneAsignacionActivaAsync(int id)
     {
+        var db = await Database.GetConnectionAsync();
+        return await db.ExecuteScalarAsync<int>(
+            "SELECT EXISTS (SELECT 1 FROM JornadaSolicitudes WHERE SolicitudId = ? AND Activa = 1)", id) != 0;
+    }
+
+    internal Task<bool> CompletarUbicacionAsync(SolicitudRecoleccion original, PuntoRecogida punto) =>
+        CompletarUbicacionAsync(original, new SeleccionUbicacion(punto, original.Zona, original.SectorOtraZona));
+
+    internal async Task<bool> CompletarUbicacionAsync(SolicitudRecoleccion original, SeleccionUbicacion ubicacion)
+    {
+        if (SeleccionUbicacion.Crear(ubicacion.Punto, ubicacion.Zona, ubicacion.Sector) is not { Punto: { } punto } seleccion)
+            return false;
+
         var db = await Database.GetConnectionAsync();
         bool guardada = false;
         await db.RunInTransactionAsync(connection =>
@@ -124,8 +137,13 @@ public class SolicitudService
                 vigente.Zona != original.Zona || vigente.SectorOtraZona != original.SectorOtraZona ||
                 vigente.Latitud != original.Latitud || vigente.Longitud != original.Longitud)
                 return;
-            guardada = connection.Execute("UPDATE Solicitudes SET Latitud = ?, Longitud = ? WHERE Id = ?",
-                punto.Latitud, punto.Longitud, vigente.Id) == 1;
+            if (vigente.Zona != seleccion.Zona && connection.ExecuteScalar<int>(
+                "SELECT EXISTS (SELECT 1 FROM JornadaSolicitudes WHERE SolicitudId = ? AND Activa = 1)", vigente.Id) != 0)
+                return;
+
+            guardada = connection.Execute("""
+                UPDATE Solicitudes SET Latitud = ?, Longitud = ?, Zona = ?, SectorOtraZona = ? WHERE Id = ?
+                """, punto.Latitud, punto.Longitud, seleccion.Zona, seleccion.Sector, vigente.Id) == 1;
         });
         return guardada;
     }

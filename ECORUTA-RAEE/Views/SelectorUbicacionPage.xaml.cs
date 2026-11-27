@@ -11,18 +11,33 @@ public partial class SelectorUbicacionPage : ContentPage
     private const string Atribucion = "https://www.openstreetmap.org/copyright";
     private readonly string _sesion = Guid.NewGuid().ToString("N");
     private readonly PuntoRecogida? _inicial;
-    private readonly Action<PuntoRecogida> _alConfirmar;
+    private readonly Action<SeleccionUbicacion> _alConfirmar;
     private readonly CancellationTokenSource _vida = new();
     private bool _iniciada;
     private bool _lista;
     private bool _ocupada;
     private bool _cerrando;
 
-    internal SelectorUbicacionPage(PuntoRecogida? inicial, Action<PuntoRecogida> alConfirmar)
+    private PuntoRecogida? _puntoPreparado;
+    private PuntoRecogida? _puntoGps;
+    private PuntoRecogida? _ultimoConsultado;
+    private bool _consultaRealizada;
+    private int _revision;
+    private bool _actualizandoZona;
+    private readonly bool _requierePunto;
+
+    internal SelectorUbicacionPage(PuntoRecogida? inicial, string? zona, string? sector,
+        Action<SeleccionUbicacion> alConfirmar, bool bloquearZona = false, bool requierePunto = false)
     {
         InitializeComponent();
         _inicial = inicial;
+        _puntoPreparado = inicial;
         _alConfirmar = alConfirmar;
+        _requierePunto = requierePunto;
+        Zona.ItemsSource = bloquearZona && zona is not null ? new[] { zona } : ElegibilidadRecogida.Zonas.ToArray();
+        Zona.SelectedItem = zona;
+        Sector.Text = sector;
+        Sector.IsEnabled = Zona.IsEnabled = !bloquearZona;
     }
 
     protected override async void OnAppearing()
@@ -32,6 +47,14 @@ public partial class SelectorUbicacionPage : ContentPage
             return;
 
         _iniciada = true;
+        bool internet = Connectivity.Current.NetworkAccess == NetworkAccess.Internet;
+        if (!internet)
+        {
+            SinMapa.IsVisible = true;
+            MostrarZona("No hay conexión", "Elige la zona manualmente. Puedes conservar un punto previo o usar el GPS.");
+            Estado.Text = "Puedes completar el punto después.";
+            return;
+        }
         try
         {
             var recursos = await Task.WhenAll(
@@ -40,7 +63,6 @@ public partial class SelectorUbicacionPage : ContentPage
             if (_cerrando)
                 return;
 
-            bool internet = Connectivity.Current.NetworkAccess == NetworkAccess.Internet;
             string config = JsonSerializer.Serialize(new
             {
                 sesion = _sesion,
@@ -53,7 +75,7 @@ public partial class SelectorUbicacionPage : ContentPage
                 .Replace("/*SELECTOR_JS*/", recursos[3])
                 .Replace("/*CONFIG*/", config);
             Mapa.Source = new HtmlWebViewSource { Html = html, BaseUrl = OrigenLocal };
-            await EsperarMapaAsync(internet);
+            await EsperarMapaAsync();
         }
         catch (OperationCanceledException) when (_cerrando)
         {
@@ -82,7 +104,7 @@ public partial class SelectorUbicacionPage : ContentPage
             await AbrirEnNavegadorAsync(Atribucion);
     }
 
-    private async Task EsperarMapaAsync(bool internet)
+    private async Task EsperarMapaAsync()
     {
         // Android may omit Navigated for an inline HtmlWebViewSource.
         using var espera = CancellationTokenSource.CreateLinkedTokenSource(_vida.Token);
@@ -103,18 +125,22 @@ public partial class SelectorUbicacionPage : ContentPage
             return;
         }
         ActualizarBotones();
-        Estado.Text = internet ? "Toca el mapa o usa tu ubicación. Confirma el punto para volver."
-            : "Sin internet. Puedes volver y guardar la referencia o introducir coordenadas avanzadas.";
+        Estado.Text = "Toca el mapa o usa tu ubicación.";
     }
 
     private void ActualizarBotones()
     {
-        Gps.IsEnabled = Confirmar.IsEnabled = _lista && !_ocupada && !_cerrando;
+        Gps.IsEnabled = !_ocupada && !_cerrando;
+        ConsultarZona.IsEnabled = (_lista || _puntoGps is not null || _inicial is not null) &&
+            !_ocupada && !_cerrando && Connectivity.Current.NetworkAccess == NetworkAccess.Internet;
+        Confirmar.IsEnabled = !_ocupada && !_cerrando && (!_requierePunto || _puntoPreparado is not null) &&
+            SeleccionUbicacion.Crear(_puntoPreparado, Zona.SelectedItem as string, Sector.Text) is not null;
+        Confirmar.Text = _puntoPreparado is null ? "Confirmar zona" : "Confirmar ubicación";
     }
 
     private async void Gps_Clicked(object? sender, EventArgs e)
     {
-        if (!_lista || _ocupada || _cerrando)
+        if (_ocupada || _cerrando)
             return;
 
         _ocupada = true;
@@ -144,6 +170,13 @@ public partial class SelectorUbicacionPage : ContentPage
             }
 
             OcultarResultados();
+            _puntoGps = punto;
+            if (SinMapa.IsVisible || !_lista)
+            {
+                PrepararPunto(punto);
+                MostrarZona("Ubicación del GPS", "Confirma la zona antes de continuar.");
+                return;
+            }
             Estado.Text = await ColocarPuntoAsync(punto)
                 ? "Ubicación aproximada. Ajusta el marcador si hace falta y confirma el punto."
                 : "No se pudo colocar el marcador. Puedes elegir un punto en el mapa.";
@@ -171,30 +204,149 @@ public partial class SelectorUbicacionPage : ContentPage
         }
     }
 
-    private async void Confirmar_Clicked(object? sender, EventArgs e)
+    private async Task<PuntoRecogida?> LeerPuntoAsync()
     {
-        if (!_lista || _ocupada || _cerrando)
-            return;
+        if (!_lista || SinMapa.IsVisible)
+            return _puntoGps ?? _inicial;
 
+        string? mensaje = await Mapa.EvaluateJavaScriptAsync("window.ecoruta?.leer()")
+            .WaitAsync(TimeSpan.FromSeconds(5), _vida.Token);
+        return PuntoRecogida.LeerSeleccion(mensaje, _sesion) ?? _puntoGps ?? _inicial;
+    }
+
+    private void MostrarZona(string titulo, string detalle)
+    {
+        PanelZona.IsVisible = true;
+        TituloZona.Text = titulo;
+        DetalleZona.Text = detalle;
+        ActualizarBotones();
+    }
+
+    private void PrepararPunto(PuntoRecogida? punto)
+    {
+        if (punto == _puntoPreparado)
+            return;
+        _revision++;
+        _puntoPreparado = punto;
+        if (Zona.IsEnabled)
+            Zona.SelectedItem = null;
+    }
+
+    private void Zona_Cambiada(object? sender, EventArgs e)
+    {
+        if (!_actualizandoZona)
+            _revision++;
+        Sector.IsVisible = Zona.SelectedItem as string == "Otra zona";
+        ActualizarBotones();
+    }
+
+    private void Sector_Cambiado(object? sender, TextChangedEventArgs e) => ActualizarBotones();
+
+    private async void ConsultarZona_Clicked(object? sender, EventArgs e) => await PrepararZonaAsync(true);
+    private async void ModoManual_Clicked(object? sender, EventArgs e) => await PrepararZonaAsync(false);
+
+    private async Task PrepararZonaAsync(bool consultar)
+    {
+        if (_cerrando || _ocupada)
+            return;
         _ocupada = true;
         ActualizarBotones();
         try
         {
-            string? mensaje = await Mapa.EvaluateJavaScriptAsync("window.ecoruta?.leer()")
-                .WaitAsync(TimeSpan.FromSeconds(5), _vida.Token);
-            var punto = PuntoRecogida.LeerSeleccion(mensaje, _sesion);
-            if (punto is null)
+            var punto = await LeerPuntoAsync();
+            if (consultar && punto is null)
+            {
                 Estado.Text = "Elige primero un punto válido en el mapa.";
-            else if (!_cerrando)
-                await CerrarAsync(punto);
+                return;
+            }
+            PrepararPunto(punto);
+
+            if (!Zona.IsEnabled)
+            {
+                MostrarZona("Zona de la jornada", "Para cambiarla, el gestor debe cancelar primero la jornada activa.");
+                return;
+            }
+            if (!consultar || Connectivity.Current.NetworkAccess != NetworkAccess.Internet || punto == _inicial || (_consultaRealizada && punto == _ultimoConsultado))
+            {
+                MostrarZona("Confirma tu zona", "Selecciona la zona que corresponde al punto o a la referencia.");
+                return;
+            }
+
+            MostrarZona("Buscando zona…", "También puedes seleccionar tu zona manualmente.");
+            int revision = _revision;
+            BuscandoZona.IsVisible = BuscandoZona.IsRunning = true;
+            var resultado = await Services.BusquedaDirecciones.Instancia.SugerirZonaAsync(
+                punto!, await LeerClaveAsync(_vida.Token), _vida.Token);
+            var vigente = await LeerPuntoAsync();
+            if (_cerrando)
+                return;
+            if (vigente != punto)
+            {
+                PrepararPunto(vigente);
+                MostrarZona("El punto cambió", "Usa el punto actualizado para sugerir una zona o elígela manualmente.");
+                return;
+            }
+            _ultimoConsultado = punto;
+            _consultaRealizada = true;
+
+            if (revision != _revision)
+            {
+                MostrarZona("Confirma tu zona", "Se conservó tu selección manual.");
+                return;
+            }
+
+            if (resultado.Zona is { } zona)
+            {
+                _actualizandoZona = true;
+                try { Zona.SelectedItem = zona; }
+                finally { _actualizandoZona = false; }
+                MostrarZona($"Zona sugerida: {zona}", "Confirma que corresponde al punto. Puedes corregir la sugerencia.");
+                return;
+            }
+
+            MostrarZona("Necesitamos confirmar tu zona", resultado.Estado switch
+            {
+                Services.EstadoBusqueda.Limite => "La búsqueda alcanzó su límite. Elige la zona manualmente.",
+                Services.EstadoBusqueda.SinResultados => "El mapa no identificó una zona clara del catálogo. Elígela manualmente.",
+                _ => "La sugerencia no está disponible. Elige la zona manualmente."
+            });
         }
-        catch (OperationCanceledException) when (_cerrando)
+        catch (OperationCanceledException) when (_cerrando) { }
+        catch (Exception ex) when (ex is IOException or InvalidOperationException or TimeoutException)
         {
+            MostrarZona("Necesitamos confirmar tu zona", "Elige la zona manualmente o vuelve al formulario.");
         }
-        catch (Exception ex)
+        finally
         {
-            Debug.WriteLine(ex);
-            Estado.Text = "No se pudo confirmar la ubicación. Inténtalo de nuevo o vuelve al formulario.";
+            BuscandoZona.IsVisible = BuscandoZona.IsRunning = false;
+            _ocupada = false;
+            ActualizarBotones();
+        }
+    }
+
+    private async void Confirmar_Clicked(object? sender, EventArgs e)
+    {
+        if (_ocupada || _cerrando)
+            return;
+        _ocupada = true;
+        ActualizarBotones();
+        try
+        {
+            var punto = await LeerPuntoAsync();
+            if (punto != _puntoPreparado)
+            {
+                PrepararPunto(punto);
+                MostrarZona("El punto cambió", "Confirma la zona del punto actualizado.");
+                return;
+            }
+            if ((!_requierePunto || punto is not null) &&
+                SeleccionUbicacion.Crear(punto, Zona.SelectedItem as string, Sector.Text) is { } seleccion)
+                await CerrarAsync(seleccion);
+        }
+        catch (OperationCanceledException) when (_cerrando) { }
+        catch (Exception ex) when (ex is IOException or InvalidOperationException or TimeoutException)
+        {
+            Estado.Text = "No se pudo confirmar. Inténtalo de nuevo o vuelve al formulario.";
         }
         finally
         {
@@ -241,7 +393,7 @@ public partial class SelectorUbicacionPage : ContentPage
         return base.OnBackButtonPressed();
     }
 
-    private async Task CerrarAsync(PuntoRecogida? punto)
+    private async Task CerrarAsync(SeleccionUbicacion? seleccion)
     {
         if (_cerrando || Navigation.ModalStack.LastOrDefault() != this)
             return;
@@ -254,7 +406,7 @@ public partial class SelectorUbicacionPage : ContentPage
             throw;
         }
         _vida.Cancel();
-        if (punto is not null)
-            _alConfirmar(punto);
+        if (seleccion is not null)
+            _alConfirmar(seleccion);
     }
 }

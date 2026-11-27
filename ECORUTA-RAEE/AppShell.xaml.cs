@@ -45,6 +45,8 @@ public partial class AppShell : Shell
             args.Cancel();
             return;
         }
+        if (CurrentPage is SolicitudFormPage { AbriendoMapa: true } && args.Source == ShellNavigationSource.Push)
+            return;
         if (CurrentPage is not IFormularioDemostracion formulario || formulario.SalidaConfirmada)
             return;
         if (formulario.Ocupado || _confirmando)
