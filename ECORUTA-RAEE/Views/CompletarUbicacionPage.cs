@@ -13,13 +13,13 @@ internal sealed class CompletarUbicacionPage : ContentPage
     internal CompletarUbicacionPage(SolicitudRecoleccion solicitud)
     {
         Title = "Completar ubicación";
+        Style = Estilo("CanvasVisual");
         var estado = Texto("Ubicación por completar");
         var confirmar = new CheckBox();
         SemanticProperties.SetDescription(confirmar, "Confirmo que el punto corresponde a la zona registrada");
         var contenido = new VerticalStackLayout { Padding = 16, Spacing = 12 };
-        contenido.Add(Texto(Title, "PageTitle"));
-        contenido.Add(Texto(SesionDemostracion.Aviso));
-        contenido.Add(Tarjeta(Texto(solicitud.CodigoSolicitud, "SectionHeading"),
+        contenido.Add(Encabezado(Title, SesionDemostracion.Aviso, "punto"));
+        contenido.Add(Tarjeta(Texto(solicitud.CodigoSolicitud, "TituloVisual"),
             Texto(solicitud.Zona), Texto(solicitud.DireccionReferencia)));
         contenido.Add(estado);
         contenido.Add(Boton("Elegir en el mapa", () => Navigation.PushModalAsync(new SelectorUbicacionPage(_punto, punto =>

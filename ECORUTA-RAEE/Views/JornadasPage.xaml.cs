@@ -17,4 +17,10 @@ public partial class JornadasPage : ContentPage
         base.OnAppearing();
         await _viewModel.CargarPantallaAsync();
     }
+
+    private void Configurar_Clicked(object? sender, EventArgs e)
+    {
+        Umbrales.IsVisible = !Umbrales.IsVisible;
+        Configurar.Text = Umbrales.IsVisible ? "Ocultar configuración de umbrales" : "Configurar umbrales";
+    }
 }

@@ -10,6 +10,7 @@ namespace ECORUTA_RAEE.ViewModels;
 internal partial class JornadasViewModel : ObservableObject
 {
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ZonasListas), nameof(ZonasProximas))]
     private IReadOnlyList<AvanceZona> zonas = Array.Empty<AvanceZona>();
 
     [ObservableProperty]
@@ -21,6 +22,7 @@ internal partial class JornadasViewModel : ObservableObject
     private string avisoUmbrales = string.Empty;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(JornadasProgramadas))]
     private IReadOnlyList<JornadaRecoleccion> jornadas = Array.Empty<JornadaRecoleccion>();
 
     [ObservableProperty]
@@ -42,6 +44,9 @@ internal partial class JornadasViewModel : ObservableObject
     public bool HayAvisoUmbrales => AvisoUmbrales.Length > 0;
     public bool HayErrorUmbrales => ErrorUmbrales.Length > 0;
     public bool PuedeInteractuar => !Ocupado;
+    public int ZonasListas => Zonas.Count(z => z.Lista);
+    public int ZonasProximas => Zonas.Count(z => z.Proxima);
+    public int JornadasProgramadas => Jornadas.Count(j => j.Estado == JornadaRecoleccion.Programada);
 
     public Task CargarPantallaAsync() => EjecutarAsync(CargarAsync);
 
@@ -50,7 +55,8 @@ internal partial class JornadasViewModel : ObservableObject
         var panel = await JornadaService.Instancia.ObtenerPanelAsync();
         CantidadTexto = panel.Umbrales.Cantidad.ToString(CultureInfo.InvariantCulture);
         PesoTexto = panel.Umbrales.Peso.ToString(CultureInfo.InvariantCulture);
-        Zonas = panel.Zonas.Select(z => new AvanceZona(z)).ToList();
+        Zonas = panel.Zonas.Select(z => new AvanceZona(z)).OrderByDescending(z => z.Lista)
+            .ThenByDescending(z => z.Proxima).ToList();
         Jornadas = panel.Jornadas;
         SinZonaEspecifica = panel.SinZonaEspecifica;
         UbicacionesPendientes = panel.UbicacionesPendientes;

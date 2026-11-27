@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8" ?>
 
 <Application
     x:Class="ECORUTA_RAEE.App"
@@ -80,8 +80,51 @@
                 <Setter Property="FontSize" Value="23" />
             </Style>
             <Style x:Key="OnGreen" TargetType="Label">
-                <Setter Property="TextColor" Value="{StaticResource CardBackground}" />
+                <Setter Property="TextColor" Value="White" />
                 <Setter Property="FontFamily" Value="OpenSansSemibold" />
+            </Style>
+            <Style x:Key="CanvasVisual" TargetType="ContentPage">
+                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource PageBackground}, Dark={StaticResource NightCanvas}}" />
+            </Style>
+            <Style x:Key="TituloVisual" TargetType="Label" BasedOn="{StaticResource SectionHeading}">
+                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource ForestGreen}, Dark={StaticResource NightInk}}" />
+            </Style>
+            <Style x:Key="TextoVisual" TargetType="Label" BasedOn="{StaticResource Subtitle}">
+                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource NightMuted}}" />
+            </Style>
+            <Style x:Key="TarjetaVisual" TargetType="Border" BasedOn="{StaticResource CardBorder}">
+                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource CardBackground}, Dark={StaticResource NightSurface}}" />
+                <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource NightBorder}}" />
+                <Setter Property="Padding" Value="14" />
+            </Style>
+            <Style x:Key="PanelVisual" TargetType="Border" BasedOn="{StaticResource SoftPanel}">
+                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource SecondaryBackground}, Dark={StaticResource NightRaised}}" />
+            </Style>
+            <Style x:Key="AccionVisual" TargetType="Button" BasedOn="{StaticResource SecondaryButton}">
+                <Setter Property="HeightRequest" Value="-1" />
+                <Setter Property="MinimumHeightRequest" Value="48" />
+                <Setter Property="Padding" Value="12,10" />
+                <Setter Property="LineBreakMode" Value="WordWrap" />
+                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource SecondaryBackground}, Dark={StaticResource NightRaised}}" />
+                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource ForestGreen}, Dark={StaticResource NightInk}}" />
+            </Style>
+            <Style x:Key="PrincipalVisual" TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
+                <Setter Property="HeightRequest" Value="-1" />
+                <Setter Property="MinimumHeightRequest" Value="52" />
+                <Setter Property="LineBreakMode" Value="WordWrap" />
+            </Style>
+            <Style x:Key="CampoVisual" TargetType="Entry" BasedOn="{StaticResource ModernEntry}">
+                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource NightInk}}" />
+                <Setter Property="PlaceholderColor" Value="{AppThemeBinding Light={StaticResource TextMuted}, Dark={StaticResource NightMuted}}" />
+                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource EntryBackground}, Dark={StaticResource NightRaised}}" />
+                <Setter Property="HeightRequest" Value="-1" />
+                <Setter Property="MinimumHeightRequest" Value="52" />
+            </Style>
+            <Style x:Key="CabeceraVisual" TargetType="Border">
+                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=#154F30, Dark=#163F2B}" />
+                <Setter Property="StrokeThickness" Value="0" />
+                <Setter Property="StrokeShape" Value="RoundRectangle 16" />
+                <Setter Property="Padding" Value="16,14" />
             </Style>
             <Style x:Key="GreenHero" TargetType="Border">
                 <Setter Property="BackgroundColor" Value="{StaticResource PrimaryGreen}" />

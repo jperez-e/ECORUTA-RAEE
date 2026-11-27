@@ -13,8 +13,8 @@ internal sealed class DetalleCampoPage : ContentPage
     private DetalleCampoPage(string titulo)
     {
         Title = titulo;
-        _contenido.Add(Texto(titulo, "PageTitle"));
-        _contenido.Add(Texto(SesionDemostracion.Aviso));
+        Style = Estilo("CanvasVisual");
+        _contenido.Add(Encabezado(titulo, SesionDemostracion.Aviso, "punto"));
         _contenido.Add(Boton("Volver", () => Navigation.PopModalAsync()));
         Content = new ScrollView { Content = _contenido };
     }
@@ -58,23 +58,48 @@ internal sealed class DetalleCampoPage : ContentPage
             estado.Text = $"{jornada.Zona} · {jornada.FechaProgramada:dd/MM/yyyy} · {jornada.PesoTotal:0.##} kg";
             var datos = MapaJornada.Crear(jornada);
             if (datos.SinCoordenadas > 0)
-                _contenido.Add(Texto($"Ubicaciones incompletas · {datos.SinCoordenadas}. Coordina con el gestor antes de la recogida en campo."));
-            _contenido.Add(Texto(jornada.RutaDesactualizada ? "Orden desactualizado. Informa al gestor."
-                : jornada.Ruta is null ? "El gestor aún no ha guardado un orden." : datos.Metodo));
+                _contenido.Add(Tarjeta(ConIcono("punto", EstadoVisual(
+                    $"Ubicaciones incompletas · {datos.SinCoordenadas}. Coordina con el gestor antes de la recogida en campo.", "ambar"))));
+            _contenido.Add(jornada.RutaDesactualizada
+                ? EstadoVisual("Orden desactualizado. Informa al gestor.", "ambar")
+                : Texto(jornada.Ruta is null ? "El gestor aún no ha guardado un orden." : datos.Metodo));
             _contenido.Add(Boton("Ver ruta en el mapa", () => Navigation.PushModalAsync(
                 new MapaJornadaPage(id, consultaDeCampo: true)), true));
             var paradas = jornada.Ruta?.Paradas ??
                 jornada.Solicitudes.Select(s => new ParadaRuta(s, 0, null)).ToArray();
+            _contenido.Add(Texto(jornada.Ruta is null ? "Solicitudes de la jornada" : "Orden de recogida", "TituloVisual"));
             foreach (var parada in paradas)
-                MostrarSolicitud(parada.Titulo, parada.Solicitud, vm.Equipos(parada.Solicitud.Id).ToArray());
+                MostrarSolicitud(parada.Solicitud.CodigoSolicitud, parada.Solicitud,
+                    vm.Equipos(parada.Solicitud.Id).ToArray(), parada.Orden);
         });
         if (!ok)
             estado.Text = "No se pudo consultar la jornada.";
     }
 
-    private void MostrarSolicitud(string titulo, SolicitudRecoleccion solicitud, IReadOnlyList<ResiduoElectronico> equipos)
+    private static View IndicadorParada(int orden, string codigo)
     {
-        var contenido = new List<View> { Texto(titulo, "SectionHeading"), Texto(solicitud.DireccionReferencia),
+        var numero = Texto(orden.ToString(), "OnGreen");
+        numero.HorizontalTextAlignment = TextAlignment.Center;
+        numero.VerticalTextAlignment = TextAlignment.Center;
+        var ficha = new Border
+        {
+            MinimumWidthRequest = 32, MinimumHeightRequest = 32,
+            StrokeThickness = 0, BackgroundColor = ColorRecurso("PrimaryGreen"),
+            StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 16 }, Content = numero
+        };
+        var fila = new Grid { ColumnDefinitions = { new(GridLength.Auto), new(GridLength.Star) }, ColumnSpacing = 9 };
+        fila.Add(ficha);
+        var titulo = Texto(codigo, "TituloVisual");
+        titulo.VerticalOptions = LayoutOptions.Center;
+        fila.Add(titulo, 1, 0);
+        return fila;
+    }
+
+    private void MostrarSolicitud(string titulo, SolicitudRecoleccion solicitud, IReadOnlyList<ResiduoElectronico> equipos, int orden = 0)
+    {
+        var encabezado = orden > 0 ? IndicadorParada(orden, titulo) : ConIcono("punto", Texto(titulo, "TituloVisual"));
+        var contenido = new List<View> { encabezado,
+            Texto(solicitud.DireccionReferencia, "TituloVisual"),
             Texto($"{solicitud.Zona} · {solicitud.Estado}"), Texto(PortadaDemoPage.Resumen(solicitud, equipos)) };
         if (equipos.Count == 0)
             contenido.Add(Texto("Sin equipos asociados."));

@@ -1,6 +1,7 @@
 ﻿
 using Android.App;
 using Android.Content.PM;
+using Android.Content.Res;
 using Android.OS;
 using Android.Views;
 
@@ -27,29 +28,19 @@ namespace ECORUTA_RAEE
             ConfigurarBarraEstado();
         }
 
+        public override void OnConfigurationChanged(Configuration newConfig)
+        {
+            base.OnConfigurationChanged(newConfig);
+            ConfigurarBarraEstado();
+        }
+
         private void ConfigurarBarraEstado()
         {
-            if (Window == null)
+            if (!OperatingSystem.IsAndroidVersionAtLeast(30) || Window?.InsetsController is not { } controlador)
                 return;
-
-            // Permitir colorear la barra del sistema.
-            Window.AddFlags(
-                WindowManagerFlags.DrawsSystemBarBackgrounds);
-
-            // Verde oscuro de EcoRuta-RAEE.
-            Window.SetStatusBarColor(
-                Android.Graphics.Color.ParseColor("#17452F"));
-
-            // Mostrar iconos claros sobre fondo oscuro.
-            var decorView = Window.DecorView;
-
-            if (decorView != null)
-            {
-                decorView.SystemUiVisibility =
-                    (StatusBarVisibility)(
-                        (int)decorView.SystemUiVisibility &
-                        ~(int)SystemUiFlags.LightStatusBar);
-            }
+            bool oscuro = (Resources!.Configuration!.UiMode & UiMode.NightMask) == UiMode.NightYes;
+            int iconosOscuros = (int)WindowInsetsControllerAppearance.LightStatusBars;
+            controlador.SetSystemBarsAppearance(oscuro ? 0 : iconosOscuros, iconosOscuros);
         }
     }
 }

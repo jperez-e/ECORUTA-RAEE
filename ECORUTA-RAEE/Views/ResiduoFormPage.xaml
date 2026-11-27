@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
-<ContentPage
+<ContentPage Style="{StaticResource CanvasVisual}"
     x:Class="ECORUTA_RAEE.Views.ResiduoFormPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     Title="{Binding TituloFormulario}"
-    BackgroundColor="#F4F7F4">
+    BackgroundColor="{AppThemeBinding Light={StaticResource PageBackground}, Dark={StaticResource NightCanvas}}">
 
     <ScrollView>
 
@@ -19,24 +19,24 @@
                 FontSize="11"
                 FontAttributes="Bold"
                 CharacterSpacing="1.5"
-                TextColor="#218653"/>
+                TextColor="{AppThemeBinding Light={StaticResource PrimaryGreen}, Dark={StaticResource NightGreen}}"/>
 
             <Label
                 Text="{Binding TituloFormulario}"
                 FontSize="28"
                 FontAttributes="Bold"
-                TextColor="#183D2B"/>
+                TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource NightInk}}"/>
 
             <Label
                 Text="Completa la información del residuo electrónico."
                 FontSize="13"
-                TextColor="#718078"/>
+                TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource NightMuted}}"/>
 
             <!-- FORMULARIO -->
             <Border
                 Padding="18"
-                BackgroundColor="White"
-                Stroke="#E1E9E2"
+                BackgroundColor="{AppThemeBinding Light={StaticResource CardBackground}, Dark={StaticResource NightSurface}}"
+                Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource NightBorder}}"
                 StrokeThickness="1"
                 StrokeShape="RoundRectangle 20">
 
@@ -49,7 +49,7 @@
                             Text="Solicitud de recogida *"
                             FontSize="14"
                             FontAttributes="Bold"
-                            TextColor="#26352B"/>
+                            TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource NightInk}}"/>
 
                         <Picker
                             Title="Selecciona una solicitud"
@@ -57,7 +57,7 @@
                             ItemDisplayBinding="{Binding CodigoSolicitud}"
                             SelectedItem="{Binding SolicitudSeleccionada, Mode=TwoWay}"
                             BackgroundColor="#F4F8F4"
-                            TextColor="#26352B"
+                            TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource NightInk}}"
                             HeightRequest="50"/>
 
                         <Label
@@ -75,14 +75,14 @@
                             Text="Categoría del equipo *"
                             FontSize="14"
                             FontAttributes="Bold"
-                            TextColor="#26352B"/>
+                            TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource NightInk}}"/>
 
                         <Picker
                             Title="Selecciona una categoría"
                             ItemsSource="{Binding Categorias}"
                             SelectedItem="{Binding Categoria, Mode=TwoWay}"
                             BackgroundColor="#F4F8F4"
-                            TextColor="#26352B"
+                            TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource NightInk}}"
                             HeightRequest="50"/>
 
                         <Label
@@ -100,7 +100,7 @@
                             Text="Descripción del equipo *"
                             FontSize="14"
                             FontAttributes="Bold"
-                            TextColor="#26352B"/>
+                            TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource NightInk}}"/>
 
                         <Border
                             Padding="12,5"
@@ -112,7 +112,7 @@
                                 Text="{Binding Descripcion, Mode=TwoWay}"
                                 Placeholder="Ej.: Monitor Samsung de 24 pulgadas"
                                 PlaceholderColor="#89958D"
-                                TextColor="#26352B"
+                                TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource NightInk}}"
                                 BackgroundColor="Transparent"
                                 AutoSize="TextChanges"
                                 MinimumHeightRequest="85"
@@ -135,7 +135,7 @@
                             Text="Cantidad de equipos *"
                             FontSize="14"
                             FontAttributes="Bold"
-                            TextColor="#26352B"/>
+                            TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource NightInk}}"/>
 
                         <Border
                             Padding="12,0"
@@ -147,7 +147,7 @@
                                 Text="{Binding CantidadTexto, Mode=TwoWay}"
                                 Placeholder="Ej.: 2"
                                 Keyboard="Numeric"
-                                TextColor="#26352B"
+                                TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource NightInk}}"
                                 BackgroundColor="Transparent"
                                 HeightRequest="50"/>
 
@@ -168,7 +168,7 @@
                             Text="Peso estimado total (kg) *"
                             FontSize="14"
                             FontAttributes="Bold"
-                            TextColor="#26352B"/>
+                            TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource NightInk}}"/>
 
                         <Border
                             Padding="12,0"
@@ -180,7 +180,7 @@
                                 Text="{Binding PesoTexto, Mode=TwoWay}"
                                 Placeholder="Ej.: 5.5"
                                 Keyboard="Numeric"
-                                TextColor="#26352B"
+                                TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource NightInk}}"
                                 BackgroundColor="Transparent"
                                 HeightRequest="50"/>
 
@@ -229,7 +229,7 @@
                 Text="Cancelar"
                 Command="{Binding CancelarCommand}"
                 BackgroundColor="#E4EAE5"
-                TextColor="#34423A"
+                TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource NightInk}}"
                 FontSize="14"
                 FontAttributes="Bold"
                 CornerRadius="12"

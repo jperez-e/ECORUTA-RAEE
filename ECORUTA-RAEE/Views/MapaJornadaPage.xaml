@@ -1,40 +1,40 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+<ContentPage Style="{StaticResource CanvasVisual}" xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="ECORUTA_RAEE.Views.MapaJornadaPage"
              Title="Mapa de la jornada">
     <Grid Padding="12,8,12,10" RowDefinitions="Auto,3*,2*,Auto" RowSpacing="7">
         <VerticalStackLayout Spacing="3">
-            <Label Text="{Binding Titulo}" Style="{StaticResource SectionHeading}" />
-            <Label Text="{Binding Estado}" Style="{StaticResource Subtitle}" />
-            <Label Text="{Binding Metodo}" Style="{StaticResource Subtitle}" />
-            <Label x:Name="Aviso" IsVisible="False" TextColor="{StaticResource WarningText}" />
-            <Label x:Name="EstadoMapa" Text="Cargando jornada…" Style="{StaticResource Subtitle}" />
+            <Label Text="{Binding Titulo}" Style="{StaticResource TituloVisual}" />
+            <Label Text="{Binding Estado}" Style="{StaticResource TextoVisual}" />
+            <Label Text="{Binding Metodo}" Style="{StaticResource TextoVisual}" />
+            <Label x:Name="Aviso" IsVisible="False" TextColor="{AppThemeBinding Light={StaticResource WarningText}, Dark={StaticResource NightAmber}}" />
+            <Label x:Name="EstadoMapa" Text="Cargando jornada…" Style="{StaticResource TextoVisual}" />
         </VerticalStackLayout>
         <WebView x:Name="Mapa" Grid.Row="1" Navigating="Mapa_Navigating"
                  UserAgent="EcoRuta-RAEE/1.0 (INF-4316; MAUI Android)" />
         <CollectionView Grid.Row="2" ItemsSource="{Binding Paradas}" SelectionMode="None">
             <CollectionView.EmptyView>
-                <Label Text="Sin solicitudes para mostrar." Style="{StaticResource Subtitle}" />
+                <Label Text="Sin solicitudes para mostrar." Style="{StaticResource TextoVisual}" />
             </CollectionView.EmptyView>
             <CollectionView.ItemTemplate>
                 <DataTemplate>
-                    <Border Style="{StaticResource CardBorder}" Padding="9" Margin="0,0,0,6">
+                    <Border Style="{StaticResource TarjetaVisual}" Padding="9" Margin="0,0,0,6">
                         <VerticalStackLayout Spacing="2">
                             <Button Text="{Binding Titulo}" Clicked="Parada_Clicked" CommandParameter="{Binding .}"
-                                    IsEnabled="{Binding Ubicada}" Style="{StaticResource SecondaryButton}" />
+                                    IsEnabled="{Binding Ubicada}" Style="{StaticResource AccionVisual}" />
                             <Label Text="{Binding Direccion}" />
-                            <Label Text="{Binding Detalle}" Style="{StaticResource Subtitle}" />
-                            <Label Text="{Binding Tramo}" IsVisible="{Binding MostrarTramo}" Style="{StaticResource Subtitle}" />
+                            <Label Text="{Binding Detalle}" Style="{StaticResource TextoVisual}" />
+                            <Label Text="{Binding Tramo}" IsVisible="{Binding MostrarTramo}" Style="{StaticResource TextoVisual}" />
                         </VerticalStackLayout>
                     </Border>
                 </DataTemplate>
             </CollectionView.ItemTemplate>
         </CollectionView>
         <Grid Grid.Row="3" ColumnDefinitions="*,*" ColumnSpacing="8">
-            <Button Text="Volver al detalle" Clicked="Volver_Clicked" Style="{StaticResource SecondaryButton}" />
+            <Button Text="Volver al detalle" Clicked="Volver_Clicked" Style="{StaticResource AccionVisual}" />
             <Button x:Name="Todas" Grid.Column="1" Text="Ver todas las paradas" Clicked="Todas_Clicked"
-                    IsEnabled="False" Style="{StaticResource PrimaryButton}" />
+                    IsEnabled="False" Style="{StaticResource PrincipalVisual}" />
         </Grid>
     </Grid>
 </ContentPage>

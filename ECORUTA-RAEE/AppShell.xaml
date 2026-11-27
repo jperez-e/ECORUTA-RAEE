@@ -6,11 +6,11 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:views="clr-namespace:ECORUTA_RAEE.Views"
     FlyoutBehavior="Flyout"
-    FlyoutBackgroundColor="{StaticResource CardBackground}"
+    FlyoutBackgroundColor="{AppThemeBinding Light={StaticResource CardBackground}, Dark={StaticResource NightSurface}}"
     FlyoutWidth="300"
-    Shell.BackgroundColor="{StaticResource CardBackground}"
-    Shell.ForegroundColor="{StaticResource PrimaryGreen}"
-    Shell.TitleColor="{StaticResource ForestGreen}"
+    Shell.BackgroundColor="{AppThemeBinding Light={StaticResource CardBackground}, Dark={StaticResource NightSurface}}"
+    Shell.ForegroundColor="{AppThemeBinding Light={StaticResource PrimaryGreen}, Dark={StaticResource NightGreen}}"
+    Shell.TitleColor="{AppThemeBinding Light={StaticResource ForestGreen}, Dark={StaticResource NightInk}}"
     Shell.DisabledColor="{StaticResource DisabledText}"
     Shell.UnselectedColor="{StaticResource TextSecondary}"
     Shell.NavBarHasShadow="False">
@@ -118,7 +118,7 @@
                     Grid.Column="0"
                     Text="{Binding Title}"
                     FontSize="16"
-                    TextColor="#1D2B22"/>
+                    TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource NightInk}}"/>
 
             </Grid>
 
@@ -131,9 +131,9 @@
 
         <VerticalStackLayout Padding="20,15" Spacing="8">
             <Label Text="Modo demostración · Datos de este dispositivo"
-                   Style="{StaticResource Subtitle}" />
+                   Style="{StaticResource TextoVisual}" />
             <Button Text="Cambiar perfil (demostración)" Clicked="CambiarPerfil_Clicked"
-                    Style="{StaticResource SecondaryButton}" />
+                    Style="{StaticResource AccionVisual}" />
 
             <Button
                 Text="Cerrar sesión"

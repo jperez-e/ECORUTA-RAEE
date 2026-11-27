@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
-<ContentPage
+<ContentPage Style="{StaticResource CanvasVisual}"
     x:Class="ECORUTA_RAEE.Views.LoginPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     Title="Iniciar sesión"
     NavigationPage.HasNavigationBar="False"
-    BackgroundColor="White">
+    BackgroundColor="{AppThemeBinding Light={StaticResource CardBackground}, Dark={StaticResource NightSurface}}">
 
     <!-- DISTRIBUCIÓN A PANTALLA COMPLETA -->
     <Grid
@@ -33,12 +33,7 @@
                     StrokeShape="RoundRectangle 26"
                     HorizontalOptions="Center">
 
-                    <Label
-                        Text="♻"
-                        FontSize="54"
-                        TextColor="#B7F36B"
-                        HorizontalTextAlignment="Center"
-                        VerticalTextAlignment="Center"/>
+                    <Image Source="ui_equipo.png" WidthRequest="28" HeightRequest="28" />
 
                 </Border>
 
@@ -65,7 +60,7 @@
         <!-- ZONA INFERIOR: FORMULARIO -->
         <Grid
             Grid.Row="1"
-            BackgroundColor="White"
+            BackgroundColor="{AppThemeBinding Light={StaticResource CardBackground}, Dark={StaticResource NightSurface}}"
             Padding="24,22,24,20"
             RowDefinitions="*,Auto"
             RowSpacing="12">
@@ -86,11 +81,11 @@
                             Text="Usuario"
                             FontSize="15"
                             FontAttributes="Bold"
-                            TextColor="#34423A"/>
+                            TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource NightInk}}"/>
 
                         <Border
                             Padding="15,0"
-                            BackgroundColor="#F7F9F7"
+                            BackgroundColor="{AppThemeBinding Light={StaticResource EntryBackground}, Dark={StaticResource NightRaised}}"
                             Stroke="#DCE6DD"
                             StrokeThickness="1"
                             StrokeShape="RoundRectangle 13">
@@ -100,7 +95,7 @@
                                 AutomationId="LoginUsuario"
                                 Placeholder="Introduce tu usuario"
                                 Text="{Binding Usuario, Mode=TwoWay}"
-                                TextColor="#26352B"
+                                TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource NightInk}}"
                                 PlaceholderColor="#89958D"
                                 BackgroundColor="Transparent"
                                 FontSize="16"
@@ -120,11 +115,11 @@
                             Text="Contraseña"
                             FontSize="15"
                             FontAttributes="Bold"
-                            TextColor="#34423A"/>
+                            TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource NightInk}}"/>
 
                         <Border
                             Padding="15,0"
-                            BackgroundColor="#F7F9F7"
+                            BackgroundColor="{AppThemeBinding Light={StaticResource EntryBackground}, Dark={StaticResource NightRaised}}"
                             Stroke="#DCE6DD"
                             StrokeThickness="1"
                             StrokeShape="RoundRectangle 13">
@@ -140,7 +135,7 @@
                                     Placeholder="Introduce tu contraseña"
                                     Text="{Binding Contrasena, Mode=TwoWay}"
                                     IsPassword="True"
-                                    TextColor="#26352B"
+                                    TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource NightInk}}"
                                     PlaceholderColor="#89958D"
                                     BackgroundColor="Transparent"
                                     FontSize="16"
@@ -156,7 +151,7 @@
                                     Text="Mostrar"
                                     Clicked="AlternarVisibilidadContrasena_Clicked"
                                     BackgroundColor="Transparent"
-                                    TextColor="#218653"
+                                    TextColor="{AppThemeBinding Light={StaticResource PrimaryGreen}, Dark={StaticResource NightGreen}}"
                                     FontSize="13"
                                     FontAttributes="Bold"
                                     Padding="4,0"
@@ -172,7 +167,7 @@
                     <!-- ERROR DE AUTENTICACIÓN -->
                     <Border
                         Padding="13"
-                        BackgroundColor="#FCEAEA"
+                        BackgroundColor="{AppThemeBinding Light={StaticResource ErrorBackground}, Dark={StaticResource NightErrorSurface}}"
                         StrokeThickness="0"
                         StrokeShape="RoundRectangle 11"
                         IsVisible="{Binding HayError}">
@@ -180,7 +175,7 @@
                         <Label
                             Text="{Binding MensajeError}"
                             FontSize="13"
-                            TextColor="#B42323"/>
+                            TextColor="{AppThemeBinding Light={StaticResource ErrorColor}, Dark={StaticResource NightError}}"/>
 
                     </Border>
 
@@ -208,16 +203,12 @@
                 VerticalOptions="End"
                 Spacing="8">
 
-                <Label
-                    Text="♻"
-                    FontSize="17"
-                    TextColor="#218653"
-                    VerticalTextAlignment="Center"/>
+                <Image Source="ui_equipo.png" WidthRequest="28" HeightRequest="28" />
 
                 <Label
                     Text="Reduce · Reutiliza · Recicla"
                     FontSize="12"
-                    TextColor="#718078"
+                    TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource NightMuted}}"
                     VerticalTextAlignment="Center"/>
 
             </HorizontalStackLayout>

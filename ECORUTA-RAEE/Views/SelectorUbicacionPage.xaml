@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage
+<ContentPage Style="{StaticResource CanvasVisual}"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     x:Class="ECORUTA_RAEE.Views.SelectorUbicacionPage"
@@ -7,20 +7,20 @@
     <Grid Padding="14,10,14,12" RowDefinitions="Auto,*,Auto" RowSpacing="8">
         <VerticalStackLayout Spacing="4">
             <Label Text="Selecciona dónde debemos recoger tus equipos"
-                   Style="{StaticResource SectionHeading}" />
+                   Style="{StaticResource TituloVisual}" />
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                 <Entry x:Name="Consulta" Placeholder="Calle, sector o lugar"
-                       Style="{StaticResource ModernEntry}" MaxLength="160"
+                       Style="{StaticResource CampoVisual}" MaxLength="160"
                        ReturnType="Search" Completed="Buscar_Clicked" TextChanged="Consulta_TextChanged"
                        SemanticProperties.Description="Dirección a buscar en República Dominicana" />
                 <Button Grid.Column="1" Text="Buscar" Clicked="Buscar_Clicked"
-                        Style="{StaticResource SecondaryButton}" />
+                        Style="{StaticResource AccionVisual}" />
             </Grid>
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                 <Label x:Name="EstadoBusquedaLabel" Text="Solo se envía lo que escribas aquí al pulsar Buscar."
-                       Style="{StaticResource Subtitle}" FontSize="12" />
+                       Style="{StaticResource TextoVisual}" FontSize="12" />
                 <Label Grid.Column="1" Text="Geoapify" TextDecorations="Underline"
-                       VerticalOptions="Center" Style="{StaticResource Subtitle}"
+                       VerticalOptions="Center" Style="{StaticResource TextoVisual}"
                        SemanticProperties.Description="Geocodificación proporcionada por Geoapify">
                     <Label.GestureRecognizers>
                         <TapGestureRecognizer Tapped="Geoapify_Tapped" />
@@ -31,10 +31,10 @@
         <WebView x:Name="Mapa" Grid.Row="1" UserAgent="EcoRuta-RAEE/1.0 (INF-4316; MAUI Android)"
                  Navigating="Mapa_Navigating" />
         <Border Grid.Row="1" x:Name="PanelResultados" ZIndex="1" IsVisible="False"
-                VerticalOptions="Start" Padding="8" Style="{StaticResource CardBorder}">
+                VerticalOptions="Start" Padding="8" Style="{StaticResource TarjetaVisual}">
             <VerticalStackLayout Spacing="4">
                 <Button Text="Ocultar resultados" Clicked="OcultarResultados_Clicked"
-                        HorizontalOptions="End" Style="{StaticResource SecondaryButton}" />
+                        HorizontalOptions="End" Style="{StaticResource AccionVisual}" />
                 <ScrollView HeightRequest="150">
                     <VerticalStackLayout x:Name="ListaResultados" Spacing="5">
                         <BindableLayout.ItemTemplate>
@@ -42,8 +42,8 @@
                                 <VerticalStackLayout Spacing="2">
                                     <Button Text="{Binding Texto}" LineBreakMode="WordWrap"
                                             CommandParameter="{Binding .}" Clicked="Resultado_Clicked"
-                                            Style="{StaticResource SecondaryButton}" />
-                                    <Label Text="{Binding Fuente}" FontSize="11" Style="{StaticResource Subtitle}" />
+                                            Style="{StaticResource AccionVisual}" />
+                                    <Label Text="{Binding Fuente}" FontSize="11" Style="{StaticResource TextoVisual}" />
                                 </VerticalStackLayout>
                             </DataTemplate>
                         </BindableLayout.ItemTemplate>
@@ -52,13 +52,13 @@
             </VerticalStackLayout>
         </Border>
         <VerticalStackLayout Grid.Row="2" Spacing="6">
-            <Label x:Name="Estado" Text="Abriendo el mapa…" Style="{StaticResource Subtitle}" />
+            <Label x:Name="Estado" Text="Abriendo el mapa…" Style="{StaticResource TextoVisual}" />
             <Button x:Name="Gps" Text="Usar mi ubicación" Clicked="Gps_Clicked"
-                    Style="{StaticResource SecondaryButton}" IsEnabled="False" />
+                    Style="{StaticResource AccionVisual}" IsEnabled="False" />
             <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-                <Button Text="Volver" Clicked="Volver_Clicked" Style="{StaticResource SecondaryButton}" />
+                <Button Text="Volver" Clicked="Volver_Clicked" Style="{StaticResource AccionVisual}" />
                 <Button x:Name="Confirmar" Grid.Column="1" Text="Confirmar punto" Clicked="Confirmar_Clicked"
-                        Style="{StaticResource PrimaryButton}" IsEnabled="False" />
+                        Style="{StaticResource PrincipalVisual}" IsEnabled="False" />
             </Grid>
         </VerticalStackLayout>
     </Grid>

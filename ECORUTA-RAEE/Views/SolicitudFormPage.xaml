@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
-<ContentPage
+<ContentPage Style="{StaticResource CanvasVisual}"
     x:Class="ECORUTA_RAEE.Views.SolicitudFormPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:vm="clr-namespace:ECORUTA_RAEE.ViewModels"
     Title="{Binding TituloFormulario}"
-    BackgroundColor="#F4F7F4">
+    BackgroundColor="{AppThemeBinding Light={StaticResource PageBackground}, Dark={StaticResource NightCanvas}}">
 
     <ContentPage.Resources>
         <Style x:Key="ErrorEquipo" TargetType="Label">
@@ -26,7 +26,7 @@
             Padding="22,20,22,30"
             Spacing="22">
 
-            <Label Text="Modo demostración · Datos de este dispositivo" Style="{StaticResource Subtitle}" />
+            <Label Text="Modo demostración · Datos de este dispositivo" Style="{StaticResource TextoVisual}" />
             <!-- Encabezado -->
             <Grid ColumnDefinitions="*,Auto"
                   ColumnSpacing="12">
@@ -37,19 +37,19 @@
                         FontSize="11"
                         FontAttributes="Bold"
                         CharacterSpacing="1.5"
-                        TextColor="#218653"/>
+                        TextColor="{AppThemeBinding Light={StaticResource PrimaryGreen}, Dark={StaticResource NightGreen}}"/>
 
                     <Label
                         Text="{Binding TituloFormulario}"
                         FontSize="29"
                         FontAttributes="Bold"
-                        TextColor="#183D2B"/>
+                        TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource NightInk}}"/>
 
                     <Label
                         Text="Organicemos juntos la recogida de tus electrónicos."
                         FontSize="14"
                         LineHeight="1.3"
-                        TextColor="#718078"/>
+                        TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource NightMuted}}"/>
                 </VerticalStackLayout>
 
                 <Border
@@ -62,20 +62,15 @@
                     StrokeShape="RoundRectangle 17"
                     VerticalOptions="Start">
 
-                    <Label
-                        Text="♻"
-                        FontSize="31"
-                        HorizontalTextAlignment="Center"
-                        VerticalTextAlignment="Center"
-                        TextColor="#218653"/>
+                    <Image Source="ui_equipo.png" WidthRequest="28" HeightRequest="28" />
                 </Border>
             </Grid>
 
             <!-- Indicador de progreso -->
             <Border
                 Padding="16,14"
-                BackgroundColor="White"
-                Stroke="#E1E9E2"
+                BackgroundColor="{AppThemeBinding Light={StaticResource CardBackground}, Dark={StaticResource NightSurface}}"
+                Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource NightBorder}}"
                 StrokeThickness="1"
                 StrokeShape="RoundRectangle 16">
 
@@ -107,53 +102,53 @@
                             Text="Información de recogida"
                             FontSize="14"
                             FontAttributes="Bold"
-                            TextColor="#1D2B22"/>
+                            TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource NightInk}}"/>
 
                         <Label
                             Text="Completa los datos para registrar tu solicitud."
                             FontSize="12"
-                            TextColor="#718078"/>
+                            TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource NightMuted}}"/>
                     </VerticalStackLayout>
                 </Grid>
             </Border>
 
             <!-- Ubicación de recogida -->
             <Border
-                Style="{StaticResource CardBorder}"
+                Style="{StaticResource TarjetaVisual}"
                 Padding="16,12">
                 <VerticalStackLayout Spacing="8">
-                    <Label Text="Ubicación de recogida" Style="{StaticResource SectionHeading}"/>
-                    <Label Text="{Binding EstadoUbicacion}" Style="{StaticResource Subtitle}"/>
+                    <Label Text="Ubicación de recogida" Style="{StaticResource TituloVisual}"/>
+                    <Label Text="{Binding EstadoUbicacion}" Style="{StaticResource TextoVisual}"/>
                     <Button Text="{Binding TextoBotonMapa}" Clicked="AbrirMapa_Clicked"
-                            IsEnabled="{Binding FormularioDisponible}" Style="{StaticResource SecondaryButton}"/>
+                            IsEnabled="{Binding FormularioDisponible}" Style="{StaticResource AccionVisual}"/>
                     <Button Text="Quitar ubicación" Command="{Binding QuitarUbicacionCommand}"
-                            IsVisible="{Binding TieneUbicacion}" Style="{StaticResource SecondaryButton}"/>
+                            IsVisible="{Binding TieneUbicacion}" Style="{StaticResource AccionVisual}"/>
                     <VerticalStackLayout IsVisible="{Binding PermitirCoordenadasAvanzadas}" Spacing="8">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                         <Label Text="Coordenadas avanzadas (opcional)" VerticalOptions="Center"
-                               Style="{StaticResource Subtitle}"/>
+                               Style="{StaticResource TextoVisual}"/>
                         <Switch Grid.Column="1" IsToggled="{Binding MostrarCoordenadasAvanzadas, Mode=TwoWay}"
                                 OnColor="{StaticResource AccentGreen}"
                                 SemanticProperties.Description="Mostrar coordenadas avanzadas"/>
                     </Grid>
                     <Grid IsVisible="{Binding MostrarCoordenadasAvanzadas}" ColumnDefinitions="*,*" ColumnSpacing="12">
                         <VerticalStackLayout Spacing="4">
-                            <Label Text="Latitud" Style="{StaticResource Subtitle}"/>
+                            <Label Text="Latitud" Style="{StaticResource TextoVisual}"/>
                             <Entry Text="{Binding LatitudTexto, Mode=TwoWay}" Placeholder="-90 a 90"
                                    IsTextPredictionEnabled="False" IsSpellCheckEnabled="False"
-                                   Style="{StaticResource ModernEntry}"
+                                   Style="{StaticResource CampoVisual}"
                                    SemanticProperties.Description="Latitud en grados decimales"/>
                             <Label Text="{Binding ErrorLatitud}" IsVisible="{Binding TieneErrorLatitud}"
-                                   TextColor="{StaticResource ErrorColor}" FontSize="12"/>
+                                   TextColor="{AppThemeBinding Light={StaticResource ErrorColor}, Dark={StaticResource NightError}}" FontSize="12"/>
                         </VerticalStackLayout>
                         <VerticalStackLayout Grid.Column="1" Spacing="4">
-                            <Label Text="Longitud" Style="{StaticResource Subtitle}"/>
+                            <Label Text="Longitud" Style="{StaticResource TextoVisual}"/>
                             <Entry Text="{Binding LongitudTexto, Mode=TwoWay}" Placeholder="-180 a 180"
                                    IsTextPredictionEnabled="False" IsSpellCheckEnabled="False"
-                                   Style="{StaticResource ModernEntry}"
+                                   Style="{StaticResource CampoVisual}"
                                    SemanticProperties.Description="Longitud en grados decimales"/>
                             <Label Text="{Binding ErrorLongitud}" IsVisible="{Binding TieneErrorLongitud}"
-                                   TextColor="{StaticResource ErrorColor}" FontSize="12"/>
+                                   TextColor="{AppThemeBinding Light={StaticResource ErrorColor}, Dark={StaticResource NightError}}" FontSize="12"/>
                         </VerticalStackLayout>
                     </Grid>
                     </VerticalStackLayout>
@@ -163,8 +158,8 @@
             <!-- Confirmación y referencia -->
             <Border
                 Padding="19"
-                BackgroundColor="White"
-                Stroke="#E1E9E2"
+                BackgroundColor="{AppThemeBinding Light={StaticResource CardBackground}, Dark={StaticResource NightSurface}}"
+                Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource NightBorder}}"
                 StrokeThickness="1"
                 StrokeShape="RoundRectangle 20">
 
@@ -175,19 +170,19 @@
                         FontSize="12"
                         FontAttributes="Bold"
                         CharacterSpacing="1"
-                        TextColor="#218653"/>
+                        TextColor="{AppThemeBinding Light={StaticResource PrimaryGreen}, Dark={StaticResource NightGreen}}"/>
 
                     <Label
                         Text="Confirma la zona de recogida"
                         FontSize="18"
                         FontAttributes="Bold"
-                        TextColor="#1D2B22"/>
+                        TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource NightInk}}"/>
 
                     <Label
                         Text="Indica la zona del punto elegido y agrega una referencia para encontrarlo."
                         FontSize="13"
                         LineHeight="1.3"
-                        TextColor="#718078"/>
+                        TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource NightMuted}}"/>
 
                     <!-- Zona -->
                     <Label
@@ -195,11 +190,11 @@
                         Text="Zona de recogida *"
                         FontSize="13"
                         FontAttributes="Bold"
-                        TextColor="#34423A"/>
+                        TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource NightInk}}"/>
 
                     <Border
                         Padding="12,0"
-                        BackgroundColor="#F7F9F7"
+                        BackgroundColor="{AppThemeBinding Light={StaticResource EntryBackground}, Dark={StaticResource NightRaised}}"
                         Stroke="#DCE6DD"
                         StrokeThickness="1"
                         StrokeShape="RoundRectangle 12">
@@ -208,19 +203,19 @@
                             Title="Selecciona una zona"
                             ItemsSource="{Binding Zonas}"
                             SelectedItem="{Binding ZonaSeleccionada}"
-                            TextColor="#26352B"
+                            TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource NightInk}}"
                             TitleColor="#89958D"
                             BackgroundColor="Transparent"
                             HeightRequest="52"/>
                     </Border>
 
                     <VerticalStackLayout Spacing="4" IsVisible="{Binding EsOtraZona}">
-                        <Label Text="Sector o comunidad *" Style="{StaticResource Subtitle}"/>
+                        <Label Text="Sector o comunidad *" Style="{StaticResource TextoVisual}"/>
                         <Entry Text="{Binding SectorOtraZona}" Placeholder="Nombre del sector o comunidad"
-                               MaxLength="100" Style="{StaticResource ModernEntry}"/>
+                               MaxLength="100" Style="{StaticResource CampoVisual}"/>
                     </VerticalStackLayout>
 
-                    <Label Text="{Binding EstadoZona}" Style="{StaticResource Subtitle}"/>
+                    <Label Text="{Binding EstadoZona}" Style="{StaticResource TextoVisual}"/>
                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
                         <CheckBox IsChecked="{Binding ZonaConfirmada, Mode=TwoWay}"
                                   IsEnabled="{Binding PuedeConfirmarZona}"
@@ -228,7 +223,7 @@
                                   SemanticProperties.Description="Confirmo que la zona corresponde al lugar de recogida"/>
                         <Label Grid.Column="1" VerticalOptions="Center"
                                Text="Confirmo que la zona corresponde al lugar de recogida."
-                               Style="{StaticResource Subtitle}"/>
+                               Style="{StaticResource TextoVisual}"/>
                     </Grid>
 
                     <Label
@@ -243,11 +238,11 @@
                         Text="Dirección de referencia *"
                         FontSize="13"
                         FontAttributes="Bold"
-                        TextColor="#34423A"/>
+                        TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource NightInk}}"/>
 
                     <Border
                         Padding="12,8"
-                        BackgroundColor="#F7F9F7"
+                        BackgroundColor="{AppThemeBinding Light={StaticResource EntryBackground}, Dark={StaticResource NightRaised}}"
                         Stroke="#DCE6DD"
                         StrokeThickness="1"
                         StrokeShape="RoundRectangle 12">
@@ -257,7 +252,7 @@
                             Text="{Binding DireccionReferencia}"
                             AutoSize="TextChanges"
                             HeightRequest="100"
-                            TextColor="#26352B"
+                            TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource NightInk}}"
                             PlaceholderColor="#89958D"
                             BackgroundColor="Transparent"/>
                     </Border>
@@ -272,48 +267,48 @@
                         Text="Evita incluir información personal que no sea necesaria para localizar el punto."
                         FontSize="11"
                         LineHeight="1.3"
-                        TextColor="#718078"/>
+                        TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource NightMuted}}"/>
                 </VerticalStackLayout>
             </Border>
 
-            <Border Style="{StaticResource CardBorder}" Padding="16,12">
+            <Border Style="{StaticResource TarjetaVisual}" Padding="16,12">
                 <VerticalStackLayout Spacing="12">
-                    <Label Text="02 · Equipos electrónicos" Style="{StaticResource SectionHeading}"/>
+                    <Label Text="02 · Equipos electrónicos" Style="{StaticResource TituloVisual}"/>
                     <Label Text="Agrega un registro por tipo de equipo."
-                           IsVisible="{Binding SinEquipos}" Style="{StaticResource Subtitle}"/>
+                           IsVisible="{Binding SinEquipos}" Style="{StaticResource TextoVisual}"/>
                     <VerticalStackLayout Spacing="8" BindableLayout.ItemsSource="{Binding Equipos}">
                         <BindableLayout.ItemTemplate>
                             <DataTemplate x:DataType="vm:EquipoBorradorViewModel">
-                                <Border Style="{StaticResource CardBorder}" Padding="12">
+                                <Border Style="{StaticResource TarjetaVisual}" Padding="12">
                                     <VerticalStackLayout Spacing="8">
-                                        <Label Text="{Binding Titulo}" Style="{StaticResource SectionHeading}"/>
-                                        <Label Text="{Binding Resumen}" Style="{StaticResource Subtitle}"/>
+                                        <Label Text="{Binding Titulo}" Style="{StaticResource TituloVisual}"/>
+                                        <Label Text="{Binding Resumen}" Style="{StaticResource TextoVisual}"/>
                                         <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
                                             <Button Text="{Binding TextoEditor}" Command="{Binding AlternarEditorCommand}"
-                                                    Style="{StaticResource SecondaryButton}"/>
+                                                    Style="{StaticResource AccionVisual}"/>
                                             <Button Grid.Column="1" Text="Quitar" Command="{Binding QuitarCommand}"
-                                                    Style="{StaticResource SecondaryButton}"/>
+                                                    Style="{StaticResource AccionVisual}"/>
                                         </Grid>
                                         <VerticalStackLayout Spacing="5" IsVisible="{Binding MostrandoEditor}">
-                                            <Label Text="Categoría *" Style="{StaticResource Subtitle}"/>
+                                            <Label Text="Categoría *" Style="{StaticResource TextoVisual}"/>
                                             <Picker Title="Selecciona una categoría" ItemsSource="{Binding Categorias}"
                                                     SelectedItem="{Binding Categoria, Mode=TwoWay}"
                                                     SemanticProperties.Description="Categoría del equipo"/>
                                             <Label Text="{Binding ErrorCategoria}" Style="{StaticResource ErrorEquipo}"/>
-                                            <Label Text="Descripción *" Style="{StaticResource Subtitle}"/>
+                                            <Label Text="Descripción *" Style="{StaticResource TextoVisual}"/>
                                             <Entry Text="{Binding Descripcion}" Placeholder="Ej. Televisor LCD"
-                                                   Style="{StaticResource ModernEntry}"/>
+                                                   Style="{StaticResource CampoVisual}"/>
                                             <Label Text="{Binding ErrorDescripcion}" Style="{StaticResource ErrorEquipo}"/>
-                                            <Label Text="Cantidad de equipos *" Style="{StaticResource Subtitle}"/>
+                                            <Label Text="Cantidad de equipos *" Style="{StaticResource TextoVisual}"/>
                                             <Entry Text="{Binding CantidadTexto}" Keyboard="Numeric"
                                                    SemanticProperties.Description="Cantidad de equipos"
-                                                   Style="{StaticResource ModernEntry}"/>
+                                                   Style="{StaticResource CampoVisual}"/>
                                             <Label Text="{Binding ErrorCantidad}" Style="{StaticResource ErrorEquipo}"/>
                                             <Label Text="Peso total estimado de estos equipos (kg) *"
-                                                   Style="{StaticResource Subtitle}"/>
+                                                   Style="{StaticResource TextoVisual}"/>
                                             <Entry Text="{Binding PesoTexto}" Keyboard="Numeric" Placeholder="Ej. 8,5"
                                                    SemanticProperties.Description="Peso total del registro en kilogramos"
-                                                   Style="{StaticResource ModernEntry}"/>
+                                                   Style="{StaticResource CampoVisual}"/>
                                             <Label Text="{Binding ErrorPeso}" Style="{StaticResource ErrorEquipo}"/>
                                         </VerticalStackLayout>
                                     </VerticalStackLayout>
@@ -322,7 +317,7 @@
                         </BindableLayout.ItemTemplate>
                     </VerticalStackLayout>
                     <Button Text="Agregar equipo" Command="{Binding AgregarEquipoCommand}"
-                            Style="{StaticResource SecondaryButton}"/>
+                            Style="{StaticResource AccionVisual}"/>
                     <Label Text="{Binding ErrorEquipos}" Style="{StaticResource ErrorEquipo}"/>
                 </VerticalStackLayout>
             </Border>
@@ -339,12 +334,12 @@
                 <Label
                     Text="{Binding MensajeExito}"
                     FontSize="13"
-                    TextColor="#176B3A"/>
+                    TextColor="{AppThemeBinding Light={StaticResource PrimaryGreen}, Dark={StaticResource NightGreen}}"/>
             </Border>
 
             <Border
                 Padding="16,10"
-                BackgroundColor="White"
+                BackgroundColor="{AppThemeBinding Light={StaticResource CardBackground}, Dark={StaticResource NightSurface}}"
                 Stroke="#E3ECE5"
                 StrokeShape="RoundRectangle 18">
 
@@ -352,7 +347,7 @@
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
                         <Label
                             Text="Personalizar código"
-                            TextColor="#183D2B"
+                            TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource NightInk}}"
                             FontSize="14"
                             VerticalOptions="Center"/>
                         <Switch
@@ -369,38 +364,38 @@
                             Text="{Binding CodigoTexto, Mode=TwoWay}"
                             Placeholder="SOL-0001"
                             SemanticProperties.Description="Código de solicitud"
-                            Style="{StaticResource ModernEntry}"
+                            Style="{StaticResource CampoVisual}"
                             IsSpellCheckEnabled="False"
                             IsTextPredictionEnabled="False"/>
                         <Label
                             Text="{Binding ErrorCodigo}"
                             IsVisible="{Binding TieneErrorCodigo}"
-                            TextColor="{StaticResource ErrorColor}"
+                            TextColor="{AppThemeBinding Light={StaticResource ErrorColor}, Dark={StaticResource NightError}}"
                             FontSize="12"/>
                     </VerticalStackLayout>
                 </VerticalStackLayout>
             </Border>
 
-            <Border Style="{StaticResource CardBorder}" Padding="16,12">
+            <Border Style="{StaticResource TarjetaVisual}" Padding="16,12">
                 <VerticalStackLayout Spacing="7">
-                    <Label Text="03 · Resumen" Style="{StaticResource SectionHeading}"/>
+                    <Label Text="03 · Resumen" Style="{StaticResource TituloVisual}"/>
                     <Label Text="{Binding RegistrosEquipos, StringFormat='Registros de equipos: {0}'}"
-                           Style="{StaticResource Subtitle}"/>
+                           Style="{StaticResource TextoVisual}"/>
                     <Label Text="{Binding UnidadesEquipos, StringFormat='Unidades físicas: {0}'}"
-                           Style="{StaticResource Subtitle}"/>
+                           Style="{StaticResource TextoVisual}"/>
                     <Label Text="{Binding ZonaResumen, StringFormat='Zona: {0}'}"
-                           Style="{StaticResource Subtitle}"/>
+                           Style="{StaticResource TextoVisual}"/>
                     <Label Text="{Binding PesoResumen, StringFormat='Peso total estimado: {0:F2} kg'}"
-                           Style="{StaticResource SectionHeading}"/>
+                           Style="{StaticResource TituloVisual}"/>
                     <VerticalStackLayout IsVisible="{Binding PesoEditable}" Spacing="5">
                         <Label Text="Peso manual de la solicitud sin equipos (kg)"
-                               Style="{StaticResource Subtitle}"/>
+                               Style="{StaticResource TextoVisual}"/>
                         <Entry Text="{Binding PesoTexto, Mode=TwoWay}" Keyboard="Numeric"
-                               Style="{StaticResource ModernEntry}"/>
+                               Style="{StaticResource CampoVisual}"/>
                         <Label Text="{Binding ErrorPeso}" Style="{StaticResource ErrorEquipo}"/>
                     </VerticalStackLayout>
                     <Button Text="{Binding TextoBotonGuardar}" Command="{Binding GuardarCommand}"
-                            Style="{StaticResource PrimaryButton}"/>
+                            Style="{StaticResource PrincipalVisual}"/>
                     <ActivityIndicator IsRunning="{Binding Guardando}" IsVisible="{Binding Guardando}"
                                        Color="{StaticResource AccentGreen}"/>
                 </VerticalStackLayout>
@@ -427,7 +422,7 @@
                     Text="Cancelar"
                     Command="{Binding CancelarCommand}"
                     BackgroundColor="Transparent"
-                    TextColor="#526158"
+                    TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource NightMuted}}"
                     FontSize="14"
                     CornerRadius="12"
                     HeightRequest="46"
@@ -440,15 +435,12 @@
                 HorizontalOptions="Center"
                 Spacing="7">
 
-                <Label
-                    Text="🌱"
-                    FontSize="15"
-                    VerticalTextAlignment="Center"/>
+                <Image Source="ui_listo.png" WidthRequest="28" HeightRequest="28" />
 
                 <Label
                     Text="Cada dispositivo bien gestionado cuenta."
                     FontSize="12"
-                    TextColor="#718078"
+                    TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource NightMuted}}"
                     VerticalTextAlignment="Center"/>
             </HorizontalStackLayout>
 

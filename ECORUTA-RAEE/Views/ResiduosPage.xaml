@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
-<ContentPage
+<ContentPage Style="{StaticResource CanvasVisual}"
     x:Class="ECORUTA_RAEE.Views.ResiduosPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     Title="Residuos electrónicos"
-    BackgroundColor="#F4F7F4">
+    BackgroundColor="{AppThemeBinding Light={StaticResource PageBackground}, Dark={StaticResource NightCanvas}}">
 
     <Grid RowDefinitions="Auto,*">
 
@@ -20,7 +20,7 @@
                 FontSize="10"
                 FontAttributes="Bold"
                 CharacterSpacing="1.2"
-                TextColor="#218653"/>
+                TextColor="{AppThemeBinding Light={StaticResource PrimaryGreen}, Dark={StaticResource NightGreen}}"/>
 
             <Grid ColumnDefinitions="*,Auto">
 
@@ -30,12 +30,12 @@
                         Text="Residuos electrónicos"
                         FontSize="24"
                         FontAttributes="Bold"
-                        TextColor="#183D2B"/>
+                        TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource NightInk}}"/>
 
                     <Label
                         Text="Administra los equipos registrados"
                         FontSize="12"
-                        TextColor="#718078"/>
+                        TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource NightMuted}}"/>
 
                 </VerticalStackLayout>
 
@@ -47,12 +47,7 @@
                     StrokeThickness="0"
                     StrokeShape="RoundRectangle 13">
 
-                    <Label
-                        Text="♻"
-                        FontSize="25"
-                        TextColor="#218653"
-                        HorizontalTextAlignment="Center"
-                        VerticalTextAlignment="Center"/>
+                    <Image Source="ui_equipo.png" WidthRequest="28" HeightRequest="28" />
 
                 </Border>
 
@@ -96,7 +91,7 @@
                             Text="{Binding TotalResiduos}"
                             FontSize="23"
                             FontAttributes="Bold"
-                            TextColor="#183D2B"/>
+                            TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource NightInk}}"/>
 
                     </Border>
 
@@ -119,9 +114,9 @@
             <SearchBar
                 Placeholder="Buscar equipo, categoría o solicitud"
                 Text="{Binding TextoBusqueda, Mode=TwoWay}"
-                BackgroundColor="White"
-                TextColor="#26352B"
-                PlaceholderColor="#718078"
+                BackgroundColor="{AppThemeBinding Light={StaticResource CardBackground}, Dark={StaticResource NightSurface}}"
+                TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource NightInk}}"
+                PlaceholderColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource NightMuted}}"
                 FontSize="13"
                 HeightRequest="46"/>
 
@@ -132,7 +127,7 @@
                     FontSize="10"
                     FontAttributes="Bold"
                     CharacterSpacing="1"
-                    TextColor="#718078"
+                    TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource NightMuted}}"
                     VerticalTextAlignment="Center"/>
 
                 <Label
@@ -140,7 +135,7 @@
                     Text="{Binding ResumenBusqueda}"
                     IsVisible="{Binding HayBusqueda}"
                     FontSize="11"
-                    TextColor="#218653"
+                    TextColor="{AppThemeBinding Light={StaticResource PrimaryGreen}, Dark={StaticResource NightGreen}}"
                     VerticalTextAlignment="Center"/>
 
             </Grid>
@@ -162,23 +157,19 @@
                     VerticalOptions="Center"
                     HorizontalOptions="Center">
 
-                    <Label
-                        Text="♻"
-                        FontSize="45"
-                        TextColor="#218653"
-                        HorizontalTextAlignment="Center"/>
+                    <Image Source="ui_equipo.png" WidthRequest="28" HeightRequest="28" />
 
                     <Label
                         Text="{Binding TituloListaVacia}"
                         FontSize="17"
                         FontAttributes="Bold"
-                        TextColor="#26352B"
+                        TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource NightInk}}"
                         HorizontalTextAlignment="Center"/>
 
                     <Label
                         Text="{Binding DescripcionListaVacia}"
                         FontSize="12"
-                        TextColor="#718078"
+                        TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource NightMuted}}"
                         HorizontalTextAlignment="Center"
                         MaximumWidthRequest="290"/>
 
@@ -194,8 +185,8 @@
                     <Border
                         Margin="0,0,0,11"
                         Padding="14"
-                        BackgroundColor="White"
-                        Stroke="#E1E9E2"
+                        BackgroundColor="{AppThemeBinding Light={StaticResource CardBackground}, Dark={StaticResource NightSurface}}"
+                        Stroke="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource NightBorder}}"
                         StrokeThickness="1"
                         StrokeShape="RoundRectangle 16">
 
@@ -227,7 +218,7 @@
                                     <Label
                                         Text="▣"
                                         FontSize="27"
-                                        TextColor="#218653"
+                                        TextColor="{AppThemeBinding Light={StaticResource PrimaryGreen}, Dark={StaticResource NightGreen}}"
                                         HorizontalTextAlignment="Center"
                                         VerticalTextAlignment="Center"/>
 
@@ -242,19 +233,19 @@
                                         Text="{Binding Categoria}"
                                         FontSize="12"
                                         FontAttributes="Bold"
-                                        TextColor="#218653"/>
+                                        TextColor="{AppThemeBinding Light={StaticResource PrimaryGreen}, Dark={StaticResource NightGreen}}"/>
 
                                     <Label
                                         Text="{Binding Descripcion}"
                                         FontSize="14"
                                         FontAttributes="Bold"
-                                        TextColor="#26352B"
+                                        TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource NightInk}}"
                                         LineBreakMode="WordWrap"/>
 
                                     <Label
                                         Text="{Binding SolicitudId, StringFormat='Solicitud #{0}'}"
                                         FontSize="11"
-                                        TextColor="#718078"/>
+                                        TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource NightMuted}}"/>
 
                                 </VerticalStackLayout>
 
@@ -287,12 +278,12 @@
                                                 Text="{Binding Cantidad}"
                                                 FontSize="16"
                                                 FontAttributes="Bold"
-                                                TextColor="#26352B"/>
+                                                TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource NightInk}}"/>
 
                                             <Label
                                                 Text="unidades"
                                                 FontSize="11"
-                                                TextColor="#718078"
+                                                TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource NightMuted}}"
                                                 VerticalTextAlignment="Center"/>
 
                                         </HorizontalStackLayout>
@@ -321,7 +312,7 @@
                                             Text="{Binding PesoEstimado, StringFormat='{0:F2} kg'}"
                                             FontSize="16"
                                             FontAttributes="Bold"
-                                            TextColor="#218653"/>
+                                            TextColor="{AppThemeBinding Light={StaticResource PrimaryGreen}, Dark={StaticResource NightGreen}}"/>
 
                                     </VerticalStackLayout>
 
@@ -340,7 +331,7 @@
                                     Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.EditarCommand}"
                                     CommandParameter="{Binding .}"
                                     BackgroundColor="#E4F2E6"
-                                    TextColor="#176B3A"
+                                    TextColor="{AppThemeBinding Light={StaticResource PrimaryGreen}, Dark={StaticResource NightGreen}}"
                                     FontSize="12"
                                     FontAttributes="Bold"
                                     CornerRadius="10"

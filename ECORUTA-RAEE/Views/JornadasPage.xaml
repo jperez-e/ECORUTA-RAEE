@@ -2,94 +2,105 @@
 <ContentPage
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:views="clr-namespace:ECORUTA_RAEE.Views"
     x:Class="ECORUTA_RAEE.Views.JornadasPage"
-    Title="Jornadas">
+    Title="Jornadas" Style="{StaticResource CanvasVisual}">
     <ScrollView>
-        <VerticalStackLayout Padding="20" Spacing="16">
-            <Border Style="{StaticResource GreenHero}">
+        <VerticalStackLayout Padding="16,0,16,16" Spacing="12">
+            <Border Style="{StaticResource CabeceraVisual}">
                 <VerticalStackLayout Spacing="6">
-                    <Label Text="Jornadas de recolección" Style="{StaticResource OnGreen}" FontSize="25" />
-                    <Label Text="Revisa qué zonas tienen solicitudes para programar una recogida."
+                    <Label Text="Modo demostración · Datos de este dispositivo" Style="{StaticResource OnGreen}" FontSize="12" />
+                    <Label Text="Jornadas inteligentes" Style="{StaticResource OnGreen}" FontSize="25" />
+                    <Label Text="Organiza recogidas según la demanda de cada zona."
                            Style="{StaticResource OnGreen}" FontSize="14" />
+                    <Grid ColumnDefinitions="*,*" RowDefinitions="Auto" ColumnSpacing="8" RowSpacing="8">
+                        <views:MetricaVisual Etiqueta="Zonas listas" Icono="listo" Valor="{Binding ZonasListas}" />
+                        <views:MetricaVisual Grid.Column="1" Etiqueta="Programadas" Icono="calendario" Tono="azul" Valor="{Binding JornadasProgramadas}" />
+                    </Grid>
                 </VerticalStackLayout>
             </Border>
             <ActivityIndicator IsVisible="{Binding Ocupado}" IsRunning="{Binding Ocupado}"
                                Color="{StaticResource PrimaryGreen}" SemanticProperties.Description="Procesando jornadas" />
-            <Border Style="{StaticResource CardBorder}" Padding="14">
+            <Button x:Name="Configurar" Text="Configurar umbrales" Clicked="Configurar_Clicked" Style="{StaticResource AccionVisual}" />
+            <Border x:Name="Umbrales" IsVisible="False" Style="{StaticResource TarjetaVisual}" Padding="14">
                 <VerticalStackLayout Spacing="8">
-                    <Label Text="Umbrales por zona" FontAttributes="Bold" TextColor="{StaticResource ForestGreen}" />
+                    <Label Text="Umbrales por zona" FontAttributes="Bold" TextColor="{AppThemeBinding Light={StaticResource ForestGreen}, Dark={StaticResource NightInk}}" />
                     <Label Text="Se puede programar una jornada al alcanzar cualquiera de los dos mínimos."
-                           Style="{StaticResource Subtitle}" />
+                           Style="{StaticResource TextoVisual}" />
                     <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
                         <VerticalStackLayout Spacing="4">
-                            <Label Text="Solicitudes" Style="{StaticResource Subtitle}" />
+                            <Label Text="Solicitudes" Style="{StaticResource TextoVisual}" />
                             <Entry Text="{Binding CantidadTexto, Mode=TwoWay}"
                                    SemanticProperties.Description="Mínimo de solicitudes"
-                                   Keyboard="Numeric" ReturnType="Done" Style="{StaticResource ModernEntry}" />
+                                   Keyboard="Numeric" ReturnType="Done" Style="{StaticResource CampoVisual}" />
                         </VerticalStackLayout>
                         <VerticalStackLayout Grid.Column="1" Spacing="4">
-                            <Label Text="Peso (kg)" Style="{StaticResource Subtitle}" />
+                            <Label Text="Peso (kg)" Style="{StaticResource TextoVisual}" />
                             <Entry Text="{Binding PesoTexto, Mode=TwoWay}"
                                    SemanticProperties.Description="Peso mínimo en kilogramos"
-                                   Keyboard="Numeric" ReturnType="Done" Style="{StaticResource ModernEntry}" />
+                                   Keyboard="Numeric" ReturnType="Done" Style="{StaticResource CampoVisual}" />
                         </VerticalStackLayout>
                     </Grid>
-                    <Border IsVisible="{Binding HayErrorUmbrales}" Style="{StaticResource SoftPanel}" BackgroundColor="{StaticResource ErrorBackground}">
-                        <Label Text="{Binding ErrorUmbrales}" TextColor="{StaticResource ErrorColor}" />
+                    <Border IsVisible="{Binding HayErrorUmbrales}" Style="{StaticResource PanelVisual}" BackgroundColor="{AppThemeBinding Light={StaticResource ErrorBackground}, Dark={StaticResource NightErrorSurface}}">
+                        <Label Text="{Binding ErrorUmbrales}" TextColor="{AppThemeBinding Light={StaticResource ErrorColor}, Dark={StaticResource NightError}}" />
                     </Border>
-                    <Border IsVisible="{Binding HayAvisoUmbrales}" Style="{StaticResource SoftPanel}" BackgroundColor="{StaticResource SuccessBackground}">
-                        <Label Text="{Binding AvisoUmbrales}" TextColor="{StaticResource PrimaryGreen}" />
+                    <Border IsVisible="{Binding HayAvisoUmbrales}" Style="{StaticResource PanelVisual}" BackgroundColor="{StaticResource SuccessBackground}">
+                        <Label Text="{Binding AvisoUmbrales}" TextColor="{AppThemeBinding Light={StaticResource PrimaryGreen}, Dark={StaticResource NightGreen}}" />
                     </Border>
                     <Button Text="Guardar umbrales" Command="{Binding GuardarUmbralesCommand}"
-                            IsEnabled="{Binding PuedeInteractuar}" Style="{StaticResource SecondaryButton}" />
+                            IsEnabled="{Binding PuedeInteractuar}" Style="{StaticResource AccionVisual}" />
                 </VerticalStackLayout>
             </Border>
 
-            <Label Text="Disponibilidad por zona" Style="{StaticResource SectionHeading}" />
+            <Label Text="Disponibilidad por zona" Style="{StaticResource TituloVisual}" />
+            <Label Text="{Binding ZonasProximas, StringFormat='{0} zonas próximas al umbral'}" Style="{StaticResource TextoVisual}" />
             <Label IsVisible="{Binding HaySolicitudesSinZona}"
                    Text="{Binding SinZonaEspecifica, StringFormat='{0} solicitudes sin zona específica. Elige una zona en su formulario para incluirlas.'}"
-                   Style="{StaticResource Subtitle}" />
+                   Style="{StaticResource TextoVisual}" />
             <Label Text="{Binding UbicacionesPendientes, StringFormat='Ubicación por completar en solicitudes pendientes · {0}'}"
-                   Style="{StaticResource Subtitle}" />
+                   Style="{StaticResource TextoVisual}" />
             <VerticalStackLayout Spacing="8" BindableLayout.ItemsSource="{Binding Zonas}">
                 <BindableLayout.EmptyView>
-                    <Border Style="{StaticResource SoftPanel}"><Label Text="No hay solicitudes pendientes disponibles en zonas específicas." Style="{StaticResource Subtitle}" /></Border>
+                    <Border Style="{StaticResource PanelVisual}"><Label Text="No hay solicitudes pendientes disponibles en zonas específicas." Style="{StaticResource TextoVisual}" /></Border>
                 </BindableLayout.EmptyView>
                 <BindableLayout.ItemTemplate>
                     <DataTemplate>
-                        <Border Style="{StaticResource CardBorder}" Padding="14">
+                        <Border Style="{StaticResource TarjetaVisual}" Padding="14">
                             <VerticalStackLayout Spacing="10">
-                                <Label Text="{Binding Datos.Zona}" Style="{StaticResource SectionHeading}" />
-                                <Border Style="{StaticResource SoftPanel}" HorizontalOptions="Start">
+                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                                    <Image Source="ui_punto.png" HeightRequest="32" WidthRequest="32" />
+                                    <Label Grid.Column="1" Text="{Binding Datos.Zona}" Style="{StaticResource TituloVisual}" VerticalOptions="Center" />
+                                </Grid>
+                                <Border Style="{StaticResource PanelVisual}" HorizontalOptions="Start">
                                     <Border.Triggers>
                                         <DataTrigger TargetType="Border" Binding="{Binding Lista}" Value="True">
-                                            <Setter Property="BackgroundColor" Value="{StaticResource SuccessBackground}" />
+                                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource SuccessBackground}, Dark={StaticResource NightRaised}}" />
                                         </DataTrigger>
                                         <DataTrigger TargetType="Border" Binding="{Binding Proxima}" Value="True">
-                                            <Setter Property="BackgroundColor" Value="{StaticResource WarningBackground}" />
+                                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource WarningBackground}, Dark={StaticResource NightWarningSurface}}" />
                                         </DataTrigger>
                                     </Border.Triggers>
-                                    <Label Text="{Binding Estado}" FontAttributes="Bold" TextColor="{StaticResource ForestGreen}">
+                                    <Label Text="{Binding Estado}" FontAttributes="Bold" TextColor="{AppThemeBinding Light={StaticResource ForestGreen}, Dark={StaticResource NightInk}}">
                                         <Label.Triggers>
                                             <DataTrigger TargetType="Label" Binding="{Binding Proxima}" Value="True">
-                                                <Setter Property="TextColor" Value="{StaticResource WarningText}" />
+                                                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource WarningText}, Dark={StaticResource NightAmber}}" />
                                             </DataTrigger>
                                         </Label.Triggers>
                                     </Label>
                                 </Border>
-                                <Label Text="{Binding Cantidad}" Style="{StaticResource Subtitle}" />
+                                <Label Text="{Binding Cantidad}" Style="{StaticResource TextoVisual}" />
                                 <ProgressBar Progress="{Binding AvanceCantidad}" Style="{StaticResource ProgressTrack}"
                                              SemanticProperties.Description="Progreso por cantidad de solicitudes" />
-                                <Label Text="{Binding Peso}" Style="{StaticResource Subtitle}" />
-                                <ProgressBar Progress="{Binding AvancePeso}" Style="{StaticResource ProgressTrack}"
+                                <Label Text="{Binding Peso}" Style="{StaticResource TextoVisual}" />
+                                <ProgressBar Progress="{Binding AvancePeso}" ProgressColor="{StaticResource StatusBlue}" Style="{StaticResource ProgressTrack}"
                                              SemanticProperties.Description="Progreso por peso en kilogramos" />
-                                <Button Text="{Binding Accion}" Style="{StaticResource SecondaryButton}"
+                                <Button Text="{Binding Accion}" Style="{StaticResource AccionVisual}"
                                         CommandParameter="{Binding Datos}"
                                         Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.PrevisualizarCommand}">
                                     <Button.Triggers>
                                         <DataTrigger TargetType="Button" Binding="{Binding Lista}" Value="True">
                                             <Setter Property="BackgroundColor" Value="{StaticResource PrimaryGreen}" />
-                                            <Setter Property="TextColor" Value="{StaticResource CardBackground}" />
+                                            <Setter Property="TextColor" Value="White" />
                                         </DataTrigger>
                                     </Button.Triggers>
                                 </Button>
@@ -99,28 +110,34 @@
                 </BindableLayout.ItemTemplate>
             </VerticalStackLayout>
 
-            <Label Text="Jornadas registradas" Style="{StaticResource SectionHeading}" />
+            <Label Text="Jornadas registradas" Style="{StaticResource TituloVisual}" />
             <VerticalStackLayout Spacing="8" BindableLayout.ItemsSource="{Binding Jornadas}">
                 <BindableLayout.EmptyView>
-                    <Border Style="{StaticResource SoftPanel}"><Label Text="Todavía no hay jornadas. Cuando una zona alcance un umbral, revisa su propuesta." Style="{StaticResource Subtitle}" /></Border>
+                    <Border Style="{StaticResource PanelVisual}"><Label Text="Todavía no hay jornadas. Cuando una zona alcance un umbral, revisa su propuesta." Style="{StaticResource TextoVisual}" /></Border>
                 </BindableLayout.EmptyView>
                 <BindableLayout.ItemTemplate>
                     <DataTemplate>
-                        <Border Style="{StaticResource CardBorder}" Padding="14">
+                        <Border Style="{StaticResource TarjetaVisual}" Padding="14">
                             <VerticalStackLayout Spacing="5">
-                                <Label Text="{Binding Nombre}" FontAttributes="Bold" TextColor="{StaticResource ForestGreen}" />
-                                <HorizontalStackLayout Spacing="12">
-                                    <Label Text="{Binding Estado}" TextColor="{StaticResource PrimaryGreen}" FontAttributes="Bold">
+                                <Label Text="{Binding Nombre}" FontAttributes="Bold" TextColor="{AppThemeBinding Light={StaticResource ForestGreen}, Dark={StaticResource NightInk}}" />
+                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                                    <Image Source="ui_calendario.png" HeightRequest="30" WidthRequest="30">
+                                        <Image.Triggers>
+                                            <DataTrigger TargetType="Image" Binding="{Binding Estado}" Value="Cancelada">
+                                                <Setter Property="Source" Value="ui_cancelada.png" />
+                                            </DataTrigger>
+                                        </Image.Triggers>
+                                    </Image>
+                                    <Label Grid.Column="1" Text="{Binding Estado}" TextColor="{AppThemeBinding Light={StaticResource InkBlue}, Dark={StaticResource NightBlue}}" FontAttributes="Bold" VerticalOptions="Center">
                                         <Label.Triggers>
                                             <DataTrigger TargetType="Label" Binding="{Binding Estado}" Value="Cancelada">
-                                                <Setter Property="TextColor" Value="{StaticResource TextSecondary}" />
+                                                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource NightMuted}}" />
                                             </DataTrigger>
                                         </Label.Triggers>
                                     </Label>
-                                    <Label Text="{Binding FechaProgramada, StringFormat='{0:dd/MM/yyyy}'}"
-                                           Style="{StaticResource Subtitle}" />
-                                </HorizontalStackLayout>
-                                <Button Text="Ver jornada" Style="{StaticResource SecondaryButton}"
+                                </Grid>
+                                <Label Text="{Binding FechaProgramada, StringFormat='{0:dd/MM/yyyy}'}" Style="{StaticResource TextoVisual}" />
+                                <Button Text="Ver jornada" Style="{StaticResource AccionVisual}"
                                         CommandParameter="{Binding .}"
                                         Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.AbrirCommand}" />
                             </VerticalStackLayout>

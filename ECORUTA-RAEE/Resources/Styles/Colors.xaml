@@ -25,6 +25,26 @@
     <Color x:Key="DisabledText">#65766B</Color>
     <Color x:Key="ErrorColor">#C62828</Color>
     <Color x:Key="FlyoutSubtitle">#D5E8DB</Color>
+    <Color x:Key="NightCanvas">#101A16</Color>
+    <Color x:Key="NightSurface">#17251F</Color>
+    <Color x:Key="NightRaised">#22362C</Color>
+    <Color x:Key="NightBorder">#3A5145</Color>
+    <Color x:Key="NightInk">#EDF8F0</Color>
+    <Color x:Key="NightMuted">#B7CDBF</Color>
+    <Color x:Key="StatusBlue">#2563EB</Color>
+    <Color x:Key="StatusAmber">#F59E0B</Color>
+    <Color x:Key="StatusViolet">#7C3AED</Color>
+    <Color x:Key="StatusSlate">#64748B</Color>
+    <Color x:Key="StatusGreen">#22C55E</Color>
+    <Color x:Key="InkBlue">#1D4ED8</Color>
+    <Color x:Key="InkViolet">#6D28D9</Color>
+    <Color x:Key="NightBlue">#A9C5FF</Color>
+    <Color x:Key="NightAmber">#FFD083</Color>
+    <Color x:Key="NightViolet">#D8BBFF</Color>
+    <Color x:Key="NightGreen">#8CE4AA</Color>
+    <Color x:Key="NightError">#FFB4AF</Color>
+    <Color x:Key="NightErrorSurface">#422725</Color>
+    <Color x:Key="NightWarningSurface">#3C311E</Color>
 
     <Color x:Key="Primary">#176B3A</Color>
     <Color x:Key="PrimaryDark">#A5D8B3</Color>
