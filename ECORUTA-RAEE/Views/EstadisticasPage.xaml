@@ -28,7 +28,7 @@
             <VerticalStackLayout Spacing="16" Padding="0,0,0,20">
                 <Border Style="{StaticResource CabeceraVisual}">
                     <VerticalStackLayout Spacing="8">
-                        <Label Text="Modo demostración · Datos de este dispositivo" Style="{StaticResource OnGreen}" FontSize="12" />
+                        <Label Text="Datos de esta instalación" Style="{StaticResource OnGreen}" FontSize="12" />
                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
                             <Label Text="Impacto ambiental" Style="{StaticResource OnGreen}" FontSize="25" VerticalOptions="Center" />
                             <Button Grid.Column="1" Text="Actualizar" Style="{StaticResource AccionVisual}"

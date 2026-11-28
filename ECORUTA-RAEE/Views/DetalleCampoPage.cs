@@ -35,7 +35,7 @@ internal sealed class DetalleCampoPage : ContentPage
 
     private async Task EjecutarConConsultaAsync(Func<ConsultaCampo, Task>? accion = null, bool conservarPosicion = true)
     {
-        if (_ocupada || SesionDemostracion.Perfil != PerfilDemostracion.Recolector)
+        if (_ocupada || Autenticacion.Instancia.Actual?.Rol != RolUsuario.Recolector)
             return;
 
         _ocupada = true;

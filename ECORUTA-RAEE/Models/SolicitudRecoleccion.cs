@@ -6,6 +6,8 @@ namespace ECORUTA_RAEE.Models;
 [Table("Solicitudes")]
 public class SolicitudRecoleccion
 {
+    public int? UsuarioId { get; set; }
+
     [PrimaryKey, AutoIncrement]
     public int Id { get; set; }
 

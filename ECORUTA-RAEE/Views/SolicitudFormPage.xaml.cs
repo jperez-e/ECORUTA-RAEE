@@ -1,3 +1,4 @@
+using ECORUTA_RAEE.Models;
 using System.Text.Json;
 using ECORUTA_RAEE.Services;
 using ECORUTA_RAEE.ViewModels;
@@ -24,9 +25,9 @@ public partial class SolicitudFormPage : ContentPage, IQueryAttributable, IFormu
         InitializeComponent();
         BindingContext = _viewModel = new SolicitudFormViewModel
         {
-            PermitirCoordenadasAvanzadas = SesionDemostracion.Perfil == PerfilDemostracion.Gestor
+            PermitirCoordenadasAvanzadas = Autenticacion.Instancia.Actual?.Rol == RolUsuario.Gestor
         };
-        _viewModel.VolverAPortada = SesionDemostracion.Perfil == PerfilDemostracion.Ciudadano;
+        _viewModel.VolverAPortada = Autenticacion.Instancia.Actual?.Rol == RolUsuario.Ciudadano;
         if (_viewModel.VolverAPortada)
             _viewModel.MostrarConfirmacionCiudadana = fila =>
                 Shell.Current.Navigation.PushModalAsync(new ConsultaCiudadanaPage(fila, confirmacion: true));
@@ -34,7 +35,7 @@ public partial class SolicitudFormPage : ContentPage, IQueryAttributable, IFormu
 
     public void ApplyQueryAttributes(IDictionary<string, object> query)
     {
-        if (SesionDemostracion.Perfil != PerfilDemostracion.Gestor &&
+        if (Autenticacion.Instancia.Actual?.Rol != RolUsuario.Gestor &&
             (query.ContainsKey("SolicitudId") || query.ContainsKey("VolverAJornada")))
         {
             _edicionDenegada = true;
@@ -42,7 +43,7 @@ public partial class SolicitudFormPage : ContentPage, IQueryAttributable, IFormu
         }
         if (query.TryGetValue("SolicitudId", out var valor) && valor is int solicitudId)
             _solicitudId = solicitudId;
-        if (SesionDemostracion.Perfil == PerfilDemostracion.Gestor &&
+        if (Autenticacion.Instancia.Actual?.Rol == RolUsuario.Gestor &&
             query.TryGetValue("VolverAListadoGestion", out var volverListado) && volverListado is true)
             _viewModel.VolverAListadoGestion = true;
         if (query.TryGetValue("VolverAJornada", out var volver) && volver is true)
@@ -132,7 +133,7 @@ public partial class SolicitudFormPage : ContentPage, IQueryAttributable, IFormu
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        if (_edicionDenegada || SesionDemostracion.Perfil == PerfilDemostracion.Recolector)
+        if (_edicionDenegada || Autenticacion.Instancia.Actual?.Rol == RolUsuario.Recolector)
         {
             Content = TarjetasDemo.Texto("Este perfil no puede abrir este formulario.");
             return;

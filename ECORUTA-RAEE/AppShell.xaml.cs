@@ -1,3 +1,4 @@
+using ECORUTA_RAEE.Models;
 using ECORUTA_RAEE.Services;
 using ECORUTA_RAEE.Views;
 
@@ -6,10 +7,10 @@ namespace ECORUTA_RAEE;
 public partial class AppShell : Shell
 {
     private static bool _rutasRegistradas;
-    private readonly PerfilDemostracion _perfil;
+    private readonly RolUsuario _perfil;
     private bool _confirmando;
 
-    internal AppShell(PerfilDemostracion perfil)
+    internal AppShell(RolUsuario perfil)
     {
         _perfil = perfil;
         InitializeComponent();
@@ -31,8 +32,19 @@ public partial class AppShell : Shell
         Items.Insert(0, portada);
         CurrentItem = portada;
         foreach (var item in Items.Where(item => item != portada &&
-            (item.Route == "inicio" || perfil != PerfilDemostracion.Gestor)).ToArray())
+            (item.Route == "inicio" || perfil != RolUsuario.Gestor)).ToArray())
             Items.Remove(item);
+        AgregarEntrada("Mi perfil", "cuenta", () => new PerfilUsuarioPage(CerrarSesionAsync));
+        if (perfil == RolUsuario.Gestor)
+            AgregarEntrada("Recolectores", "recolectores", () => new RecolectoresPage());
+    }
+
+    private void AgregarEntrada(string titulo, string ruta, Func<Page> fabrica)
+    {
+        var opcion = new FlyoutItem { Title = titulo, Route = ruta };
+        opcion.Items.Add(new ShellContent { Title = titulo, Route = ruta + "Detalle",
+            ContentTemplate = new DataTemplate(fabrica) });
+        Items.Add(opcion);
     }
 
     protected override async void OnNavigating(ShellNavigatingEventArgs args)
@@ -40,7 +52,7 @@ public partial class AppShell : Shell
         base.OnNavigating(args);
         if (!args.CanCancel)
             return;
-        if (!RutasDemostracion.Permite(_perfil, args.Target.Location.OriginalString))
+        if (Autenticacion.Instancia.Actual?.Rol != _perfil || !RutasCuenta.Permite(_perfil, args.Target.Location.OriginalString))
         {
             args.Cancel();
             return;
@@ -83,16 +95,17 @@ public partial class AppShell : Shell
         finally { _confirmando = false; }
     }
 
-    private async void CambiarPerfil_Clicked(object? sender, EventArgs e)
-    {
-        if (await ConfirmarSalidaAsync())
-            NavegacionDemostracion.ElegirPerfil();
-    }
+    private async void CerrarSesion_Clicked(object? sender, EventArgs e) => await CerrarSesionAsync();
 
-    private async void CerrarSesion_Clicked(object? sender, EventArgs e)
+    private async Task CerrarSesionAsync()
     {
-        if (await ConfirmarSalidaAsync() &&
-            await DisplayAlertAsync("Cerrar sesión", "¿Deseas salir de EcoRuta-RAEE?", "Sí", "No"))
-            NavegacionDemostracion.Salir();
+        if (!await ConfirmarSalidaAsync() ||
+            !await DisplayAlertAsync("Cerrar sesión", "¿Deseas salir de EcoRuta-RAEE?", "Sí", "No"))
+            return;
+        try { await NavegacionCuenta.SalirAsync(); }
+        catch (Exception)
+        {
+            await DisplayAlertAsync("No se pudo cerrar la sesión", "Vuelve a intentarlo.", "Entendido");
+        }
     }
 }

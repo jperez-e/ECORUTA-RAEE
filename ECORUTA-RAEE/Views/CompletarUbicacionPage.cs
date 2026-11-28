@@ -10,13 +10,44 @@ internal sealed class CompletarUbicacionPage : ContentPage
     private SeleccionUbicacion? _ubicacion;
     private bool _guardando;
 
-    internal CompletarUbicacionPage(SolicitudRecoleccion solicitud)
+    private readonly int _id;
+    private bool _cargando;
+
+    internal CompletarUbicacionPage(int id)
+    {
+        _id = id;
+        Title = "Completar ubicación";
+        Style = Estilo("CanvasVisual");
+        Content = Texto("Consultando ubicación…");
+    }
+
+    protected override async void OnAppearing()
+    {
+        base.OnAppearing();
+        if (_cargando)
+            return;
+        _cargando = true;
+        try
+        {
+            await OperacionBaseDatos.EjecutarAsync(async () =>
+            {
+                var fila = (await SolicitudService.Instancia.ObtenerVistaCiudadanaAsync(_id)).SingleOrDefault();
+                if (fila is { PuedeCompletarPunto: true })
+                    Mostrar(fila.Solicitud);
+                else
+                    Content = Boton("Solicitud no disponible · Volver", () => Navigation.PopModalAsync());
+            });
+        }
+        finally { _cargando = false; }
+    }
+
+    private void Mostrar(SolicitudRecoleccion solicitud)
     {
         Title = "Completar ubicación";
         Style = Estilo("CanvasVisual");
-        var estado = Texto("Ubicación por completar");
+        var estado = Texto(_ubicacion is null ? "Ubicación por completar" : $"Ubicación seleccionada · {_ubicacion.Zona}. Guarda para aplicar el cambio.");
         var contenido = new VerticalStackLayout { Padding = 16, Spacing = 12 };
-        contenido.Add(Encabezado(Title, SesionDemostracion.Aviso, "punto"));
+        contenido.Add(Encabezado(Title, "Datos de esta instalación", "punto"));
         contenido.Add(Tarjeta(Texto(solicitud.CodigoSolicitud, "TituloVisual"),
             Texto(solicitud.Zona), Texto(solicitud.DireccionReferencia)));
         contenido.Add(estado);

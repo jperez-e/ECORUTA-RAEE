@@ -5,7 +5,7 @@ namespace ECORUTA_RAEE.Services;
 
 internal sealed class EcoRutaDatabase
 {
-    private const int SchemaVersion = 5;
+    private const int SchemaVersion = 6;
     private const string FileName = "ecoruta-raee.db3";
     private static readonly Lazy<EcoRutaDatabase> DefaultInstance =
         new(() => new EcoRutaDatabase(Path.Combine(FileSystem.AppDataDirectory, FileName)));
@@ -76,6 +76,37 @@ internal sealed class EcoRutaDatabase
             connection.Execute("ALTER TABLE Solicitudes ADD COLUMN NombreContacto TEXT");
             connection.Execute("ALTER TABLE Solicitudes ADD COLUMN TelefonoContacto TEXT");
             connection.Execute("PRAGMA user_version = 5");
+        }
+        if (version < 6)
+        {
+            connection.Execute("""
+                CREATE TABLE Usuarios (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    Nombre TEXT NOT NULL CHECK (length(trim(Nombre)) > 0),
+                    Correo TEXT NOT NULL UNIQUE CHECK (length(trim(Correo)) > 0 AND Correo = trim(Correo)),
+                    Telefono TEXT,
+                    Hash BLOB NOT NULL CHECK (length(Hash) = 32),
+                    Salt BLOB NOT NULL CHECK (length(Salt) >= 16),
+                    Iteraciones INTEGER NOT NULL CHECK (Iteraciones >= 600000),
+                    VersionDerivacion INTEGER NOT NULL CHECK (VersionDerivacion = 1),
+                    Rol TEXT NOT NULL CHECK (Rol IN ('Ciudadano', 'Gestor', 'Recolector')),
+                    Activo INTEGER NOT NULL CHECK (Activo IN (0, 1)),
+                    FechaCreacion INTEGER NOT NULL
+                )
+                """);
+            connection.Execute("CREATE UNIQUE INDEX UX_Usuarios_GestorInicial ON Usuarios (Rol) WHERE Rol = 'Gestor'");
+            connection.Execute("""
+                CREATE TABLE Sesiones (
+                    Huella BLOB PRIMARY KEY NOT NULL CHECK (length(Huella) = 32),
+                    UsuarioId INTEGER NOT NULL REFERENCES Usuarios (Id) ON DELETE RESTRICT,
+                    VenceUtc INTEGER NOT NULL,
+                    RevocadaUtc INTEGER
+                )
+                """);
+            connection.Execute("CREATE INDEX IX_Sesiones_UsuarioId ON Sesiones (UsuarioId)");
+            connection.Execute("ALTER TABLE Solicitudes ADD COLUMN UsuarioId INTEGER REFERENCES Usuarios (Id) ON DELETE RESTRICT");
+            connection.Execute("CREATE INDEX IX_Solicitudes_UsuarioId ON Solicitudes (UsuarioId)");
+            connection.Execute("PRAGMA user_version = 6");
         }
     }
 

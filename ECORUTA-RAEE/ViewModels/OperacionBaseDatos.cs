@@ -12,6 +12,11 @@ internal static class OperacionBaseDatos
             await operacion();
             return true;
         }
+        catch (UnauthorizedAccessException)
+        {
+            if (Shell.Current is { } shell)
+                await shell.DisplayAlertAsync("Acceso restringido", "Tu sesión no permite esta operación. Vuelve a iniciar sesión si ha vencido.", "Aceptar");
+        }
         catch (SQLiteException ex) when (((int)ex.Result & 0xff) == (int)SQLite3.Result.Constraint)
         {
             Debug.WriteLine(ex);
@@ -21,7 +26,7 @@ internal static class OperacionBaseDatos
                     "La operación entra en conflicto con los datos registrados. Comprueba que los registros relacionados todavía existan.",
                     "Aceptar");
         }
-        catch (Exception ex) when (ex is SQLiteException or IOException or UnauthorizedAccessException
+        catch (Exception ex) when (ex is SQLiteException or IOException
             or InvalidOperationException or TypeInitializationException or DllNotFoundException)
         {
             Debug.WriteLine(ex);

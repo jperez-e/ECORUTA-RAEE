@@ -4,7 +4,7 @@ using ECORUTA_RAEE.Services;
 
 namespace ECORUTA_RAEE.ViewModels;
 
-internal sealed class PortadaDemoViewModel(PerfilDemostracion perfil) : ObservableObject
+internal sealed class PortadaDemoViewModel(RolUsuario perfil) : ObservableObject
 {
     internal IReadOnlyList<SolicitudRecoleccion> Solicitudes { get; private set; } = [];
     internal IReadOnlyList<SolicitudCiudadana> VistaCiudadana { get; private set; } = [];
@@ -19,15 +19,15 @@ internal sealed class PortadaDemoViewModel(PerfilDemostracion perfil) : Observab
     {
         switch (perfil)
         {
-            case PerfilDemostracion.Ciudadano:
+            case RolUsuario.Ciudadano:
                 VistaCiudadana = await SolicitudService.Instancia.ObtenerVistaCiudadanaAsync();
                 Solicitudes = VistaCiudadana.Select(f => f.Solicitud).ToArray();
                 _equipos = VistaCiudadana.SelectMany(f => f.Equipos).ToLookup(e => e.SolicitudId);
                 break;
-            case PerfilDemostracion.Gestor:
+            case RolUsuario.Gestor:
                 (Panel, AlertasGestion) = await EstadisticasAmbientalesService.Instancia.ObtenerGestionAsync();
                 break;
-            case PerfilDemostracion.Recolector:
+            case RolUsuario.Recolector:
                 PortadaCampo = await JornadaService.Instancia.ObtenerPortadaCampoAsync();
                 break;
         }

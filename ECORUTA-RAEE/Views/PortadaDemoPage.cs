@@ -7,12 +7,12 @@ namespace ECORUTA_RAEE.Views;
 
 internal sealed class PortadaDemoPage : ContentPage
 {
-    private readonly PerfilDemostracion _perfil;
+    private readonly RolUsuario _perfil;
     private readonly PortadaDemoViewModel _vm;
     private readonly VerticalStackLayout _contenido = new() { Padding = 16, Spacing = 10 };
     private bool _cargando;
 
-    internal PortadaDemoPage(PerfilDemostracion perfil)
+    internal PortadaDemoPage(RolUsuario perfil)
     {
         _perfil = perfil;
         BindingContext = _vm = new(perfil);
@@ -31,11 +31,11 @@ internal sealed class PortadaDemoPage : ContentPage
         {
             var (titulo, detalle) = _perfil switch
             {
-                PerfilDemostracion.Ciudadano => ("Pequeñas acciones, grandes cambios.", "Dale una segunda vida a tus equipos electrónicos."),
-                PerfilDemostracion.Gestor => ("Centro de operaciones", "Organiza las recogidas y supervisa la demanda de tu comunidad."),
+                RolUsuario.Ciudadano => ("Pequeñas acciones, grandes cambios.", "Dale una segunda vida a tus equipos electrónicos."),
+                RolUsuario.Gestor => ("Centro de operaciones", "Organiza las recogidas y supervisa la demanda de tu comunidad."),
                 _ => ("Cada recogida cuenta.", "Consulta las jornadas disponibles y organiza tus paradas.")
             };
-            var nuevaSolicitud = _perfil == PerfilDemostracion.Ciudadano
+            var nuevaSolicitud = _perfil == RolUsuario.Ciudadano
                 ? Boton("Nueva solicitud", () => Shell.Current.GoToAsync(nameof(SolicitudFormPage)), true)
                 : null;
             var cabecera = Cabecera(titulo, detalle, nuevaSolicitud);
@@ -53,7 +53,7 @@ internal sealed class PortadaDemoPage : ContentPage
                     _contenido.Insert(0, estado);
                 return;
             }
-            if (_perfil == PerfilDemostracion.Recolector)
+            if (_perfil == RolUsuario.Recolector)
             {
                 var resumenCampo = CrearCuadricula();
                 resumenCampo.Add(new MetricaVisual { Etiqueta = "Jornadas disponibles", Icono = "calendario",
@@ -62,7 +62,7 @@ internal sealed class PortadaDemoPage : ContentPage
                     Valor = _vm.PortadaCampo.Sum(j => j.Paradas) }, 1, 0);
                 cabecera = Cabecera(titulo, detalle, resumenCampo);
             }
-            if (_perfil == PerfilDemostracion.Gestor && _vm.Panel is { } panel)
+            if (_perfil == RolUsuario.Gestor && _vm.Panel is { } panel)
             {
                 var resumenGestor = CrearCuadricula();
                 resumenGestor.Add(new MetricaVisual { Etiqueta = "Solicitudes registradas", Icono = "panel", Valor = panel.Indicadores.Solicitudes });
@@ -74,9 +74,9 @@ internal sealed class PortadaDemoPage : ContentPage
             _contenido.Add(cabecera);
             switch (_perfil)
             {
-                case PerfilDemostracion.Ciudadano: MostrarSolicitudes(); break;
-                case PerfilDemostracion.Gestor: MostrarPanel(); break;
-                case PerfilDemostracion.Recolector: MostrarJornadas(); break;
+                case RolUsuario.Ciudadano: MostrarSolicitudes(); break;
+                case RolUsuario.Gestor: MostrarPanel(); break;
+                case RolUsuario.Recolector: MostrarJornadas(); break;
             }
         }
         finally { _cargando = false; }

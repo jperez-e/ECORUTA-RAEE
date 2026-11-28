@@ -19,20 +19,16 @@ internal sealed class ConsultaCiudadanaPage : ContentPage
         _id = solicitudId;
         _esGestion = true;
         Title = "Detalle de solicitud";
-        _contenido.Insert(0, Boton("Volver", () => Navigation.PopModalAsync()));
     }
 
     internal ConsultaCiudadanaPage(SolicitudCiudadana? fila = null, bool confirmacion = false)
     {
         _id = fila?.Solicitud.Id;
         _confirmacion = confirmacion;
-        Title = confirmacion ? "Solicitud registrada" : fila is null ? "Todas las solicitudes" : fila.Solicitud.CodigoSolicitud;
+        Title = confirmacion ? "Solicitud registrada" : fila is null ? "Mis solicitudes" : "Detalle de solicitud";
         Style = Estilo("CanvasVisual");
         Content = new ScrollView { Content = _contenido };
-        if (fila is not null)
-            Mostrar([fila]);
-        else
-            _contenido.Add(_aviso);
+        _contenido.Add(_aviso);
     }
 
     protected override async void OnAppearing()
@@ -60,7 +56,7 @@ internal sealed class ConsultaCiudadanaPage : ContentPage
         _contenido.Add(Boton(_confirmacion ? "Volver al inicio" : "Volver", () => Navigation.PopModalAsync()));
         if (_id is null)
         {
-            _contenido.Add(Cabecera("Solicitudes de este dispositivo", "Consulta el estado de tus solicitudes en el dispositivo."));
+            _contenido.Add(Cabecera("Mis solicitudes", "Consulta el estado de tus solicitudes."));
             foreach (var fila in filas)
                 _contenido.Add(TarjetaSolicitud(fila, Navigation));
         }
@@ -78,7 +74,7 @@ internal sealed class ConsultaCiudadanaPage : ContentPage
                     ? $"Jornada programada · {fecha:d 'de' MMMM 'de' yyyy}"
                     : "Sin jornada programada"))));
             if (!_esGestion && fila.PuedeCompletarPunto)
-                _contenido.Add(Boton("Completar ubicación", () => Navigation.PushModalAsync(new CompletarUbicacionPage(solicitud)), true));
+                _contenido.Add(Boton("Completar ubicación", () => Navigation.PushModalAsync(new CompletarUbicacionPage(solicitud.Id)), true));
             if (_confirmacion)
             {
                 _contenido.Add(Boton("Ver solicitud", () => Navigation.PushModalAsync(new ConsultaCiudadanaPage(fila)), true));
@@ -97,11 +93,7 @@ internal sealed class ConsultaCiudadanaPage : ContentPage
             _contenido.Add(Tarjeta(equipos.ToArray()));
             if (Coordenadas.SonValidas(solicitud))
             {
-                var parada = new ParadaMapa(solicitud.Id, null, solicitud.CodigoSolicitud,
-                    solicitud.DireccionReferencia, solicitud.Zona, $"{solicitud.PesoTotalEstimado:0.##} kg",
-                    null, solicitud.Latitud, solicitud.Longitud);
-                _contenido.Add(Boton("Ver ubicación", () => Navigation.PushModalAsync(new MapaJornadaPage(
-                    new MapaJornada("Ubicación de recogida", solicitud.Estado, solicitud.DireccionReferencia, 0, [parada])))));
+                _contenido.Add(Boton("Ver ubicación", () => Navigation.PushModalAsync(MapaJornadaPage.ParaSolicitud(solicitud.Id))));
             }
         }
         if (filas.Count == 0)
@@ -125,7 +117,7 @@ internal sealed class ConsultaCiudadanaPage : ContentPage
         contenido.Add(Texto(fila.ProximoPaso));
         contenido.Add(Boton("Ver detalles", () => navegacion.PushModalAsync(new ConsultaCiudadanaPage(fila))));
         if (fila.PuedeCompletarPunto)
-            contenido.Add(Boton("Completar ubicación", () => navegacion.PushModalAsync(new CompletarUbicacionPage(solicitud))));
+            contenido.Add(Boton("Completar ubicación", () => navegacion.PushModalAsync(new CompletarUbicacionPage(solicitud.Id))));
         return Tarjeta(contenido.ToArray());
     }
 }

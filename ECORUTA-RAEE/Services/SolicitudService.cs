@@ -13,6 +13,7 @@ public class SolicitudService
 
     public async Task<List<SolicitudRecoleccion>> ObtenerTodasAsync()
     {
+        Autenticacion.Instancia.Exigir(RolUsuario.Gestor);
         var db = await Database.GetConnectionAsync();
         return await db.Table<SolicitudRecoleccion>()
             .OrderByDescending(s => s.FechaRegistro)
@@ -22,12 +23,14 @@ public class SolicitudService
 
     public async Task<SolicitudRecoleccion?> ObtenerPorIdAsync(int id)
     {
+        Autenticacion.Instancia.Exigir(RolUsuario.Gestor);
         var db = await Database.GetConnectionAsync();
         return await db.FindAsync<SolicitudRecoleccion>(id);
     }
 
     public async Task CrearAsync(SolicitudRecoleccion solicitud, int? numeroPersonalizado = null)
     {
+        Autenticacion.Instancia.Exigir(RolUsuario.Gestor);
         var db = await Database.GetConnectionAsync();
         SolicitudRecoleccion nueva = null!;
         await db.RunInTransactionAsync(connection => nueva = Insertar(connection, solicitud, numeroPersonalizado));
@@ -35,19 +38,20 @@ public class SolicitudService
     }
 
     private static SolicitudRecoleccion Insertar(
-        SQLiteConnection connection, SolicitudRecoleccion solicitud, int? numeroPersonalizado)
+        SQLiteConnection connection, SolicitudRecoleccion solicitud, int? numeroPersonalizado, int? propietario = null)
     {
         ValidarUbicacion(solicitud);
         var nueva = new SolicitudRecoleccion
         {
             FechaRegistro = DateTime.Now,
+            UsuarioId = propietario,
             Zona = solicitud.Zona,
             SectorOtraZona = solicitud.SectorOtraZona,
             NombreContacto = solicitud.NombreContacto, TelefonoContacto = solicitud.TelefonoContacto,
             DireccionReferencia = solicitud.DireccionReferencia,
             Latitud = solicitud.Latitud,
             Longitud = solicitud.Longitud,
-            Estado = solicitud.Estado,
+            Estado = propietario.HasValue ? ElegibilidadRecogida.Pendiente : solicitud.Estado,
             PesoTotalEstimado = solicitud.PesoTotalEstimado
         };
 
@@ -65,6 +69,7 @@ public class SolicitudService
     private static void CopiarIdentidad(SolicitudRecoleccion nueva, SolicitudRecoleccion solicitud)
     {
         solicitud.Id = nueva.Id;
+        solicitud.UsuarioId = nueva.UsuarioId;
         solicitud.CodigoSolicitud = nueva.CodigoSolicitud;
         solicitud.FechaRegistro = nueva.FechaRegistro;
     }
@@ -73,6 +78,7 @@ public class SolicitudService
         SolicitudRecoleccion solicitud, bool actualizarPesoManual = true,
         int? numeroPersonalizado = null)
     {
+        Autenticacion.Instancia.Exigir(RolUsuario.Gestor);
         var db = await Database.GetConnectionAsync();
         string? codigo = numeroPersonalizado is int numero ? FormatearCodigo(numero) : null;
         bool actualizado = false;
@@ -123,9 +129,11 @@ public class SolicitudService
 
     internal async Task<bool> TieneAsignacionActivaAsync(int id)
     {
+        var actor = Autenticacion.Instancia.Exigir(RolUsuario.Ciudadano, RolUsuario.Gestor);
         var db = await Database.GetConnectionAsync();
         return await db.ExecuteScalarAsync<int>(
-            "SELECT EXISTS (SELECT 1 FROM JornadaSolicitudes WHERE SolicitudId = ? AND Activa = 1)", id) != 0;
+            "SELECT EXISTS (SELECT 1 FROM JornadaSolicitudes js JOIN Solicitudes s ON s.Id = js.SolicitudId WHERE js.SolicitudId = ? AND js.Activa = 1 AND (? IS NULL OR s.UsuarioId = ?))",
+            id, Propietario(actor), Propietario(actor)) != 0;
     }
 
     internal Task<bool> CompletarUbicacionAsync(SolicitudRecoleccion original, PuntoRecogida punto) =>
@@ -133,6 +141,7 @@ public class SolicitudService
 
     internal async Task<bool> CompletarUbicacionAsync(SolicitudRecoleccion original, SeleccionUbicacion ubicacion)
     {
+        var actor = Autenticacion.Instancia.Exigir(RolUsuario.Ciudadano, RolUsuario.Gestor);
         if (SeleccionUbicacion.Crear(ubicacion.Punto, ubicacion.Zona, ubicacion.Sector) is not { Punto: { } punto } seleccion)
             return false;
 
@@ -141,7 +150,7 @@ public class SolicitudService
         await db.RunInTransactionAsync(connection =>
         {
             var vigente = connection.Find<SolicitudRecoleccion>(original.Id);
-            if (vigente is not { Estado: ElegibilidadRecogida.Pendiente, UbicacionPendiente: true } ||
+            if (vigente is null || !PuedeConsultar(actor, vigente) || vigente is not { Estado: ElegibilidadRecogida.Pendiente, UbicacionPendiente: true } ||
                 vigente.Zona != original.Zona || vigente.SectorOtraZona != original.SectorOtraZona ||
                 vigente.Latitud != original.Latitud || vigente.Longitud != original.Longitud)
                 return;
@@ -158,6 +167,7 @@ public class SolicitudService
 
     internal async Task<List<SolicitudRecoleccion>> ObtenerListadoOperativoAsync()
     {
+        Autenticacion.Instancia.Exigir(RolUsuario.Gestor);
         var db = await Database.GetConnectionAsync();
         List<SolicitudRecoleccion> solicitudes = [];
         await db.RunInTransactionAsync(connection =>
@@ -179,6 +189,7 @@ public class SolicitudService
 
     internal async Task<IReadOnlyList<SolicitudGestion>> ObtenerGestionAsync()
     {
+        Autenticacion.Instancia.Exigir(RolUsuario.Gestor);
         var db = await Database.GetConnectionAsync();
         var filas = await db.QueryAsync<SolicitudGestion>("""
             SELECT s.Id, s.CodigoSolicitud, s.FechaRegistro, s.Zona, s.SectorOtraZona, s.DireccionReferencia,
@@ -199,21 +210,28 @@ public class SolicitudService
 
     internal async Task<IReadOnlyList<SolicitudCiudadana>> ObtenerVistaCiudadanaAsync(int? id = null)
     {
+        var actor = Autenticacion.Instancia.Exigir(RolUsuario.Ciudadano, RolUsuario.Gestor);
         var db = await Database.GetConnectionAsync();
         IReadOnlyList<SolicitudCiudadana> resultado = [];
         await db.RunInTransactionAsync(connection =>
         {
-            var solicitudes = connection.Query<SolicitudRecoleccion>(
-                "SELECT * FROM Solicitudes WHERE (? IS NULL OR Id = ?) ORDER BY FechaRegistro DESC, Id DESC",
-                id, id);
-            var equipos = connection.Query<ResiduoElectronico>(
-                "SELECT * FROM Residuos WHERE (? IS NULL OR SolicitudId = ?) ORDER BY Id", id, id)
-                .ToLookup(e => e.SolicitudId);
+            int? propietario = Propietario(actor);
+            var solicitudes = connection.Query<SolicitudRecoleccion>("""
+                SELECT * FROM Solicitudes WHERE (? IS NULL OR Id = ?) AND (? IS NULL OR UsuarioId = ?)
+                ORDER BY FechaRegistro DESC, Id DESC
+                """, id, id, propietario, propietario);
+            var equipos = connection.Query<ResiduoElectronico>("""
+                SELECT r.* FROM Residuos r JOIN Solicitudes s ON s.Id = r.SolicitudId
+                WHERE (? IS NULL OR s.Id = ?) AND (? IS NULL OR s.UsuarioId = ?) ORDER BY r.Id
+                """, id, id, propietario, propietario).ToLookup(e => e.SolicitudId);
             var fechas = connection.Query<FechaAsignacionCiudadana>("""
                 SELECT js.SolicitudId, j.FechaProgramada
                 FROM JornadaSolicitudes js JOIN Jornadas j ON j.Id = js.JornadaId
-                WHERE js.Activa = 1 AND j.Estado = ? AND (? IS NULL OR js.SolicitudId = ?)
-                """, JornadaRecoleccion.Programada, id, id).ToDictionary(f => f.SolicitudId, f => f.FechaProgramada);
+                JOIN Solicitudes s ON s.Id = js.SolicitudId
+                WHERE js.Activa = 1 AND j.Estado = ? AND (? IS NULL OR s.Id = ?)
+                    AND (? IS NULL OR s.UsuarioId = ?)
+                """, JornadaRecoleccion.Programada, id, id, propietario, propietario)
+                .ToDictionary(f => f.SolicitudId, f => f.FechaProgramada);
             resultado = solicitudes.Select(s => new SolicitudCiudadana(s, equipos[s.Id].ToArray(),
                 fechas.GetValueOrDefault(s.Id))).ToArray();
         });
@@ -228,13 +246,18 @@ public class SolicitudService
 
     internal async Task<(SolicitudRecoleccion? Solicitud, List<ResiduoElectronico> Equipos)> ObtenerCompletaAsync(int id)
     {
+        var actor = Autenticacion.Instancia.Exigir(RolUsuario.Ciudadano, RolUsuario.Gestor);
         var db = await Database.GetConnectionAsync();
         SolicitudRecoleccion? solicitud = null;
         List<ResiduoElectronico> equipos = new();
         await db.RunInTransactionAsync(connection =>
         {
-            solicitud = connection.Find<SolicitudRecoleccion>(id);
-            equipos = LeerEquipos(connection, id);
+            var candidata = connection.Find<SolicitudRecoleccion>(id);
+            if (candidata is not null && PuedeConsultar(actor, candidata))
+            {
+                solicitud = candidata;
+                equipos = LeerEquipos(connection, id);
+            }
         });
         return (solicitud, equipos);
     }
@@ -243,8 +266,11 @@ public class SolicitudService
         IReadOnlyList<ResiduoElectronico> borrador, IReadOnlyList<ResiduoElectronico> originales,
         SolicitudRecoleccion? original, int? numeroPersonalizado = null)
     {
+        var actor = Autenticacion.Instancia.Exigir(RolUsuario.Ciudadano, RolUsuario.Gestor);
         var ids = borrador.Where(e => e.Id != 0).Select(e => e.Id).ToHashSet();
         bool nueva = solicitud.Id == 0;
+        if (actor.Rol == RolUsuario.Ciudadano && !nueva)
+            throw new UnauthorizedAccessException("El ciudadano solo puede completar la ubicaci?n de una solicitud existente.");
         if ((original?.Id ?? 0) != solicitud.Id ||
             borrador.Any(e => !DatosEquipo.EsValido(e)) ||
             ids.Count != borrador.Count(e => e.Id != 0) ||
@@ -276,7 +302,7 @@ public class SolicitudService
             bool pesoManual = actuales.Count == 0 && borrador.Count == 0;
             ValidarSolicitudCompleta(solicitud, pesoManual, actual?.PesoTotalEstimado);
             if (nueva)
-                insertada = Insertar(connection, solicitud, numeroPersonalizado);
+                insertada = Insertar(connection, solicitud, numeroPersonalizado, Propietario(actor));
             else
                 Actualizar(connection, solicitud, pesoManual, codigo, numeroPersonalizado);
 
@@ -307,6 +333,12 @@ public class SolicitudService
             solicitud.CodigoSolicitud = codigo;
         return encontrado;
     }
+
+    private static int? Propietario(IdentidadUsuario actor) =>
+        actor.Rol == RolUsuario.Ciudadano ? actor.Id : null;
+
+    private static bool PuedeConsultar(IdentidadUsuario actor, SolicitudRecoleccion solicitud) =>
+        actor.Rol == RolUsuario.Gestor || solicitud.UsuarioId == actor.Id;
 
     private static List<ResiduoElectronico> LeerEquipos(SQLiteConnection connection, int id) =>
         connection.Table<ResiduoElectronico>().Where(e => e.SolicitudId == id).OrderBy(e => e.Id).ToList();
@@ -387,6 +419,7 @@ public class SolicitudService
 
     public async Task<bool> EliminarAsync(int id)
     {
+        Autenticacion.Instancia.Exigir(RolUsuario.Gestor);
         var db = await Database.GetConnectionAsync();
         // SQLite elimina los residuos asociados dentro de la misma sentencia.
         return await db.DeleteAsync<SolicitudRecoleccion>(id) == 1;
@@ -394,6 +427,7 @@ public class SolicitudService
 
     public async Task<int> ContarAsync()
     {
+        Autenticacion.Instancia.Exigir(RolUsuario.Gestor);
         var db = await Database.GetConnectionAsync();
         return await db.Table<SolicitudRecoleccion>().CountAsync();
     }

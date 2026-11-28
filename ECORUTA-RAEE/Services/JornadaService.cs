@@ -16,6 +16,7 @@ internal sealed class JornadaService
 
     public async Task<PanelJornadas> ObtenerPanelAsync()
     {
+        Autenticacion.Instancia.Exigir(RolUsuario.Gestor);
         var db = await EcoRutaDatabase.Instance.GetConnectionAsync();
         PanelJornadas panel = null!;
         await db.RunInTransactionAsync(connection =>
@@ -32,6 +33,7 @@ internal sealed class JornadaService
 
     public async Task<VistaPreviaJornada> ObtenerVistaPreviaAsync(string zona)
     {
+        Autenticacion.Instancia.Exigir(RolUsuario.Gestor);
         var db = await EcoRutaDatabase.Instance.GetConnectionAsync();
         VistaPreviaJornada vista = null!;
         await db.RunInTransactionAsync(connection =>
@@ -47,6 +49,7 @@ internal sealed class JornadaService
 
     public async Task GuardarUmbralesAsync(UmbralesJornada umbrales)
     {
+        Autenticacion.Instancia.Exigir(RolUsuario.Gestor);
         if (umbrales.Cantidad < 1 || !double.IsFinite(umbrales.Peso) || umbrales.Peso <= 0)
             throw new ArgumentOutOfRangeException(nameof(umbrales));
 
@@ -58,6 +61,7 @@ internal sealed class JornadaService
     public async Task<JornadaRecoleccion?> CrearAsync(
         string zona, DateTime fechaProgramada, IReadOnlyCollection<int> idsConfirmados)
     {
+        Autenticacion.Instancia.Exigir(RolUsuario.Gestor);
         if (!EsZonaEspecifica(zona) || fechaProgramada.Date < DateTime.Today)
             return null;
 
@@ -93,6 +97,7 @@ internal sealed class JornadaService
     // Incluye los modelos completos, con las coordenadas opcionales de las solicitudes.
     public async Task<JornadaRecoleccion?> ObtenerDetalleAsync(int id, bool incluirRutaCancelada = false, bool incluirUnidades = false)
     {
+        Autenticacion.Instancia.Exigir(RolUsuario.Gestor);
         var db = await EcoRutaDatabase.Instance.GetConnectionAsync();
         JornadaRecoleccion? jornada = null;
         await db.RunInTransactionAsync(connection =>
@@ -109,6 +114,32 @@ internal sealed class JornadaService
         return jornada;
     }
 
+    internal async Task<MapaJornada?> ObtenerMapaCampoAsync(int jornadaId, int? paradaInicial)
+    {
+        Autenticacion.Instancia.Exigir(RolUsuario.Recolector, RolUsuario.Gestor);
+        var db = await EcoRutaDatabase.Instance.GetConnectionAsync();
+        MapaJornada? mapa = null;
+        await db.RunInTransactionAsync(c =>
+        {
+            if (c.ExecuteScalar<int>("SELECT EXISTS(SELECT 1 FROM Jornadas WHERE Id = ? AND Estado = ?)",
+                jornadaId, JornadaRecoleccion.Programada) == 0 ||
+                (paradaInicial is int id && c.ExecuteScalar<int>("""
+                    SELECT EXISTS(SELECT 1 FROM JornadaSolicitudes WHERE JornadaId = ? AND SolicitudId = ? AND Activa = 1)
+                    """, jornadaId, id) == 0))
+                return;
+
+            var jornada = LeerDetalle(c, jornadaId);
+            if (jornada is null)
+                return;
+            LeerRuta(c, jornada);
+            var vista = MapaJornada.Crear(jornada);
+            mapa = jornada.Ruta is not null ? vista : vista with { Metodo = jornada.RutaDesactualizada
+                ? "Orden desactualizado. Informa al gestor."
+                : "El gestor aún no ha guardado un orden." };
+        });
+        return mapa;
+    }
+
     private const string ColumnasParadaCampo = """
         s.Id, s.CodigoSolicitud, s.FechaRegistro, s.Zona, s.SectorOtraZona,
         s.DireccionReferencia, s.Latitud, s.Longitud, s.Estado, s.PesoTotalEstimado,
@@ -117,6 +148,7 @@ internal sealed class JornadaService
 
     internal async Task<IReadOnlyList<ResumenJornadaCampo>> ObtenerPortadaCampoAsync()
     {
+        Autenticacion.Instancia.Exigir(RolUsuario.Recolector, RolUsuario.Gestor);
         var db = await EcoRutaDatabase.Instance.GetConnectionAsync();
         IReadOnlyList<ResumenJornadaCampo> resultado = [];
         await db.RunInTransactionAsync(connection => resultado = LeerPortadaCampo(connection));
@@ -135,6 +167,7 @@ internal sealed class JornadaService
 
     internal async Task<ConsultaCampo?> ObtenerConsultaCampoAsync(int jornadaId, int? solicitudId = null)
     {
+        Autenticacion.Instancia.Exigir(RolUsuario.Recolector, RolUsuario.Gestor);
         var db = await EcoRutaDatabase.Instance.GetConnectionAsync();
         ConsultaCampo? resultado = null;
         await db.RunInTransactionAsync(connection =>
@@ -224,6 +257,7 @@ internal sealed class JornadaService
 
     public async Task<JornadaRecoleccion?> GenerarRutaAsync(int id)
     {
+        Autenticacion.Instancia.Exigir(RolUsuario.Gestor);
         var db = await EcoRutaDatabase.Instance.GetConnectionAsync();
         JornadaRecoleccion? actualizada = null;
         await db.RunInTransactionAsync(connection =>
@@ -304,6 +338,7 @@ internal sealed class JornadaService
 
     public async Task<bool> CancelarAsync(int id)
     {
+        Autenticacion.Instancia.Exigir(RolUsuario.Gestor);
         var db = await EcoRutaDatabase.Instance.GetConnectionAsync();
         return await db.ExecuteAsync("UPDATE Jornadas SET Estado = ? WHERE Id = ? AND Estado = ?",
             JornadaRecoleccion.Cancelada, id, JornadaRecoleccion.Programada) == 1;
@@ -311,6 +346,7 @@ internal sealed class JornadaService
 
     public async Task<bool> TieneJornadasAsync(int solicitudId)
     {
+        Autenticacion.Instancia.Exigir(RolUsuario.Gestor);
         var db = await EcoRutaDatabase.Instance.GetConnectionAsync();
         return await db.ExecuteScalarAsync<int>(
             "SELECT EXISTS(SELECT 1 FROM JornadaSolicitudes WHERE SolicitudId = ?)", solicitudId) == 1;

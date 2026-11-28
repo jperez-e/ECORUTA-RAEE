@@ -10,7 +10,7 @@ namespace ECORUTA_RAEE
 
         protected override Window CreateWindow(IActivationState? activationState)
         {
-            return new Window(new Views.LoginPage());
+            return new Window(new NavigationPage(new Views.LoginPage()));
         }
     }
 }

@@ -46,7 +46,7 @@ internal static class TarjetasDemo
     {
         var texto = Texto(titulo, "OnGreen");
         texto.FontSize = 25;
-        var contexto = Texto("Modo demostración · Datos de este dispositivo", "OnGreen");
+        var contexto = Texto("Datos de esta instalación", "OnGreen");
         contexto.FontSize = 12;
         var contenido = new VerticalStackLayout { Spacing = 8, Children = { contexto, texto, Texto(detalle, "OnGreen") } };
         if (accion is not null)

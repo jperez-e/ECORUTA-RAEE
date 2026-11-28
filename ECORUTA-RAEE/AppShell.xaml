@@ -130,11 +130,6 @@
     <Shell.FlyoutFooter>
 
         <VerticalStackLayout Padding="20,15" Spacing="8">
-            <Label Text="Modo demostración · Datos de este dispositivo"
-                   Style="{StaticResource TextoVisual}" />
-            <Button Text="Cambiar perfil (demostración)" Clicked="CambiarPerfil_Clicked"
-                    Style="{StaticResource AccionVisual}" />
-
             <Button
                 Text="Cerrar sesión"
                 BackgroundColor="#F4F7F4"

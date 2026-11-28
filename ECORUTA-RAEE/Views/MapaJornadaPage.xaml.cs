@@ -10,7 +10,7 @@ public partial class MapaJornadaPage : ContentPage
     private const string Atribucion = "https://www.openstreetmap.org/copyright";
     private const string Origen = "about:blank";
     private readonly int _jornadaId;
-    private readonly MapaJornada? _ubicacion;
+    private int? _solicitudId;
     private readonly bool _consultaDeCampo;
     private readonly int? _paradaInicial;
     private readonly string _sesion = Guid.NewGuid().ToString("N");
@@ -26,12 +26,8 @@ public partial class MapaJornadaPage : ContentPage
         _paradaInicial = paradaInicial;
     }
 
-    internal MapaJornadaPage(MapaJornada ubicacion)
-    {
-        InitializeComponent();
-        Title = "Ubicación de recogida";
-        _ubicacion = ubicacion;
-    }
+    internal static MapaJornadaPage ParaSolicitud(int id) =>
+        new(0) { _solicitudId = id, Title = "Ubicación de recogida" };
 
     protected override async void OnAppearing()
     {
@@ -41,24 +37,26 @@ public partial class MapaJornadaPage : ContentPage
         _iniciada = true;
 
         bool cambioDeJornada = false;
-        BindingContext = _ubicacion;
-        bool consultada = _ubicacion is not null || await OperacionBaseDatos.EjecutarAsync(async () =>
+        bool consultada = await OperacionBaseDatos.EjecutarAsync(async () =>
         {
-            var jornada = await JornadaService.Instancia.ObtenerDetalleAsync(_jornadaId, incluirRutaCancelada: true);
-            if (jornada is null || _vida.IsCancellationRequested)
-                return;
-            if (_consultaDeCampo && (jornada.Estado != JornadaRecoleccion.Programada ||
-                (_paradaInicial is int id && jornada.Solicitudes.All(s => s.Id != id))))
+            if (_solicitudId is int solicitudId)
             {
-                cambioDeJornada = true;
+                var fila = (await SolicitudService.Instancia.ObtenerVistaCiudadanaAsync(solicitudId)).SingleOrDefault();
+                if (fila?.Solicitud is { } s && Coordenadas.SonValidas(s))
+                    BindingContext = new MapaJornada("Ubicación de recogida", s.Estado, "",
+                        0, [new(s.Id, null, s.CodigoSolicitud, s.DireccionReferencia, s.Zona,
+                            $"{s.PesoTotalEstimado:0.##} kg", null, s.Latitud, s.Longitud)]);
                 return;
             }
-            var resultado = MapaJornada.Crear(jornada);
-            if (_consultaDeCampo && jornada.Estado == JornadaRecoleccion.Programada && jornada.Ruta is null)
-                resultado = resultado with { Metodo = jornada.RutaDesactualizada
-                    ? "Orden desactualizado. Informa al gestor."
-                    : "El gestor aún no ha guardado un orden." };
-            BindingContext = resultado;
+            if (_consultaDeCampo)
+            {
+                BindingContext = await JornadaService.Instancia.ObtenerMapaCampoAsync(_jornadaId, _paradaInicial);
+                cambioDeJornada = BindingContext is null;
+                return;
+            }
+            var jornada = await JornadaService.Instancia.ObtenerDetalleAsync(_jornadaId, incluirRutaCancelada: true);
+            if (jornada is not null && !_vida.IsCancellationRequested)
+                BindingContext = MapaJornada.Crear(jornada);
         });
         if (_vida.IsCancellationRequested)
             return;

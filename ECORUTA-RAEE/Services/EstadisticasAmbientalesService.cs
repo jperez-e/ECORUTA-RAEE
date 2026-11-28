@@ -10,6 +10,7 @@ internal sealed class EstadisticasAmbientalesService
 
     public async Task<PanelAmbiental> ObtenerAsync()
     {
+        Autenticacion.Instancia.Exigir(RolUsuario.Gestor);
         var db = await EcoRutaDatabase.Instance.GetConnectionAsync();
         PanelAmbiental panel = null!;
         await db.RunInTransactionAsync(connection => panel = LeerPanel(connection));
@@ -18,6 +19,7 @@ internal sealed class EstadisticasAmbientalesService
 
     internal async Task<(PanelAmbiental Panel, IReadOnlyList<AlertaGestion> Alertas)> ObtenerGestionAsync()
     {
+        Autenticacion.Instancia.Exigir(RolUsuario.Gestor);
         var db = await EcoRutaDatabase.Instance.GetConnectionAsync();
         PanelAmbiental panel = null!;
         IReadOnlyList<AlertaGestion> alertas = [];

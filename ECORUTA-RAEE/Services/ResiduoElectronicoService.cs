@@ -12,12 +12,14 @@ public class ResiduoElectronicoService
 
     public async Task<List<ResiduoElectronico>> ObtenerTodosAsync()
     {
+        Autenticacion.Instancia.Exigir(RolUsuario.Gestor);
         var db = await Database.GetConnectionAsync();
         return await db.Table<ResiduoElectronico>().OrderByDescending(r => r.Id).ToListAsync();
     }
 
     internal async Task<(List<ResiduoElectronico> Residuos, Dictionary<int, string> Codigos)> ObtenerListadoAsync()
     {
+        Autenticacion.Instancia.Exigir(RolUsuario.Gestor);
         var db = await Database.GetConnectionAsync();
         List<ResiduoElectronico> residuos = new();
         Dictionary<int, string> codigos = new();
@@ -34,12 +36,14 @@ public class ResiduoElectronicoService
 
     public async Task<ResiduoElectronico?> ObtenerPorIdAsync(int id)
     {
+        Autenticacion.Instancia.Exigir(RolUsuario.Gestor);
         var db = await Database.GetConnectionAsync();
         return await db.FindAsync<ResiduoElectronico>(id);
     }
 
     public async Task<List<ResiduoElectronico>> ObtenerPorSolicitudIdAsync(int solicitudId)
     {
+        Autenticacion.Instancia.Exigir(RolUsuario.Gestor);
         var db = await Database.GetConnectionAsync();
         return await db.Table<ResiduoElectronico>()
             .Where(r => r.SolicitudId == solicitudId)
@@ -49,6 +53,7 @@ public class ResiduoElectronicoService
 
     public async Task<int> ContarPorSolicitudIdAsync(int solicitudId)
     {
+        Autenticacion.Instancia.Exigir(RolUsuario.Gestor);
         var db = await Database.GetConnectionAsync();
         return await db.Table<ResiduoElectronico>()
             .Where(r => r.SolicitudId == solicitudId)
@@ -57,6 +62,7 @@ public class ResiduoElectronicoService
 
     public async Task<bool> CrearAsync(ResiduoElectronico residuo)
     {
+        Autenticacion.Instancia.Exigir(RolUsuario.Gestor);
         if (!EsValido(residuo))
             return false;
 
@@ -79,6 +85,7 @@ public class ResiduoElectronicoService
 
     public async Task<bool> ActualizarAsync(ResiduoElectronico residuo)
     {
+        Autenticacion.Instancia.Exigir(RolUsuario.Gestor);
         if (!EsValido(residuo))
             return false;
 
@@ -102,6 +109,7 @@ public class ResiduoElectronicoService
 
     public async Task<bool> EliminarAsync(int id)
     {
+        Autenticacion.Instancia.Exigir(RolUsuario.Gestor);
         var db = await Database.GetConnectionAsync();
         bool eliminado = false;
         await db.RunInTransactionAsync(connection =>

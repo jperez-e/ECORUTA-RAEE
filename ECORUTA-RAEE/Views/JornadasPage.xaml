@@ -9,7 +9,7 @@
         <VerticalStackLayout Padding="16,0,16,16" Spacing="12">
             <Border Style="{StaticResource CabeceraVisual}">
                 <VerticalStackLayout Spacing="6">
-                    <Label Text="Modo demostración · Datos de este dispositivo" Style="{StaticResource OnGreen}" FontSize="12" />
+                    <Label Text="Datos de esta instalación" Style="{StaticResource OnGreen}" FontSize="12" />
                     <Label Text="Planifica las recogidas" Style="{StaticResource OnGreen}" FontSize="25" />
                     <Label Text="Organiza recogidas según la demanda de cada zona."
                            Style="{StaticResource OnGreen}" FontSize="14" />

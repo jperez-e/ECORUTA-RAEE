@@ -5,6 +5,14 @@ using System.Net;
 using System.Text.Json;
 
 await VerificarZonasAsync();
+var auth = Autenticacion.Instancia;
+string claveGestor = Guid.NewGuid().ToString("N");
+string claveCiudadana = Guid.NewGuid().ToString("N");
+const string correoGestor = "gestion@example.invalid";
+const string correoCiudadano = "ciudadania@example.invalid";
+await auth.AprovisionarAsync(new("Gestión de pruebas", correoGestor, null), claveGestor);
+await auth.RegistrarAsync(new("Ciudadanía de pruebas", correoCiudadano, null), claveCiudadana);
+Verificar((await auth.EntrarAsync(correoGestor, claveGestor, false)).Identidad?.Rol == RolUsuario.Gestor, "Login gestor.");
 
 var vacioGestion = await EstadisticasAmbientalesService.Instancia.ObtenerGestionAsync();
 Verificar(vacioGestion.Panel.Indicadores is { Solicitudes: 0, PesoVigente: 0, UnidadesEquipos: 0 } &&
@@ -60,20 +68,22 @@ if (!equipo.Resumen.StartsWith("2 unidades ·", StringComparison.Ordinal))
     throw new InvalidOperationException("El resumen debe usar el plural para dos equipos.");
 Console.WriteLine("APROBADO: el resumen distingue una unidad de varias unidades.");
 
-foreach (var perfil in new[] { PerfilDemostracion.Ciudadano, PerfilDemostracion.Recolector })
+foreach (var perfil in new[] { RolUsuario.Ciudadano, RolUsuario.Recolector })
 {
     foreach (string ruta in new[] { "//solicitudes", "//residuos", "//jornadas", "//estadisticas",
         "JornadaDetallePage", "ResiduoFormPage", "ResiduosSolicitudPage", "//perfil/%6Aornadas" })
     {
-        if (RutasDemostracion.Permite(perfil, ruta) || !RutasDemostracion.Permite(PerfilDemostracion.Gestor, ruta))
+        if (RutasCuenta.Permite(perfil, ruta) || !RutasCuenta.Permite(RolUsuario.Gestor, ruta))
             throw new InvalidOperationException("La ruta administrativa debe quedar limitada al gestor.");
     }
 }
-if (!RutasDemostracion.Permite(PerfilDemostracion.Ciudadano, "SolicitudFormPage") ||
-    RutasDemostracion.Permite(PerfilDemostracion.Recolector, "SolicitudFormPage"))
+if (!RutasCuenta.Permite(RolUsuario.Ciudadano, "SolicitudFormPage") ||
+    RutasCuenta.Permite(RolUsuario.Recolector, "SolicitudFormPage"))
     throw new InvalidOperationException("El recolector no debe acceder al formulario de solicitud.");
 Console.WriteLine("APROBADO: separación de rutas directas por perfil.");
 
+await auth.SalirAsync();
+Verificar((await auth.EntrarAsync(correoCiudadano, claveCiudadana, false)).Identidad?.Rol == RolUsuario.Ciudadano, "Login ciudadano.");
 var alta = new SolicitudFormViewModel
 {
     FormularioDisponible = true, ZonaSeleccionada = "Pantoja",
@@ -88,19 +98,22 @@ fila.Descripcion = "Monitores de prueba";
 fila.CantidadTexto = "2";
 fila.PesoTexto = "50";
 await alta.GuardarCommand.ExecuteAsync(null);
-var ciudadano = new PortadaDemoViewModel(PerfilDemostracion.Ciudadano);
-var gestor = new PortadaDemoViewModel(PerfilDemostracion.Gestor);
-if (!await ciudadano.CargarAsync() || !await gestor.CargarAsync() ||
+var ciudadano = new PortadaDemoViewModel(RolUsuario.Ciudadano);
+var gestor = new PortadaDemoViewModel(RolUsuario.Gestor);
+if (!await ciudadano.CargarAsync() ||
     ciudadano.Solicitudes.Single(s => s.Zona == "Pantoja") is not { PesoTotalEstimado: 50 } registrada ||
-    ciudadano.Equipos(registrada.Id).Single().Cantidad != 2 ||
-    gestor.Panel?.Indicadores.Pendientes != 2 || gestor.Panel.Alertas.All(a => a.Zona != "Pantoja" || !a.EsLista))
+    ciudadano.Equipos(registrada.Id).Single().Cantidad != 2 || ciudadano.Solicitudes.Count != 1)
     throw new InvalidOperationException("El gestor y el ciudadano deben leer los mismos datos persistidos.");
 
+await auth.SalirAsync();
+await auth.EntrarAsync(correoGestor, claveGestor, false);
+Verificar(await gestor.CargarAsync() && gestor.Panel?.Indicadores.Pendientes == 2 &&
+    gestor.Panel.Alertas.Any(a => a.Zona == "Pantoja" && a.EsLista), "Gestión ve solicitudes propias e históricas.");
 var jornadas = JornadaService.Instancia;
 var jornada = await jornadas.CrearAsync("Pantoja", DateTime.Today, [registrada.Id]);
 if (jornada is null || await jornadas.GenerarRutaAsync(jornada.Id) is null)
     throw new InvalidOperationException("El flujo gestor debe programar y guardar la ruta.");
-var recolector = new PortadaDemoViewModel(PerfilDemostracion.Recolector);
+var recolector = new PortadaDemoViewModel(RolUsuario.Recolector);
 if (!await recolector.CargarAsync() ||
     recolector.PortadaCampo.Single() is not { Paradas: 1, Peso: 50 } disponible ||
     (await jornadas.ObtenerDetalleAsync(disponible.Id))?.Ruta?.Paradas.Single().Solicitud.Id != registrada.Id)
@@ -278,7 +291,7 @@ Verificar(ambiental.CantidadElegible == resumen.Zonas.Sum(z => z.Cantidad) &&
     gestor.Panel?.CantidadElegible == ambiental.CantidadElegible &&
     gestor.Panel?.PesoElegible == ambiental.PesoElegible &&
     ambiental.Indicadores.PesoVigente > ambiental.PesoElegible &&
-    await db.ExecuteScalarAsync<int>("PRAGMA user_version") == 5,
+    await db.ExecuteScalarAsync<int>("PRAGMA user_version") == 6,
     "Los paneles deben compartir disponibilidad y mantener totales generales y esquema.");
 Console.WriteLine("APROBADO: elegibilidad, umbrales, protección transaccional, jornadas antiguas y estadísticas.");
 
@@ -318,9 +331,9 @@ var reabierta = await new EcoRutaDatabase(Path.Combine(Microsoft.Maui.Storage.Fi
     "ecoruta-raee.db3")).GetConnectionAsync();
 Verificar(await reabierta.FindAsync<SolicitudRecoleccion>(sinPunto.Id) is { UbicacionPendiente: false } &&
     await reabierta.FindAsync<SolicitudRecoleccion>(segunda.Id) is { UbicacionPendiente: true } &&
-    await reabierta.ExecuteScalarAsync<int>("PRAGMA user_version") == 5,
+    await reabierta.ExecuteScalarAsync<int>("PRAGMA user_version") == 6,
     "Los puntos corregidos y los registros históricos deben mantenerse tras reabrir SQLite.");
-Console.WriteLine("APROBADO: alta integrada sin punto y persistencia tras reabrir SQLite v5.");
+Console.WriteLine("APROBADO: alta integrada sin punto y persistencia tras reabrir SQLite v6.");
 
 Verificar(await reabierta.FindAsync<SolicitudRecoleccion>(primera.Id) is { TelefonoContacto: "+18095550100" },
     "El contacto se conserva al reabrir.");
@@ -444,9 +457,9 @@ Verificar(actualizadoGestion.Alertas.Any(a => a.Zona == "Los Alcarrizos" &&
     a.Accion == "Ver disponibilidad" && a.Clave == "Zona" && Equals(a.Valor, "Los Alcarrizos")) &&
     actualizadoGestion.Alertas.Any(a => a.Zona == "Herrera" && a.Accion == "Programar jornada"),
     "Las zonas listas por peso y las próximas deben abrir la vista previa correcta.");
-Verificar(actualizadoGestion.Alertas.All(a => RutasDemostracion.Permite(PerfilDemostracion.Gestor, a.Ruta) &&
-    !RutasDemostracion.Permite(PerfilDemostracion.Ciudadano, a.Ruta) &&
-    !RutasDemostracion.Permite(PerfilDemostracion.Recolector, a.Ruta)),
+Verificar(actualizadoGestion.Alertas.All(a => RutasCuenta.Permite(RolUsuario.Gestor, a.Ruta) &&
+    !RutasCuenta.Permite(RolUsuario.Ciudadano, a.Ruta) &&
+    !RutasCuenta.Permite(RolUsuario.Recolector, a.Ruta)),
     "Los destinos operativos deben seguir restringidos al gestor.");
 Verificar(Math.Abs(actualizadoGestion.Panel.Indicadores.PesoVigente -
     (await servicio.ObtenerTodasAsync()).Sum(s => s.PesoTotalEstimado)) < 1e-9,
@@ -459,6 +472,214 @@ Verificar(Math.Abs(trasAjusteGestion.Panel.Indicadores.PesoVigente -
     trasAjusteGestion.Alertas.Any(a => a.Zona == "Los Alcarrizos" && a.Accion == "Programar jornada"),
     "Al editar el peso, el centro debe actualizar el total y promover una zona próxima a lista.");
 Console.WriteLine("APROBADO: alertas por zona, destinos protegidos y peso vigente sin doble contabilización.");
+
+await VerificarCuentasAsync(correoGestor, claveGestor, correoCiudadano, claveCiudadana, creada.Id, registrada.Id);
+
+static void QuitarEsquemaUsuarios(SQLite.SQLiteConnection db)
+{
+    db.Execute("DROP INDEX IX_Solicitudes_UsuarioId");
+    db.Execute("ALTER TABLE Solicitudes DROP COLUMN UsuarioId");
+    db.Execute("DROP TABLE Sesiones");
+    db.Execute("DROP TABLE Usuarios");
+}
+
+static async Task VerificarCuentasAsync(string correoGestor, string claveGestor, string correoA,
+    string claveA, int idHistorico, int idA)
+{
+    var auth = Autenticacion.Instancia;
+    var solicitudes = SolicitudService.Instancia;
+    var jornadas = JornadaService.Instancia;
+    var database = EcoRutaDatabase.Instance;
+    var db = await database.GetConnectionAsync();
+    string claveB = Guid.NewGuid().ToString("N");
+    string claveCampo = Guid.NewGuid().ToString("N");
+    string nuevaClave = Guid.NewGuid().ToString("N");
+    const string correoB = "segunda@example.invalid";
+    const string correoCampo = "campo@example.invalid";
+
+    async Task Denegar(Func<Task> accion)
+    {
+        try { await accion(); }
+        catch (UnauthorizedAccessException) { return; }
+        throw new InvalidOperationException("Se permitió una operación fuera del rol.");
+    }
+
+    await auth.SalirAsync();
+    Verificar(auth.Actual is null && !await auth.RequiereGestorAsync(), "Cerrar sesión elimina el actor.");
+    await Denegar(() => solicitudes.ObtenerVistaCiudadanaAsync());
+    try
+    {
+        await auth.AprovisionarAsync(new("Segunda gestión", "segundo-gestor@example.invalid", null), claveB);
+        throw new InvalidOperationException("Se repitió el aprovisionamiento.");
+    }
+    catch (InvalidOperationException ex) when (ex.Message.Contains("configuración inicial")) { }
+    await auth.RegistrarAsync(new("Ciudadanía B", "  SEGUNDA@example.invalid ", null), claveB);
+    Verificar(Autenticacion.Validar(new("  ", "correo inválido", "8095550100"), "corta", "distinta").Count == 5 &&
+        await db.ExecuteScalarAsync<int>("SELECT COUNT(DISTINCT Salt) FROM Usuarios") ==
+        await db.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM Usuarios WHERE length(Hash) = 32 AND VersionDerivacion = 1"),
+        "La validación comprueba los cinco campos y cada credencial tiene un salt distinto.");
+    try
+    {
+        await auth.RegistrarAsync(new("Duplicada", correoB, null), claveB);
+        throw new InvalidOperationException("Se aceptó un correo duplicado.");
+    }
+    catch (CorreoDuplicadoException) { }
+
+    Verificar((await auth.EntrarAsync(correoB, claveA, true)).Identidad is null, "Contraseña incorrecta.");
+    var (b, sinToken) = await auth.EntrarAsync(correoB, claveB, false);
+    Verificar(b is { Rol: RolUsuario.Ciudadano } && sinToken is null, "Acceso ciudadano sin sesión persistida.");
+    Verificar((await solicitudes.ObtenerVistaCiudadanaAsync()).Count == 0 &&
+        (await solicitudes.ObtenerVistaCiudadanaAsync(idA)).Count == 0 &&
+        (await solicitudes.ObtenerVistaCiudadanaAsync(idHistorico)).Count == 0 &&
+        (await solicitudes.ObtenerCompletaAsync(idA)).Solicitud is null &&
+        !(await solicitudes.ObtenerCompletaAsync(idA)).Equipos.Any() &&
+        !await solicitudes.TieneAsignacionActivaAsync(idA),
+        "Un ciudadano debe quedar aislado por propietario en listas, detalles, mapas y equipos.");
+    var historica = await db.FindAsync<SolicitudRecoleccion>(idHistorico);
+    Verificar(historica is { UsuarioId: null } && !await solicitudes.CompletarUbicacionAsync(historica,
+        PuntoRecogida.Crear(18.5, -70)!), "No puede completar la ubicación histórica por ID.");
+    await Denegar(() => solicitudes.ObtenerPorIdAsync(idA));
+    await Denegar(() => solicitudes.EliminarAsync(idA));
+    await Denegar(() => ResiduoElectronicoService.Instancia.ObtenerPorSolicitudIdAsync(idA));
+    await Denegar(() => jornadas.ObtenerPanelAsync());
+    await Denegar(() => jornadas.ObtenerMapaCampoAsync(1, idA));
+    await Denegar(() => EstadisticasAmbientalesService.Instancia.ObtenerAsync());
+    await Denegar(() => auth.CrearRecolectorAsync(new("Intento", correoCampo, null), claveCampo));
+
+    var deB = new SolicitudRecoleccion { UsuarioId = -1, Zona = "Pantoja", DireccionReferencia = "Referencia de prueba",
+        NombreContacto = "Contacto de prueba", TelefonoContacto = "+18095550100" };
+    var equipoB = new ResiduoElectronico { Categoria = "Monitor", Descripcion = "Equipo de prueba", Cantidad = 1, PesoEstimado = 60 };
+    Verificar(await solicitudes.GuardarSolicitudCompletaAsync(deB, [equipoB], [], null) && deB.UsuarioId == b!.Id,
+        "El propietario lo asigna el servicio y no la vista.");
+    Verificar(await solicitudes.CompletarUbicacionAsync(deB, PuntoRecogida.Crear(18.5, -70)!) &&
+        (await solicitudes.ObtenerVistaCiudadanaAsync()).Single().Solicitud.Id == deB.Id,
+        "El ciudadano completa su ubicación y ve su solicitud.");
+    await Denegar(() => solicitudes.GuardarSolicitudCompletaAsync(deB, [equipoB], [], deB));
+    await auth.SalirAsync();
+
+    var (a, tokenA) = await auth.EntrarAsync(correoA, claveA, true);
+    Verificar(a is { Rol: RolUsuario.Ciudadano } && tokenA is not null &&
+        (await solicitudes.ObtenerVistaCiudadanaAsync()).Single().Solicitud.Id == idA &&
+        (await solicitudes.ObtenerVistaCiudadanaAsync(deB.Id)).Count == 0, "Aislamiento recíproco.");
+    Verificar(await new Autenticacion(database, TimeProvider.System).RestaurarAsync(tokenA) == a &&
+        await new Autenticacion(database, new RelojFijo(DateTimeOffset.UtcNow.AddDays(15))).RestaurarAsync(tokenA) is null,
+        "Restauración y vencimiento de la sesión.");
+    Verificar(await db.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM Sesiones WHERE length(Huella) = 32") == 1,
+        "SQLite guarda únicamente una huella.");
+    await auth.SalirAsync();
+    Verificar(await new Autenticacion(database, TimeProvider.System).RestaurarAsync(tokenA) is null,
+        "El token revocado no vuelve a iniciar sesión.");
+
+    await auth.EntrarAsync(correoGestor, claveGestor, false);
+    Verificar((await solicitudes.ObtenerGestionAsync()).Any(f => f.Id == idHistorico) &&
+        await solicitudes.ObtenerPorIdAsync(deB.Id) is not null, "Gestor conserva acceso a todos los registros.");
+    await auth.CrearRecolectorAsync(new("Cuenta de campo", correoCampo, null), claveCampo);
+    var cuentaCampo = (await auth.RecolectoresAsync()).Single();
+    await auth.ActualizarRecolectorAsync(cuentaCampo.Id, new("Campo actualizado", correoCampo, null));
+    var punto = PuntoRecogida.Crear(18.52, -70.02)!;
+    var solicitudCampo = new SolicitudRecoleccion { Zona = "Herrera", DireccionReferencia = "Referencia operativa de prueba",
+        Latitud = punto.Latitud, Longitud = punto.Longitud, PesoTotalEstimado = 500,
+        NombreContacto = "Contacto de prueba", TelefonoContacto = "+18095550100" };
+    await solicitudes.CrearAsync(solicitudCampo);
+    var vista = await jornadas.ObtenerVistaPreviaAsync("Herrera");
+    var programada = await jornadas.CrearAsync("Herrera", DateTime.Today, vista.Solicitudes.Select(s => s.Id).ToArray()) ??
+        throw new InvalidOperationException("Falta jornada de campo para verificar permisos.");
+    await jornadas.GenerarRutaAsync(programada.Id);
+    await auth.SalirAsync();
+
+    var (campo, tokenCampo) = await auth.EntrarAsync(correoCampo, claveCampo, true);
+    Verificar(campo is { Rol: RolUsuario.Recolector, Nombre: "Campo actualizado" } && tokenCampo is not null &&
+        (await jornadas.ObtenerPortadaCampoAsync()).Any(j => j.Id == programada.Id) &&
+        await jornadas.ObtenerMapaCampoAsync(programada.Id, solicitudCampo.Id) is not null &&
+        await jornadas.ObtenerMapaCampoAsync(programada.Id, int.MaxValue) is null &&
+        (await jornadas.ObtenerConsultaCampoAsync(programada.Id, solicitudCampo.Id))?.Paradas
+            .Single(p => p.Solicitud.Id == solicitudCampo.Id).Solicitud.TelefonoContacto == "+18095550100",
+        "El recolector consulta únicamente las paradas vigentes y sus contactos.");
+    await Denegar(() => jornadas.ObtenerDetalleAsync(programada.Id));
+    await Denegar(() => jornadas.GenerarRutaAsync(programada.Id));
+    await Denegar(() => jornadas.CancelarAsync(programada.Id));
+    await Denegar(() => solicitudes.ObtenerVistaCiudadanaAsync(deB.Id));
+    await Denegar(() => ResiduoElectronicoService.Instancia.ObtenerTodosAsync());
+
+    // Un segundo coordinador de prueba representa otra sesión persistida de la misma instalación.
+    var gestor = new Autenticacion(database, TimeProvider.System);
+    await gestor.EntrarAsync(correoGestor, claveGestor, false);
+    await gestor.EstadoRecolectorAsync(campo!.Id, false);
+    var reapertura = new Autenticacion(database, TimeProvider.System);
+    Verificar(await reapertura.RestaurarAsync(tokenCampo) is null &&
+        (await reapertura.EntrarAsync(correoCampo, claveCampo, false)).Identidad is null, "Cuenta desactivada y token revocado.");
+    await auth.SalirAsync();
+    await gestor.EstadoRecolectorAsync(campo.Id, true);
+    (_, tokenCampo) = await auth.EntrarAsync(correoCampo, claveCampo, true);
+    await gestor.RestablecerRecolectorAsync(campo.Id, nuevaClave);
+    Verificar(await reapertura.RestaurarAsync(tokenCampo) is null &&
+        (await reapertura.EntrarAsync(correoCampo, claveCampo, false)).Identidad is null &&
+        (await reapertura.EntrarAsync(correoCampo, nuevaClave, false)).Identidad?.Rol == RolUsuario.Recolector,
+        "El restablecimiento revoca sesiones y sustituye la credencial.");
+    await auth.SalirAsync();
+    await auth.EntrarAsync(correoGestor, claveGestor, false);
+    await jornadas.CancelarAsync(programada.Id);
+    await auth.SalirAsync();
+    await auth.EntrarAsync(correoCampo, nuevaClave, false);
+    Verificar(await jornadas.ObtenerMapaCampoAsync(programada.Id, solicitudCampo.Id) is null &&
+        await jornadas.ObtenerConsultaCampoAsync(programada.Id, solicitudCampo.Id) is null, "Una jornada cancelada no expone paradas.");
+    await auth.SalirAsync();
+
+    var reloj = new RelojFijo(DateTimeOffset.UtcNow);
+    var intentos = new Autenticacion(database, reloj);
+    for (int i = 0; i < 5; i++)
+        Verificar((await intentos.EntrarAsync(correoB, claveA, false)).Identidad is null, "Intento rechazado.");
+    Verificar((await intentos.EntrarAsync(correoB, claveB, false)).Identidad is null, "Pausa tras cinco intentos fallidos.");
+    reloj.Avanzar(TimeSpan.FromSeconds(31));
+    Verificar((await intentos.EntrarAsync(correoB, claveB, false)).Identidad is not null, "La pausa termina automáticamente.");
+
+    string path = Path.Combine(Microsoft.Maui.Storage.FileSystem.AppDataDirectory, "ecoruta-raee.db3");
+    string legado = Path.Combine(Path.GetDirectoryName(path)!, "cuentas-v5.db3");
+    await db.CloseAsync();
+    File.Copy(path, legado);
+    long secuenciaV5;
+    int asociacionesV5;
+    int paradasV5;
+    int equiposV5;
+    double umbralV5;
+    using (var c = new SQLite.SQLiteConnection(legado))
+    {
+        QuitarEsquemaUsuarios(c);
+        c.Execute("PRAGMA user_version=5");
+        secuenciaV5 = c.ExecuteScalar<long>("SELECT UltimoNumero FROM SecuenciaCodigoSolicitud");
+        asociacionesV5 = c.ExecuteScalar<int>("SELECT COUNT(*) FROM JornadaSolicitudes");
+        paradasV5 = c.ExecuteScalar<int>("SELECT COUNT(OrdenRuta) FROM JornadaSolicitudes");
+        equiposV5 = c.ExecuteScalar<int>("SELECT COUNT(*) FROM Residuos");
+        umbralV5 = c.ExecuteScalar<double>("SELECT Peso FROM ConfiguracionJornadas WHERE Id = 1");
+    }
+    string fallo = Path.ChangeExtension(legado, ".fallo.db3");
+    File.Copy(legado, fallo);
+    using (var c = new SQLite.SQLiteConnection(fallo))
+        c.Execute("CREATE INDEX IX_Solicitudes_UsuarioId ON Solicitudes (Id)");
+    try
+    {
+        await new EcoRutaDatabase(fallo).GetConnectionAsync();
+        throw new InvalidOperationException("Se esperaba fallo tardío de migración.");
+    }
+    catch (SQLite.SQLiteException) { }
+    using (var c = new SQLite.SQLiteConnection(fallo))
+        Verificar(c.ExecuteScalar<int>("PRAGMA user_version") == 5 &&
+            c.ExecuteScalar<int>("SELECT COUNT(*) FROM sqlite_schema WHERE name IN ('Usuarios','Sesiones')") == 0 &&
+            c.ExecuteScalar<int>("SELECT COUNT(*) FROM pragma_table_info('Solicitudes') WHERE name='UsuarioId'") == 0,
+            "El fallo tardío debe revertir tablas, columna y versión.");
+    var migrada = await new EcoRutaDatabase(legado).GetConnectionAsync();
+    Verificar(await migrada.ExecuteScalarAsync<int>("PRAGMA user_version") == 6 &&
+        await migrada.FindAsync<SolicitudRecoleccion>(deB.Id) is { UsuarioId: null, TelefonoContacto: "+18095550100" } &&
+        await migrada.ExecuteScalarAsync<long>("SELECT UltimoNumero FROM SecuenciaCodigoSolicitud") == secuenciaV5 &&
+        await migrada.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM JornadaSolicitudes") == asociacionesV5 &&
+        await migrada.ExecuteScalarAsync<int>("SELECT COUNT(OrdenRuta) FROM JornadaSolicitudes") == paradasV5 &&
+        await migrada.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM Residuos") == equiposV5 &&
+        await migrada.ExecuteScalarAsync<double>("SELECT Peso FROM ConfiguracionJornadas WHERE Id = 1") == umbralV5 &&
+        await migrada.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM pragma_foreign_key_check") == 0 &&
+        await migrada.ExecuteScalarAsync<string>("PRAGMA integrity_check") == "ok",
+        "Migración v5 poblada, coordenadas, contacto, equipos y relaciones conservados.");
+    Console.WriteLine("APROBADO: migración v6 y rollback, cuentas, aislamiento por ID y rol, restauración, caducidad, revocación y límite de intentos.");
+}
 
 static async Task VerificarMigracionContactoAsync()
 {
@@ -473,6 +694,7 @@ static async Task VerificarMigracionContactoAsync()
     string[] indices;
     using (var db = new SQLite.SQLiteConnection(legado))
     {
+        QuitarEsquemaUsuarios(db);
         db.Execute("ALTER TABLE Solicitudes DROP COLUMN TelefonoContacto");
         db.Execute("ALTER TABLE Solicitudes DROP COLUMN NombreContacto");
         db.Execute("PRAGMA user_version=4");
@@ -498,12 +720,12 @@ static async Task VerificarMigracionContactoAsync()
             "La primera columna y la versión deben revertirse si falla la segunda.");
 
     var migrada = await new EcoRutaDatabase(legado).GetConnectionAsync();
-    Verificar(await migrada.ExecuteScalarAsync<int>("PRAGMA user_version") == 5 &&
+    Verificar(await migrada.ExecuteScalarAsync<int>("PRAGMA user_version") == 6 &&
         await migrada.ExecuteScalarAsync<long>("SELECT UltimoNumero FROM SecuenciaCodigoSolicitud") == secuencia &&
         asociaciones > 0 && await migrada.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM JornadaSolicitudes") == asociaciones &&
         equipos > 0 && await migrada.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM Residuos") == equipos &&
         await migrada.ExecuteScalarAsync<int>("SELECT COUNT(OrdenRuta) FROM JornadaSolicitudes") == ruta &&
-        (await migrada.QueryScalarsAsync<string>("SELECT name FROM sqlite_schema WHERE type='index' ORDER BY name")).SequenceEqual(indices) &&
+        (await migrada.QueryScalarsAsync<string>("SELECT name FROM sqlite_schema WHERE type='index' ORDER BY name")).Where(indices.Contains).SequenceEqual(indices) &&
         await migrada.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM pragma_foreign_key_check") == 0 &&
         await migrada.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM Solicitudes WHERE NombreContacto IS NOT NULL OR TelefonoContacto IS NOT NULL") == 0,
         "La migración debe conservar datos, índices, secuencia y relaciones con contacto nulo.");
@@ -515,7 +737,7 @@ static async Task VerificarMigracionContactoAsync()
         !DatosContacto.TryNormalizarTelefono("+1 809 555 ABCD", false, out _),
         "La normalización exige prefijo explícito y formato compatible.");
     await migrada.CloseAsync();
-    Console.WriteLine("APROBADO: migración v4 a v5 con datos, índices, claves foráneas, secuencia y rollback.");
+    Console.WriteLine("APROBADO: migración v4 hasta v6 con datos, índices, claves foráneas, secuencia y rollback.");
 }
 
 static async Task VerificarZonasAsync()
@@ -587,4 +809,10 @@ sealed class MapaHttp(Func<HttpRequestMessage, CancellationToken, Task<HttpRespo
 {
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
         responder(request, cancellationToken);
+}
+
+internal sealed class RelojFijo(DateTimeOffset instante) : TimeProvider
+{
+    public override DateTimeOffset GetUtcNow() => instante;
+    internal void Avanzar(TimeSpan lapso) => instante = instante.Add(lapso);
 }

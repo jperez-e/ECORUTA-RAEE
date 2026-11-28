@@ -1,56 +1,70 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using ECORUTA_RAEE.Services;
 using ECORUTA_RAEE.Views;
 
 namespace ECORUTA_RAEE.ViewModels;
 
 public partial class LoginViewModel : ObservableObject
 {
-    [ObservableProperty]
-    private string usuario = string.Empty;
+    [ObservableProperty] private string correo = "";
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(TieneClave))] private string contrasena = "";
+    [ObservableProperty] private bool recordar;
+    [ObservableProperty] private bool ocupado;
+    [ObservableProperty] private bool requiereGestor;
+    [ObservableProperty] private bool listo;
+    [ObservableProperty] private string errorCorreo = "";
+    [ObservableProperty] private string errorClave = "";
+    [ObservableProperty] private string mensajeError = "";
 
-    [ObservableProperty]
-    private string contrasena = string.Empty;
+    public bool TieneClave => !string.IsNullOrEmpty(Contrasena);
 
-    [ObservableProperty]
-    private string mensajeError = string.Empty;
-
-    [ObservableProperty]
-    private bool hayError;
+    internal async Task PrepararAsync(bool restaurar)
+    {
+        if (Ocupado)
+            return;
+        Ocupado = true;
+        try
+        {
+            if (restaurar && await NavegacionCuenta.RestaurarAsync())
+                return;
+            RequiereGestor = await Autenticacion.Instancia.RequiereGestorAsync();
+            Listo = true;
+            MensajeError = "";
+        }
+        catch (Exception)
+        {
+            Listo = false;
+            MensajeError = "No se pudo preparar el acceso. Vuelve a intentarlo.";
+        }
+        finally { Ocupado = false; }
+    }
 
     [RelayCommand]
-    private void IniciarSesion()
+    private async Task IniciarSesionAsync()
     {
-        HayError = false;
-        MensajeError = string.Empty;
-
-        if (string.IsNullOrWhiteSpace(Usuario))
-        {
-            MostrarError("Introduce tu nombre de usuario.");
+        if (Ocupado || !Listo || RequiereGestor)
             return;
-        }
-
-        if (string.IsNullOrWhiteSpace(Contrasena))
-        {
-            MostrarError("Introduce tu contraseña.");
+        ErrorCorreo = string.IsNullOrWhiteSpace(Correo) ? "Introduce tu correo electrónico." : "";
+        ErrorClave = string.IsNullOrEmpty(Contrasena) ? "Introduce tu contraseña." : "";
+        MensajeError = "";
+        if (ErrorCorreo.Length > 0 || ErrorClave.Length > 0)
             return;
-        }
-
-        if (Usuario.Trim() == "admin" &&
-            Contrasena == "1234")
+        Ocupado = true;
+        try
         {
-            // Navegar al área principal.
-            NavegacionDemostracion.ElegirPerfil();
-
-            return;
+            if (!await NavegacionCuenta.EntrarAsync(Correo, Contrasena, Recordar))
+                MensajeError = "No se pudo iniciar sesión. Comprueba tus datos o espera unos segundos antes de volver a intentarlo.";
+            else
+                Contrasena = "";
         }
-
-        MostrarError("El usuario o la contraseña son incorrectos.");
+        catch (Exception)
+        {
+            MensajeError = "No se pudo iniciar sesión. Reintenta y, si el problema continúa, desmarca Recordar sesión.";
+        }
+        finally { Ocupado = false; }
     }
 
-    private void MostrarError(string mensaje)
-    {
-        MensajeError = mensaje;
-        HayError = true;
-    }
+    [RelayCommand]
+    private Task ReintentarAsync() => PrepararAsync(restaurar: true);
 }

@@ -1,220 +1,55 @@
-<?xml version="1.0" encoding="utf-8" ?>
-
-<ContentPage Style="{StaticResource CanvasVisual}"
-    x:Class="ECORUTA_RAEE.Views.LoginPage"
+<?xml version="1.0" encoding="utf-8"?>
+<ContentPage x:Class="ECORUTA_RAEE.Views.LoginPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    Title="Iniciar sesión"
-    NavigationPage.HasNavigationBar="False"
-    BackgroundColor="{AppThemeBinding Light={StaticResource CardBackground}, Dark={StaticResource NightSurface}}">
-
-    <!-- DISTRIBUCIÓN A PANTALLA COMPLETA -->
-    <Grid
-        RowDefinitions="0.35*,0.65*"
-        RowSpacing="0">
-
-        <!-- ZONA SUPERIOR: IDENTIDAD -->
-        <Grid
-            Grid.Row="0"
-            BackgroundColor="#17452F"
-            Padding="24,18">
-
-            <VerticalStackLayout
-                VerticalOptions="Center"
-                HorizontalOptions="Fill"
-                Spacing="11">
-
-                <!-- LOGOTIPO -->
-                <Border
-                    WidthRequest="88"
-                    HeightRequest="88"
-                    BackgroundColor="#286347"
-                    StrokeThickness="0"
-                    StrokeShape="RoundRectangle 26"
-                    HorizontalOptions="Center">
-
-                    <Image Source="ui_equipo.png" WidthRequest="28" HeightRequest="28" />
-
-                </Border>
-
-                <!-- NOMBRE DE LA APLICACIÓN -->
-                <Label
-                    Margin="0,6,0,0"
-                    Text="EcoRuta-RAEE"
-                    FontSize="30"
-                    FontAttributes="Bold"
-                    TextColor="White"
-                    HorizontalTextAlignment="Center"/>
-
-                <!-- SUBTÍTULO -->
-                <Label
-                    Text="Gestión de residuos electrónicos"
-                    FontSize="14"
-                    TextColor="#D4E9D9"
-                    HorizontalTextAlignment="Center"/>
-
-            </VerticalStackLayout>
-
-        </Grid>
-
-        <!-- ZONA INFERIOR: FORMULARIO -->
-        <Grid
-            Grid.Row="1"
-            BackgroundColor="{AppThemeBinding Light={StaticResource CardBackground}, Dark={StaticResource NightSurface}}"
-            Padding="24,22,24,20"
-            RowDefinitions="*,Auto"
-            RowSpacing="12">
-
-            <!-- SCROLL PARA PANTALLAS PEQUEÑAS -->
-            <ScrollView
-                Grid.Row="0"
-                VerticalScrollBarVisibility="Never">
-
-                <VerticalStackLayout
-                    Padding="0,12,0,12"
-                    Spacing="21">
-
-                    <!-- USUARIO -->
-                    <VerticalStackLayout Spacing="9">
-
-                        <Label
-                            Text="Usuario"
-                            FontSize="15"
-                            FontAttributes="Bold"
-                            TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource NightInk}}"/>
-
-                        <Border
-                            Padding="15,0"
-                            BackgroundColor="{AppThemeBinding Light={StaticResource EntryBackground}, Dark={StaticResource NightRaised}}"
-                            Stroke="#DCE6DD"
-                            StrokeThickness="1"
-                            StrokeShape="RoundRectangle 13">
-
-                            <Entry
-                                x:Name="UsuarioEntry"
-                                AutomationId="LoginUsuario"
-                                Placeholder="Introduce tu usuario"
-                                Text="{Binding Usuario, Mode=TwoWay}"
-                                TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource NightInk}}"
-                                PlaceholderColor="#89958D"
-                                BackgroundColor="Transparent"
-                                FontSize="16"
-                                HeightRequest="58"
-                                HorizontalOptions="Fill"
-                                ReturnType="Next"
-                                Completed="UsuarioEntry_Completed"/>
-
-                        </Border>
-
-                    </VerticalStackLayout>
-
-                    <!-- CONTRASEÑA -->
-                    <VerticalStackLayout Spacing="9">
-
-                        <Label
-                            Text="Contraseña"
-                            FontSize="15"
-                            FontAttributes="Bold"
-                            TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource NightInk}}"/>
-
-                        <Border
-                            Padding="15,0"
-                            BackgroundColor="{AppThemeBinding Light={StaticResource EntryBackground}, Dark={StaticResource NightRaised}}"
-                            Stroke="#DCE6DD"
-                            StrokeThickness="1"
-                            StrokeShape="RoundRectangle 13">
-
-                            <Grid
-                                ColumnDefinitions="*,Auto"
-                                ColumnSpacing="8">
-
-                                <Entry
-                                    Grid.Column="0"
-                                    x:Name="PasswordEntry"
-                                    AutomationId="LoginContrasena"
-                                    Placeholder="Introduce tu contraseña"
-                                    Text="{Binding Contrasena, Mode=TwoWay}"
-                                    IsPassword="True"
-                                    TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource NightInk}}"
-                                    PlaceholderColor="#89958D"
-                                    BackgroundColor="Transparent"
-                                    FontSize="16"
-                                    HeightRequest="58"
-                                    HorizontalOptions="Fill"
-                                    ReturnType="Go"
-                                    ReturnCommand="{Binding IniciarSesionCommand}"/>
-
-                                <!-- MOSTRAR / OCULTAR CONTRASEÑA -->
-                                <Button
-                                    Grid.Column="1"
-                                    x:Name="TogglePasswordButton"
-                                    Text="Mostrar"
-                                    Clicked="AlternarVisibilidadContrasena_Clicked"
-                                    BackgroundColor="Transparent"
-                                    TextColor="{AppThemeBinding Light={StaticResource PrimaryGreen}, Dark={StaticResource NightGreen}}"
-                                    FontSize="13"
-                                    FontAttributes="Bold"
-                                    Padding="4,0"
-                                    HeightRequest="48"
-                                    VerticalOptions="Center"/>
-
-                            </Grid>
-
-                        </Border>
-
-                    </VerticalStackLayout>
-
-                    <!-- ERROR DE AUTENTICACIÓN -->
-                    <Border
-                        Padding="13"
-                        BackgroundColor="{AppThemeBinding Light={StaticResource ErrorBackground}, Dark={StaticResource NightErrorSurface}}"
-                        StrokeThickness="0"
-                        StrokeShape="RoundRectangle 11"
-                        IsVisible="{Binding HayError}">
-
-                        <Label
-                            Text="{Binding MensajeError}"
-                            FontSize="13"
-                            TextColor="{AppThemeBinding Light={StaticResource ErrorColor}, Dark={StaticResource NightError}}"/>
-
-                    </Border>
-
-                    <!-- BOTÓN DE ACCESO -->
-                    <Button
-                        Margin="0,8,0,0"
-                        Text="Iniciar sesión"
-                        Command="{Binding IniciarSesionCommand}"
-                        BackgroundColor="#218653"
-                        TextColor="White"
-                        FontSize="16"
-                        FontAttributes="Bold"
-                        CornerRadius="13"
-                        HeightRequest="58"
-                        HorizontalOptions="Fill"/>
-
+    xmlns:vm="clr-namespace:ECORUTA_RAEE.ViewModels"
+    x:DataType="vm:LoginViewModel"
+    Title="Iniciar sesión" Style="{StaticResource CanvasVisual}" NavigationPage.HasNavigationBar="False">
+    <ScrollView>
+        <VerticalStackLayout Padding="16,24" Spacing="16">
+            <Border Style="{StaticResource GreenHero}">
+                <VerticalStackLayout Spacing="8">
+                    <Image Source="ui_equipo.png" WidthRequest="44" HeightRequest="44" />
+                    <Label Text="EcoRuta RAEE" Style="{StaticResource OnGreen}" FontSize="28" HorizontalTextAlignment="Center" />
+                    <Label Text="Gestión de residuos electrónicos" Style="{StaticResource OnGreen}" HorizontalTextAlignment="Center" />
                 </VerticalStackLayout>
-
-            </ScrollView>
-
-            <!-- PIE DE PÁGINA INFERIOR -->
-            <HorizontalStackLayout
-                Grid.Row="1"
-                HorizontalOptions="Center"
-                VerticalOptions="End"
-                Spacing="8">
-
-                <Image Source="ui_equipo.png" WidthRequest="28" HeightRequest="28" />
-
-                <Label
-                    Text="Reduce · Reutiliza · Recicla"
-                    FontSize="12"
-                    TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource NightMuted}}"
-                    VerticalTextAlignment="Center"/>
-
-            </HorizontalStackLayout>
-
-        </Grid>
-
-    </Grid>
-
+            </Border>
+            <Border Style="{StaticResource TarjetaVisual}">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Bienvenido" Style="{StaticResource TituloVisual}" />
+                    <Label x:Name="AvisoInicial" Text="Configura la primera cuenta de gestión de esta instalación."
+                        Style="{StaticResource TextoVisual}" IsVisible="False" />
+                    <VerticalStackLayout x:Name="Campos" Spacing="8" IsVisible="False">
+                        <Label Text="Correo electrónico" Style="{StaticResource TextoVisual}" />
+                        <Border x:Name="BordeCorreo" StrokeShape="RoundRectangle 12" Padding="10,0">
+                            <Entry x:Name="CorreoEntry" Text="{Binding Correo}" Keyboard="Email" ReturnType="Next"
+                                Completed="Correo_Completed" SemanticProperties.Description="Correo electrónico" />
+                        </Border>
+                        <Label x:Name="ErrorCorreo" Text="{Binding ErrorCorreo}" />
+                        <Label Text="Contraseña" Style="{StaticResource TextoVisual}" />
+                        <Border x:Name="BordeClave" StrokeShape="RoundRectangle 12" Padding="10,0">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <Entry x:Name="ClaveEntry" IsPassword="True" Text="{Binding Contrasena}"
+                                    ReturnType="Go" Completed="Clave_Completed" SemanticProperties.Description="Contraseña" />
+                                <ImageButton x:Name="VerClave" Grid.Column="1" Source="cuenta_ojo.png" WidthRequest="48"
+                                    HeightRequest="48" BackgroundColor="Transparent" Padding="13"
+                                    IsVisible="{Binding TieneClave}" Clicked="Alternar_Clicked" SemanticProperties.Description="Mostrar contraseña" />
+                            </Grid>
+                        </Border>
+                        <Label x:Name="ErrorClave" Text="{Binding ErrorClave}" />
+                        <HorizontalStackLayout Spacing="6">
+                            <CheckBox IsChecked="{Binding Recordar}" SemanticProperties.Description="Recordar sesión" />
+                            <Label Text="Recordar sesión" Style="{StaticResource TextoVisual}" VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                        <Button Text="Iniciar sesión" Command="{Binding IniciarSesionCommand}" Style="{StaticResource PrincipalVisual}" />
+                    </VerticalStackLayout>
+                    <ActivityIndicator IsRunning="{Binding Ocupado}" IsVisible="{Binding Ocupado}" SemanticProperties.Description="Preparando acceso" />
+                    <Label x:Name="Mensaje" Text="{Binding MensajeError}" />
+                    <Button x:Name="Registro" Text="Registrarme" IsVisible="False" Clicked="Registro_Clicked" Style="{StaticResource AccionVisual}" />
+                    <Button x:Name="Configurar" Text="Configurar cuenta gestora" IsVisible="False" Clicked="Configurar_Clicked" Style="{StaticResource PrincipalVisual}" />
+                    <Button x:Name="Reintentar" Text="Reintentar" IsVisible="False" Command="{Binding ReintentarCommand}" Style="{StaticResource AccionVisual}" />
+                </VerticalStackLayout>
+            </Border>
+        </VerticalStackLayout>
+    </ScrollView>
 </ContentPage>
